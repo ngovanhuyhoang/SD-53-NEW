@@ -1,0 +1,71 @@
+﻿@model IEnumerable<QuanApi.Dtos.KhachHangDto> 
+@{
+    ViewData["Title"] = "Danh Sách Khách Hàng"; 
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<p>
+ 
+    <a class="btn btn-success" asp-area="Admin" asp-controller="KhachHang" asp-action="Create">+ Thêm khách hàng mới</a>
+</p>
+
+<form asp-action="Index" method="get" class="mb-3">
+   
+    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="🔍 Tìm kiếm khách hàng..." />
+</form>
+
+<table class="table table-bordered table-hover table-striped">
+    <thead>
+        <tr>
+            
+            <th>Mã khách hàng</th>
+            <th>Tên Khách hàng</th>
+            <th>Email</th> 
+            <th>Số điện thoại</th> 
+            <th>Ngày tạo</th>
+            <th>Người tạo</th>
+            <th>Cập nhật</th>
+            <th>Người cập nhật</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.MaKhachHang</td>
+                <td>@item.TenKhachHang</td>
+                <td>@item.Email</td> 
+                <td>@item.SoDienThoai</td> 
+                <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@item.NguoiTao</td>
+                <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@item.NguoiCapNhat</td>
+                <td>
+                    @if (item.TrangThai) 
+                    {
+                        <span class="badge bg-success">Kích hoạt</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Ẩn</span>
+                    }
+                </td>
+                <td>
+                    
+                    <a class="btn btn-sm btn-primary" asp-action="Edit" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Sửa</a>
+                    <a class="btn btn-sm btn-info" asp-action="Details" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Xem</a>
+                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Xóa</a>
+                    <a class="btn btn-sm btn-warning" asp-action="ChangeStatus" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Đổi trạng thái</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+ 
+}

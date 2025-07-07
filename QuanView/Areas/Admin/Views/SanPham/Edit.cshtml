@@ -1,0 +1,146 @@
+﻿@model QuanView.Areas.Admin.Models.SanPhamDto
+
+@{
+    ViewData["Title"] = "Sửa sản phẩm";
+}
+
+<h2 class="mb-4">Sửa sản phẩm</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <p>@error.ErrorMessage</p>
+        }
+    </div>
+}
+
+<form asp-area="Admin" asp-controller="SanPham" asp-action="Edit" method="post">
+    <input type="hidden" asp-for="IDSanPham" />
+
+    <div class="form-group">
+        <label asp-for="MaSanPham"></label>
+        <input asp-for="MaSanPham" class="form-control" />
+        <span asp-validation-for="MaSanPham" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="TenSanPham"></label>
+        <input asp-for="TenSanPham" class="form-control" />
+        <span asp-validation-for="TenSanPham" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IDDanhMuc">Danh mục</label>
+        <select asp-for="IDDanhMuc" class="form-control" asp-items="ViewBag.DanhMucs">
+            <option value="">-- Chọn danh mục --</option>
+        </select>
+        <span asp-validation-for="IDDanhMuc" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IDThuongHieu">Thương hiệu</label>
+        <select asp-for="IDThuongHieu" class="form-control" asp-items="ViewBag.ThuongHieus">
+            <option value="">-- Chọn thương hiệu --</option>
+        </select>
+        <span asp-validation-for="IDThuongHieu" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IDChatLieu">Chất liệu</label>
+        <select asp-for="IDChatLieu" class="form-control" asp-items="ViewBag.ChatLieus">
+            <option value="">-- Chọn chất liệu --</option>
+        </select>
+        <span asp-validation-for="IDChatLieu" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IDLoaiOng">Loại ống</label>
+        <select asp-for="IDLoaiOng" class="form-control" asp-items="ViewBag.LoaiOngs">
+            <option value="">-- Chọn loại ống --</option>
+        </select>
+        <span asp-validation-for="IDLoaiOng" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IDKieuDang">Kiểu dáng</label>
+        <select asp-for="IDKieuDang" class="form-control" asp-items="ViewBag.KieuDangs">
+            <option value="">-- Chọn kiểu dáng --</option>
+        </select>
+        <span asp-validation-for="IDKieuDang" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IDLungQuan">Lưng quần</label>
+        <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans">
+            <option value="">-- Chọn lưng quần --</option>
+        </select>
+        <span asp-validation-for="IDLungQuan" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="CoXepLy" class="form-check-input" />
+        <label asp-for="CoXepLy" class="form-check-label"></label>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="CoGian" class="form-check-input" />
+        <label asp-for="CoGian" class="form-check-label"></label>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="TrangThai" class="form-check-input" />
+        <label asp-for="TrangThai" class="form-check-label"></label>
+    </div>
+
+    <!-- Biến thể sản phẩm -->
+    @if (Model.ChiTietSanPhams != null && Model.ChiTietSanPhams.Any())
+    {
+        <h4 class="mt-4">Biến thể sản phẩm</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Kích cỡ</th>
+                    <th>Màu sắc</th>
+                    <th>Họa tiết</th>
+                    <th>Số lượng</th>
+                    <th>Giá bán</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.ChiTietSanPhams.Count; i++)
+                {
+                    <tr>
+                        <td>
+                            <input type="hidden" asp-for="@Model.ChiTietSanPhams[i].IdSanPhamChiTiet" />
+                            <input type="hidden" asp-for="@Model.ChiTietSanPhams[i].IdKichCo" />
+                            @Model.ChiTietSanPhams[i].TenKichCo
+                        </td>
+                        <td>
+                            <input type="hidden" asp-for="@Model.ChiTietSanPhams[i].IdMauSac" />
+                            @Model.ChiTietSanPhams[i].TenMauSac
+                        </td>
+                        <td>
+                            <input type="hidden" asp-for="@Model.ChiTietSanPhams[i].IdHoaTiet" />
+                            @Model.ChiTietSanPhams[i].TenHoaTiet
+                        </td>
+                        <td>
+                            <input asp-for="@Model.ChiTietSanPhams[i].SoLuong" class="form-control" />
+                        </td>
+                        <td>
+                            <input asp-for="@Model.ChiTietSanPhams[i].GiaBan" class="form-control" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <button type="submit" class="btn btn-primary">Cập nhật</button>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

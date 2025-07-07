@@ -1,0 +1,22 @@
+﻿@model QuanApi.Data.DanhMuc
+
+<form id="createForm">
+    <div class="mb-3">
+        <label asp-for="MaDanhMuc" class="form-label">Mã danh mục</label>
+        <input asp-for="MaDanhMuc" class="form-control" />
+        <span asp-validation-for="MaDanhMuc" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="TenDanhMuc" class="form-label">Tên danh mục</label>
+        <input asp-for="TenDanhMuc" class="form-control" />
+        <span asp-validation-for="TenDanhMuc" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3 form-check">
+        <!-- Trick: hidden input để nếu checkbox không được tick thì vẫn gửi giá trị false -->
+        <input type="hidden" name="TrangThai" value="false" />
+        <input asp-for="TrangThai" class="form-check-input" />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>

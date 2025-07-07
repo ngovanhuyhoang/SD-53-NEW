@@ -1,0 +1,18 @@
+﻿@model QuanApi.Data.ChatLieu
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaChatLieu" class="form-label">Mã chất liệu</label>
+        <input asp-for="MaChatLieu" class="form-control" required />
+        <span asp-validation-for="MaChatLieu" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenChatLieu" class="form-label">Tên chất liệu</label>
+        <input asp-for="TenChatLieu" class="form-control" required />
+        <span asp-validation-for="TenChatLieu" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>

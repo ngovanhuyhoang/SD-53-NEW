@@ -1,0 +1,6 @@
+@QuanApi_HostAddress = http://localhost:5228
+
+GET {{QuanApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

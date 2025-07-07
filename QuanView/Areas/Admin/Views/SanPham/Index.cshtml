@@ -1,0 +1,98 @@
+﻿@model IEnumerable<QuanView.Areas.Admin.Models.SanPhamDto>
+@{
+    ViewData["Title"] = "Danh sách sản phẩm";
+}
+
+<h2 class="mb-4">Danh sách sản phẩm</h2>
+
+<p>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success mb-3">+ Thêm sản phẩm mới</a>
+</p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Không có sản phẩm nào được tìm thấy.
+    </div>
+}
+else
+{
+    <table class="table table-bordered table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>Mã SP</th>
+                <th>Tên SP</th>
+                <th>Chất liệu</th>
+                <th>Danh mục</th>
+                <th>Thương hiệu</th>
+                <th>Loại ống</th>
+                <th>Kiểu dáng</th>
+                <th>Lưng quần</th>
+                <th>Xếp ly</th>
+                <th>Co giãn</th>
+                <th>Trạng thái</th>
+                <th style="width: 150px;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.MaSanPham</td>
+                    <td>@item.TenSanPham</td>
+                    <td>@item.TenChatLieu</td>
+                    <td>@item.TenDanhMuc</td>
+                    <td>@item.TenThuongHieu</td>
+                    <td>@item.TenLoaiOng</td>
+                    <td>@item.TenKieuDang</td>
+                    <td>@item.TenLungQuan</td>
+                    <td>@(item.CoXepLy ? "Có" : "Không")</td>
+                    <td>@(item.CoGian ? "Có" : "Không")</td>
+                    <td>
+                        <span class="badge @(item.TrangThai ? "bg-success" : "bg-secondary")">
+                            @(item.TrangThai ? "Hoạt động" : "Ngưng")
+                        </span>
+                    </td>
+                    <td>
+                        <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-primary me-1">Sửa</a>
+                        <a asp-area="Admin" asp-controller="SanPham" asp-action="Delete" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-danger">Xóa</a>
+                    </td>
+                </tr>
+
+                @* Nếu có biến thể thì hiển thị thêm bảng con *@
+                @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                {
+                    <tr>
+                        <td colspan="12" class="p-0">
+                            <div class="table-responsive px-3 py-2">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Kích cỡ</th>
+                                            <th>Màu sắc</th>
+                                            <th>Họa tiết</th>
+                                            <th>Số lượng</th>
+                                            <th>Giá bán</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var ct in item.ChiTietSanPhams)
+                                        {
+                                            <tr>
+                                                <td>@ct.TenKichCo</td>
+                                                <td>@ct.TenMauSac</td>
+                                                <td>@ct.TenHoaTiet</td>
+                                                <td>@ct.SoLuong</td>
+                                                <td>@ct.GiaBan.ToString("N0") ₫</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}

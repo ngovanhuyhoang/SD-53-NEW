@@ -1,0 +1,18 @@
+﻿@model QuanApi.Data.ThuongHieu
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaThuongHieu" class="form-label">Mã thương hiệu</label>
+        <input asp-for="MaThuongHieu" class="form-control" required />
+        <span asp-validation-for="MaThuongHieu" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenThuongHieu" class="form-label">Tên thương hiệu</label>
+        <input asp-for="TenThuongHieu" class="form-control" required />
+        <span asp-validation-for="TenThuongHieu" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>

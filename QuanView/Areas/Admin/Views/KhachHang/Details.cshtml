@@ -1,0 +1,71 @@
+﻿@model QuanApi.Dtos.KhachHangDto 
+
+@{
+    ViewData["Title"] = "Chi tiết Khách Hàng";
+}
+
+<h1>Chi tiết Khách Hàng</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.MaKhachHang)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.MaKhachHang)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.TenKhachHang)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.TenKhachHang)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Email)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Email)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.SoDienThoai)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.SoDienThoai)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.TrangThai)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.TrangThai)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.NgayTao)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.NgayTao)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.NguoiTao)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.NguoiTao)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.LanCapNhatCuoi)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.LanCapNhatCuoi)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.NguoiCapNhat)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.NguoiCapNhat)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.IDKhachHang" class="btn btn-warning">Chỉnh sửa</a> |
+    <a asp-action="Index">Quay lại danh sách</a>
+</div>
