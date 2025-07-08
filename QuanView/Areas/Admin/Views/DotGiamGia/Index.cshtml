@@ -112,13 +112,7 @@
                                 <td>
                                     <a asp-action="Edit" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-primary">✏️</a>
                                     <a asp-action="Delete" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-danger">🗑️</a>
-                                    <a class="btn btn-sm btn-warning"
-                                       asp-action="UpdateTrangThai"
-                                       asp-route-id="@item.IDDotGiamGia"
-                                       asp-route-trangThai="@(item.TrangThai ? "false" : "true")"
-                                       onclick="return confirm('Bạn có muốn thay đổi trạng thái không?')">
-                                        @(item.TrangThai ? "⏸️" : "▶️")
-                                    </a>
+                                    
 
 
                                 </td>
@@ -162,3 +156,17 @@
         .btn-sm { padding: 2px 6px; }
     </style>
 }
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        @if (TempData["Reload"] != null)
+        {
+            <text>
+                        // Reload lại trang sau khi tạo/sửa thành công
+                        window.location.reload();
+            </text>
+        }
+        });
+    </script>
+}
+

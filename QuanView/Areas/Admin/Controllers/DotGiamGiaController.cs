@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace QuanView.Areas.Admin.Controllers
 {
@@ -82,10 +83,15 @@ namespace QuanView.Areas.Admin.Controllers
             var response = await _httpClient.PostAsync("DotGiamGias", jsonContent);
 
             if (response.IsSuccessStatusCode)
+            {
+                TempData["Reload"] = true;
                 return RedirectToAction(nameof(Index));
+
+            }
 
             var errorMessage = await response.Content.ReadAsStringAsync();
             ModelState.AddModelError("", $"Tạo đợt giảm giá thất bại: {errorMessage}");
+
             return View(model);
         }
 
@@ -98,25 +104,62 @@ namespace QuanView.Areas.Admin.Controllers
                 return NotFound();
 
             var dot = await res.Content.ReadFromJsonAsync<DotGiamGia>();
+
+            // GỌI API lấy sản phẩm đã chọn
+            var spRes = await _httpClient.GetAsync($"DotGiamGias/{id}/SanPhams");
+            if (spRes.IsSuccessStatusCode)
+            {
+                var sanPhams = await spRes.Content.ReadFromJsonAsync<List<SelectListItem>>();
+                ViewBag.SelectedSanPhamList = sanPhams;
+            }
+            else
+            {
+                ViewBag.SelectedSanPhamList = new List<SelectListItem>();
+            }
+
             return View(dot);
         }
 
+
         // POST: Cập nhật
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, DotGiamGia model)
+        public async Task<IActionResult> Edit(Guid id, DotGiamGia model, [FromForm] List<Guid> SelectedSanPhamChiTietIds)
         {
             if (!ModelState.IsValid) return View(model);
             if (id != model.IDDotGiamGia) return BadRequest();
 
-            var content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
+            var dto = new
+            {
+                IDDotGiamGia = model.IDDotGiamGia,
+                MaDot = model.MaDot,
+                TenDot = model.TenDot,
+                PhanTramGiam = model.PhanTramGiam,
+                NgayBatDau = model.NgayBatDau,
+                NgayKetThuc = model.NgayKetThuc,
+                TrangThai = model.TrangThai,
+                SanPhamChiTietIds = SelectedSanPhamChiTietIds
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
             var res = await _httpClient.PutAsync($"DotGiamGias/{id}", content);
 
             if (res.IsSuccessStatusCode)
+            {
+                TempData["Reload"] = true;
+
                 return RedirectToAction(nameof(Index));
+            }
+
 
             ModelState.AddModelError("", "Cập nhật thất bại");
+
             return View(model);
         }
+
+
+
+
+
 
         // GET: Xoá
         public async Task<IActionResult> Delete(Guid id)
@@ -181,14 +224,14 @@ namespace QuanView.Areas.Admin.Controllers
                 kichCo = x.TenKichCo ?? "N/A",
                 mauSac = x.TenMauSac ?? "N/A",
                 hoaTiet = x.TenHoaTiet ?? "N/A",
-                anhDaiDien = string.IsNullOrWhiteSpace(x.AnhDaiDien)
-                    ? "/images/sanpham/no-image.jpg"
-                    : x.AnhDaiDien,
+
                 trangThai = x.TrangThai
             }).ToList();
 
             return Json(result);
         }
+
+
 
 
     }

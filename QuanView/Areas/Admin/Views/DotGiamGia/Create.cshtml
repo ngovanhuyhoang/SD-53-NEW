@@ -90,7 +90,6 @@
                 <tr>
                     <th></th>
                     <th>STT</th>
-                    <th>Ảnh</th>
                     <th>Tên sản phẩm</th>
                     <th>Kích cỡ</th>
                     <th>Màu sắc</th>
@@ -130,39 +129,28 @@
             });
         }
 
-               async function loadChiTietSanPham(idSanPham) {
+        async function loadChiTietSanPham(idSanPham) {
             const response = await fetch(`/Admin/DotGiamGia/GetChiTietSanPham?idSanPham=${idSanPham}`);
             const data = await response.json();
 
             const table = document.getElementById('productDetailTable');
             table.innerHTML = '';
-                    data.forEach((ct, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="checkbox" value="${ct.idSanPhamChiTiet}" onchange="toggleSelection(this)" /></td>
-                <td>${index + 1}</td>
-                <td>
-                       <img src="${ct.anhDaiDien}"
-        width="60" height="60"
-        class="fade-img rounded shadow-sm"
-        style="object-fit: cover;"
-        onload="this.classList.add('loaded')"
-        onerror="this.src='/images/no-image.jpg'" />
-
-                </td>
-                <td>${ct.tenSanPham}</td>
-                <td>${ct.kichCo}</td>
-                <td>${ct.mauSac}</td>
-                <td>${ct.hoaTiet || '-'}</td>
-                <td>${ct.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
-            `;
-            table.appendChild(tr);
-        });
-
+            data.forEach((ct, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="checkbox" value="${ct.idSanPhamChiTiet}" onchange="toggleSelection(this)" /></td>
+                    <td>${index + 1}</td>
+                    <td>${ct.tenSanPham}</td>
+                    <td>${ct.kichCo}</td>
+                    <td>${ct.mauSac}</td>
+                    <td>${ct.hoaTiet || '-'}</td>
+                    <td>${ct.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
+                `;
+                table.appendChild(tr);
+            });
 
             table.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-
 
         function toggleSelection(checkbox) {
             const value = checkbox.value;

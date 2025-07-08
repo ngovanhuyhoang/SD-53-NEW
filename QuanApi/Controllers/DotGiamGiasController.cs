@@ -4,6 +4,7 @@ using QuanApi.Dtos;
 using QuanApi.Repository.IRepository;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace QuanApi.Controllers
@@ -33,17 +34,20 @@ namespace QuanApi.Controllers
                 filter.Page,
                 filter.PageSize
             );
-            
+
             var now = DateTime.Now;
 
             foreach (var item in result.Data)
             {
-                if (item.TrangThai == true && item.NgayKetThuc < now)
+                bool trangThaiMoi = item.NgayBatDau <= now && item.NgayKetThuc >= now;
+
+                if (item.TrangThai != trangThaiMoi)
                 {
-                    item.TrangThai = false;
-                    await _repository.UpdateTrangThaiAsync(item.IDDotGiamGia, false);
+                    item.TrangThai = trangThaiMoi;
+                    await _repository.UpdateTrangThaiAsync(item.IDDotGiamGia, trangThaiMoi);
                 }
             }
+
 
             return Ok(result);
         }
@@ -71,13 +75,35 @@ namespace QuanApi.Controllers
 
         // PUT: api/DotGiamGias/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] DotGiamGia model)
-        {
-            if (id != model.IDDotGiamGia) return BadRequest("ID không khớp");
 
-            var success = await _repository.UpdateAsync(model);
-            return success ? Ok(new { Success = true }) : BadRequest("Cập nhật thất bại (có thể do ngày không hợp lệ)");
+        public async Task<IActionResult> Update(Guid id, [FromBody] DotGiamGiaUpdateDto dto)
+        {
+            if (id != dto.IDDotGiamGia)
+                return BadRequest("ID không khớp");
+
+            var dot = new DotGiamGia
+            {
+                IDDotGiamGia = dto.IDDotGiamGia,
+                MaDot = dto.MaDot,
+                TenDot = dto.TenDot,
+                PhanTramGiam = dto.PhanTramGiam,
+                NgayBatDau = dto.NgayBatDau,
+                NgayKetThuc = dto.NgayKetThuc
+            };
+
+            var success = await _repository.UpdateAsync(dot, dto.SanPhamChiTietIds);
+            return success ? Ok() : BadRequest("Cập nhật thất bại");
         }
+
+
+
+        [HttpGet("{id}/SanPhams")]
+        public async Task<IActionResult> GetSanPhamsCuaDot(Guid id)
+        {
+            var sanPhams = await _repository.GetAllSanPhamChiTietWithSelected(id);
+            return Ok(sanPhams);
+        }
+
 
         // DELETE: api/DotGiamGias/{id}
         [HttpDelete("{id}")]
