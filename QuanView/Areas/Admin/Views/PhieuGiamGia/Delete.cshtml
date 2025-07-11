@@ -1,0 +1,27 @@
+﻿@model QuanApi.Data.PhieuGiamGia
+
+@{
+    ViewData["Title"] = "Xoá phiếu giảm giá";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<h3>Bạn có chắc chắn muốn xoá phiếu này không?</h3>
+
+<dl class="row">
+    <dt class="col-sm-3">Mã Code</dt>
+    <dd class="col-sm-9">@Model.MaCode</dd>
+
+    <dt class="col-sm-3">Tên phiếu</dt>
+    <dd class="col-sm-9">@Model.TenPhieu</dd>
+
+    <dt class="col-sm-3">Giá trị giảm</dt>
+    <dd class="col-sm-9">@Model.GiaTriGiam</dd>
+</dl>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="IDPhieuGiamGia" />
+    <button type="submit" class="btn btn-danger">Xác nhận xoá</button>
+    <a asp-action="Index" class="btn btn-secondary">Huỷ</a>
+</form>
+

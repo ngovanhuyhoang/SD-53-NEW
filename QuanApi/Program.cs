@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using QuanApi.Repository;
 using QuanApi.Repository.IRepository;
 using AutoMapper; 
-using QuanApi; 
+using QuanApi;
+using QuanApi.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,8 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 

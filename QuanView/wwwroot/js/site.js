@@ -1,4 +1,18 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
+﻿<script>
+    function toggleKhachHang() {
+        const isPublic = document.getElementById("LaCongKhai").checked;
+    document.getElementById("chonKhachHang").style.display = isPublic ? "none" : "block";
+    }
+    document.addEventListener("DOMContentLoaded", toggleKhachHang);
+</script>
+document.querySelectorAll(".khach-row").forEach(row => {
+    row.addEventListener("click", function () {
+        document.querySelectorAll(".khach-row").forEach(r => r.classList.remove("table-primary"));
+        row.classList.add("table-primary");
+        document.getElementById("SelectedKhachHangId").value = row.dataset.id;
 
-// Write your JavaScript code.
+        // Hiện checkbox gửi email sau khi chọn khách hàng
+        document.getElementById("guiEmailDiv").style.display = "block";
+    });
+});
+
