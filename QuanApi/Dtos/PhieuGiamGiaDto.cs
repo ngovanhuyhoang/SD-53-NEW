@@ -30,6 +30,6 @@ namespace QuanApi.Dtos
 
         public string? NguoiCapNhat { get; set; }
 
-        public Guid? IDKhachHang { get; set; }  // nếu có gán khách hàng riêng
+        public Guid? IDKhachHang { get; set; }  
     }
 }

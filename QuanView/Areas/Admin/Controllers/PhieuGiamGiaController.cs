@@ -26,9 +26,6 @@ namespace QuanView.Areas.Admin.Controllers
             _emailService = emailService;
         }
 
-
-
-        /*────────────────────────────────── INDEX ──────────────────────────────────*/
         public async Task<IActionResult> Index()
         {
             try
@@ -45,14 +42,12 @@ namespace QuanView.Areas.Admin.Controllers
             }
         }
 
-        /*────────────────────────────────── DETAILS ─────────────────────────────────*/
         public async Task<IActionResult> Details(Guid id)
         {
             var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGias/{id}");
             return phieu == null ? NotFound() : View(phieu);
         }
 
-        /*────────────────────────────────── CREATE ──────────────────────────────────*/
         public async Task<IActionResult> Create()
         {
             ViewBag.KhachHangs = await GetKhachHangsAsync();
@@ -113,8 +108,6 @@ namespace QuanView.Areas.Admin.Controllers
 
             var khachHangs = await GetKhachHangsAsync();
             ViewBag.KhachHangs = khachHangs;
-
-            // Tách ID khách hàng đã được gắn vào tên phiếu nếu có
             Guid? selectedKhachHangId = null;
             var idx = phieu.TenPhieu.IndexOf("(Áp dụng KH");
             if (idx >= 0)
@@ -170,9 +163,6 @@ namespace QuanView.Areas.Admin.Controllers
             return View(model);
         }
 
-
-
-        /*────────────────────────────────── DELETE ──────────────────────────────────*/
         public async Task<IActionResult> Delete(Guid id)
         {
             var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGias/{id}");
@@ -191,7 +181,6 @@ namespace QuanView.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        /*────────────────────────────────── PRIVATE ─────────────────────────────────*/
         private async Task<List<KhachHangDto>> GetKhachHangsAsync()
         {
             try

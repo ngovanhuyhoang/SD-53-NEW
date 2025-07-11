@@ -51,8 +51,6 @@ namespace QuanApi.Controllers
             {
                 var kh = await _context.KhachHang.FindAsync(idKhachHang.Value);
                 if (kh == null) return BadRequest("Khách hàng không tồn tại.");
-
-                // 👉 Không thay model – chỉ ghim thông tin
                 model.TenPhieu += $" (Áp dụng KH {kh.MaKhachHang})";
             }
 
@@ -82,8 +80,6 @@ namespace QuanApi.Controllers
 
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
-
-            // ✅ Làm sạch tên phiếu trước (xóa "Áp dụng KH")
             var idx = model.TenPhieu.IndexOf("(Áp dụng KH");
             if (idx >= 0)
                 model.TenPhieu = model.TenPhieu.Substring(0, idx).Trim();
@@ -93,8 +89,6 @@ namespace QuanApi.Controllers
                 var kh = await _context.KhachHang.FindAsync(khachHangId.Value);
                 if (kh == null)
                     return BadRequest("Khách hàng không tồn tại.");
-
-                // ✨ Gắn lại thông tin khách hàng duy nhất 1 lần
                 model.TenPhieu += $" (Áp dụng KH {kh.MaKhachHang})";
             }
 
@@ -113,8 +107,6 @@ namespace QuanApi.Controllers
 
             return NoContent();
         }
-
-
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
