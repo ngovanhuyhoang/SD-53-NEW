@@ -1,25 +1,29 @@
 ﻿using System;
-using System.Collections.Generic; 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace QuanApi.Dtos
 {
-    public class KhachHangDto
+    public class DiaChiDto
     {
-        public Guid IDKhachHang { get; set; }
+        public Guid IDDiaChi { get; set; }
 
-        [DisplayName("Mã khách hàng")]
-        public string MaKhachHang { get; set; } = string.Empty;
+        [DisplayName("Mã địa chỉ")]
+        public string MaDiaChi { get; set; } = string.Empty;
 
-        [DisplayName("Tên khách hàng")]
-        public string TenKhachHang { get; set; } = string.Empty;
+        [DisplayName("Địa chỉ chi tiết")]
+        public string DiaChiChiTiet { get; set; } = string.Empty;
 
-        [DisplayName("Email")]
-        public string? Email { get; set; }
+        public Guid IDKhachHang { get; set; } 
 
-        [DisplayName("Số điện thoại")]
-        public string SoDienThoai { get; set; } = string.Empty;
+        [DisplayName("Là mặc định")]
+        public bool LaMacDinh { get; set; }
+
+        [DisplayName("Tên người nhận")]
+        public string? TenNguoiNhan { get; set; }
+
+        [DisplayName("SĐT người nhận")]
+        public string? SdtNguoiNhan { get; set; }
 
         [DisplayName("Ngày tạo")]
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy HH:mm}")]
@@ -37,7 +41,5 @@ namespace QuanApi.Dtos
 
         [DisplayName("Trạng thái")]
         public bool TrangThai { get; set; }
-
-        public List<DiaChiDto>? DiaChis { get; set; }
     }
 }

@@ -1,61 +1,110 @@
-﻿@model QuanApi.Dtos.UpdateKhachHangDto 
+﻿@model IEnumerable<QuanApi.Dtos.KhachHangDto>
 
 @{
-    ViewData["Title"] = "Chỉnh sửa Khách Hàng";
+    ViewData["Title"] = "Danh Sách Khách Hàng";
 }
 
-<h1>Chỉnh sửa Khách Hàng</h1>
+<h2>@ViewData["Title"]</h2>
 
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="IDKhachHang" /> 
-            
-            <div class="form-group">
-                <label asp-for="MaKhachHang" class="control-label"></label>
-                <input asp-for="MaKhachHang" class="form-control" />
-                <span asp-validation-for="MaKhachHang" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="TenKhachHang" class="control-label"></label>
-                <input asp-for="TenKhachHang" class="form-control" />
-                <span asp-validation-for="TenKhachHang" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Email" class="control-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="MatKhau" class="control-label"></label>
-                <input asp-for="MatKhau" type="password" class="form-control" placeholder="Để trống nếu không muốn thay đổi mật khẩu" />
-                <span asp-validation-for="MatKhau" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SoDienThoai" class="control-label"></label>
-                <input asp-for="SoDienThoai" class="form-control" />
-                <span asp-validation-for="SoDienThoai" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="TrangThai" /> @Html.DisplayNameFor(model => model.TrangThai)
-                </label>
-            </div>
-            
-
-            <div class="form-group mt-3">
-                <input type="submit" value="Lưu" class="btn btn-primary" />
-            </div>
-        </form>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
-<div>
-    <a asp-action="Index">Quay lại danh sách</a>
-</div>
+
+<p>
+    <a class="btn btn-success" asp-area="Admin" asp-controller="KhachHang" asp-action="Create">+ Thêm khách hàng mới</a>
+</p>
+
+<form asp-action="Index" asp-controller="KhachHang" asp-area="Admin" method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="search" value="@ViewData["CurrentSearch"]" class="form-control" placeholder="🔍 Tìm kiếm theo mã, tên, email, SĐT..." />
+        <button class="btn btn-outline-secondary" type="submit">Tìm kiếm</button>
+        <a asp-action="Index" asp-controller="KhachHang" asp-area="Admin" class="btn btn-outline-secondary">Xóa tìm kiếm</a>
+    </div>
+</form>
+
+<table class="table table-bordered table-hover table-striped">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.MaKhachHang)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TenKhachHang)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Email)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SoDienThoai)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NgayTao)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NguoiTao)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LanCapNhatCuoi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NguoiCapNhat)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TrangThai)
+            </th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.MaKhachHang)</td>
+                <td>@Html.DisplayFor(modelItem => item.TenKhachHang)</td>
+                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
+                <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
+                <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td>
+                <td>
+                    @if (item.TrangThai)
+                    {
+                        <span class="badge bg-success">Kích hoạt</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Ẩn</span>
+                    }
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-primary" asp-area="Admin" asp-controller="KhachHang" asp-action="Edit" asp-route-id="@item.IDKhachHang">Sửa</a>
+                    <a class="btn btn-sm btn-info" asp-area="Admin" asp-controller="KhachHang" asp-action="Details" asp-route-id="@item.IDKhachHang">Xem</a>
+                    <a class="btn btn-sm btn-danger" asp-area="Admin" asp-controller="KhachHang" asp-action="Delete" asp-route-id="@item.IDKhachHang">Xóa</a>
+                    <form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus" asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-warning">Đổi trạng thái</button>
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

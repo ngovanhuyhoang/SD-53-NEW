@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic; 
+using System.ComponentModel.DataAnnotations;
 
 namespace QuanApi.Dtos
 {
@@ -12,7 +13,7 @@ namespace QuanApi.Dtos
         [StringLength(100, ErrorMessage = "Tên khách hàng không được vượt quá 100 ký tự.")]
         public string TenKhachHang { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Email là bắt buộc.")] 
+        [Required(ErrorMessage = "Email là bắt buộc.")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
         [StringLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự.")]
         public string Email { get; set; } = string.Empty;
@@ -27,6 +28,9 @@ namespace QuanApi.Dtos
         [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
         public string SoDienThoai { get; set; } = string.Empty;
 
-        public bool TrangThai { get; set; } = true; 
+        public bool TrangThai { get; set; } = true;
+
+   
+        public List<CreateDiaChiDto>? DiaChis { get; set; }
     }
 }

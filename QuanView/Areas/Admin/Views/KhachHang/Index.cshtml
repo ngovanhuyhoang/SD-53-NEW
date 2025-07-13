@@ -1,33 +1,71 @@
-﻿@model IEnumerable<QuanApi.Dtos.KhachHangDto> 
+﻿@* File: QuanView/Areas/Admin/Views/KhachHang/Index.cshtml *@
+@model IEnumerable<QuanApi.Dtos.KhachHangDto>
+
 @{
-    ViewData["Title"] = "Danh Sách Khách Hàng"; 
+    ViewData["Title"] = "Danh Sách Khách Hàng";
 }
 
 <h2>@ViewData["Title"]</h2>
 
+@* Thêm phần hiển thị thông báo thành công/lỗi từ TempData *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
 <p>
- 
     <a class="btn btn-success" asp-area="Admin" asp-controller="KhachHang" asp-action="Create">+ Thêm khách hàng mới</a>
 </p>
 
-<form asp-action="Index" method="get" class="mb-3">
-   
-    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="🔍 Tìm kiếm khách hàng..." />
+<form asp-action="Index" asp-controller="KhachHang" asp-area="Admin" method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="search" value="@ViewData["CurrentSearch"]" class="form-control" placeholder="🔍 Tìm kiếm theo mã, tên, email, SĐT..." />
+        <button class="btn btn-outline-secondary" type="submit">Tìm kiếm</button>
+        <a asp-action="Index" asp-controller="KhachHang" asp-area="Admin" class="btn btn-outline-secondary">Xóa tìm kiếm</a>
+    </div>
 </form>
 
 <table class="table table-bordered table-hover table-striped">
     <thead>
         <tr>
-            
-            <th>Mã khách hàng</th>
-            <th>Tên Khách hàng</th>
-            <th>Email</th> 
-            <th>Số điện thoại</th> 
-            <th>Ngày tạo</th>
-            <th>Người tạo</th>
-            <th>Cập nhật</th>
-            <th>Người cập nhật</th>
-            <th>Trạng thái</th>
+            <th>
+                @Html.DisplayNameFor(model => model.MaKhachHang)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TenKhachHang)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Email)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SoDienThoai)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NgayTao)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NguoiTao)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LanCapNhatCuoi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NguoiCapNhat)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TrangThai)
+            </th>
             <th>Thao tác</th>
         </tr>
     </thead>
@@ -35,16 +73,16 @@
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.MaKhachHang</td>
-                <td>@item.TenKhachHang</td>
-                <td>@item.Email</td> 
-                <td>@item.SoDienThoai</td> 
+                <td>@Html.DisplayFor(modelItem => item.MaKhachHang)</td>
+                <td>@Html.DisplayFor(modelItem => item.TenKhachHang)</td>
+                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
                 <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                <td>@item.NguoiTao</td>
+                <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
                 <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
-                <td>@item.NguoiCapNhat</td>
+                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td>
                 <td>
-                    @if (item.TrangThai) 
+                    @if (item.TrangThai)
                     {
                         <span class="badge bg-success">Kích hoạt</span>
                     }
@@ -54,11 +92,13 @@
                     }
                 </td>
                 <td>
-                    
-                    <a class="btn btn-sm btn-primary" asp-action="Edit" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Sửa</a>
-                    <a class="btn btn-sm btn-info" asp-action="Details" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Xem</a>
-                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Xóa</a>
-                    <a class="btn btn-sm btn-warning" asp-action="ChangeStatus" asp-controller="KhachHang" asp-route-id="@item.IDKhachHang">Đổi trạng thái</a>
+                    <a class="btn btn-sm btn-primary" asp-area="Admin" asp-controller="KhachHang" asp-action="Edit" asp-route-id="@item.IDKhachHang">Sửa</a>
+                    <a class="btn btn-sm btn-info" asp-area="Admin" asp-controller="KhachHang" asp-action="Details" asp-route-id="@item.IDKhachHang">Xem</a>
+                    <a class="btn btn-sm btn-danger" asp-area="Admin" asp-controller="KhachHang" asp-action="Delete" asp-route-id="@item.IDKhachHang">Xóa</a>
+                    <form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus" asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-warning">Đổi trạng thái</button>
+                        @Html.AntiForgeryToken()
+                    </form>
                 </td>
             </tr>
         }
@@ -66,6 +106,7 @@
 </table>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
- 
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
