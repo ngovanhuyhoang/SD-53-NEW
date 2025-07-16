@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1️⃣ Cấu hình DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SuaHangLoat")));
 
 // 2️⃣ Cấu hình HttpClient gọi API
 builder.Services.AddHttpClient("MyApi", client =>

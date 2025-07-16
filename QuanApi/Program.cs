@@ -3,9 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using QuanApi.Repository;
 using QuanApi.Repository.IRepository;
 using AutoMapper; 
-using QuanApi; 
+using QuanApi;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var cultureInfo = new CultureInfo("en-US");
+cultureInfo.NumberFormat.NumberDecimalSeparator = ".";
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 
 builder.Services.AddControllers();
@@ -15,7 +21,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SuaHangLoat"));
 });
 
 
