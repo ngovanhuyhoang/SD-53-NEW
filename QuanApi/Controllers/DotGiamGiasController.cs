@@ -103,6 +103,7 @@ namespace QuanApi.Controllers
             var sanPhams = await _repository.GetAllSanPhamChiTietWithSelected(id);
             return Ok(sanPhams);
         }
+     
 
 
         // DELETE: api/DotGiamGias/{id}

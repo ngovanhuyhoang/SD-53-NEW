@@ -188,10 +188,6 @@ namespace QuanApi.Repository
         }
 
 
-
-
-
-
         public async Task<bool> DeleteAsync(Guid id)
         {
             var dot = await _context.DotGiamGias.FindAsync(id);

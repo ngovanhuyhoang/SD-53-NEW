@@ -20,6 +20,8 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
+builder.Services.AddScoped<HoaDonIRepository, HoaDonRepository>();
+
 
 builder.Services.AddAutoMapper(typeof(Program));
 
