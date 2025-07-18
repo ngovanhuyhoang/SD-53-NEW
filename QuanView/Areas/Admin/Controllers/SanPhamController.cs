@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using QuanView.Areas.Admin.Models;
+using System.Net.Http;
+using System.Text;
 
 [Area("Admin")]
 public class SanPhamController : Controller
@@ -92,24 +94,74 @@ public class SanPhamController : Controller
     {
         var response = await _http.GetAsync($"sanphams/{id}");
         if (!response.IsSuccessStatusCode) return NotFound();
-
         var dto = await response.Content.ReadFromJsonAsync<SanPhamDto>();
+
+        // 🔍 Debug: Kiểm tra thông tin sản phẩm chính
+        System.Diagnostics.Debug.WriteLine($"🏷️ SanPham ID: {dto.IDSanPham}, Ten: {dto.TenSanPham}");
 
         var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={id}");
         if (res.IsSuccessStatusCode)
         {
             var ctJson = await res.Content.ReadAsStringAsync();
-            dto.ChiTietSanPhams = JsonSerializer.Deserialize<List<SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            // 💥 Kiểm tra JSON trước khi parse
+            Console.WriteLine($"👉 JSON: {ctJson}");
+
+            var ctList = JsonSerializer.Deserialize<List<SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            // 🔧 FIX: Đảm bảo IdSanPham được gán đúng cho tất cả chi tiết
+            foreach (var item in ctList)
+            {
+                // Gán IdSanPham nếu chưa có hoặc bị null/empty
+                if (item.IdSanPham == Guid.Empty || item.IdSanPham == null)
+                {
+                    item.IdSanPham = id;
+                    System.Diagnostics.Debug.WriteLine($"🔧 Fixed IdSanPham for ChiTiet: {item.IdSanPhamChiTiet}");
+                }
+
+                // 💥 Kiểm tra sau khi parse và fix
+                System.Diagnostics.Debug.WriteLine($"📦 ID: {item.IdSanPhamChiTiet}, SanPhamID: {item.IdSanPham}, {item.TenKichCo} - SL: {item.SoLuong}, Giá: {item.GiaBan}");
+            }
+
+            dto.ChiTietSanPhams = ctList;
+
+            // 🔍 Debug: Kiểm tra tổng quan
+            System.Diagnostics.Debug.WriteLine($"📊 Tổng số chi tiết: {ctList.Count}");
+        }
+        else
+        {
+            // 🔍 Debug: Nếu không load được chi tiết
+            System.Diagnostics.Debug.WriteLine($"❌ Không load được chi tiết sản phẩm: {res.StatusCode}");
+            dto.ChiTietSanPhams = new List<SanPhamChiTietDto>();
         }
 
         await LoadDropdownData();
         return View(dto);
     }
 
+
     [HttpPost]
-    public async Task<IActionResult> Edit(Guid id, SanPhamDto dto)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(SanPhamDto dto)
     {
-        var response = await _http.PutAsJsonAsync($"sanphams/{id}", dto);
+        // 🔍 Debug: Kiểm tra dữ liệu nhận được
+        System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
+        System.Diagnostics.Debug.WriteLine($"📥 ChiTietSanPhams count: {dto.ChiTietSanPhams?.Count ?? 0}");
+
+        if (dto.ChiTietSanPhams != null)
+        {
+            for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
+            {
+                var ct = dto.ChiTietSanPhams[i];
+                System.Diagnostics.Debug.WriteLine($"📦 [{i}] ID: {ct?.IdSanPhamChiTiet}, SL: {ct?.SoLuong}, Giá: {ct?.GiaBan}");
+            }
+        }
+
+        // Cập nhật sản phẩm chính
+        var response = await _http.PutAsJsonAsync($"sanphams/{dto.IDSanPham}", dto);
         if (!response.IsSuccessStatusCode)
         {
             var msg = await response.Content.ReadAsStringAsync();
@@ -118,15 +170,43 @@ public class SanPhamController : Controller
             return View(dto);
         }
 
+        // Cập nhật chi tiết sản phẩm
         if (dto.ChiTietSanPhams != null)
         {
             foreach (var ct in dto.ChiTietSanPhams)
             {
+                if (ct == null)
+                    continue;
+
+                // 🔧 FIX: Gán IdSanPham nếu bị mất
+                if (ct.IdSanPham == Guid.Empty)
+                {
+                    ct.IdSanPham = dto.IDSanPham;
+                    System.Diagnostics.Debug.WriteLine($"🔧 Fixed IdSanPham: {ct.IdSanPham}");
+                }
+
+                // 🔍 Debug: Kiểm tra dữ liệu trước khi gửi API
+                System.Diagnostics.Debug.WriteLine($"🔄 Sending to API: ID={ct.IdSanPhamChiTiet}, SanPhamID={ct.IdSanPham}, SL={ct.SoLuong}, Giá={ct.GiaBan}");
+
+                // 🔍 Debug: Serialize để xem JSON gửi đi
+                var jsonContent = JsonSerializer.Serialize(ct, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = true
+                });
+                System.Diagnostics.Debug.WriteLine($"📤 JSON being sent: {jsonContent}");
+
                 var res = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct);
+
                 if (!res.IsSuccessStatusCode)
                 {
                     var msg = await res.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"❌ API Error: {res.StatusCode} - {msg}");
                     ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"✅ Successfully updated ID: {ct.IdSanPhamChiTiet}");
                 }
             }
         }
@@ -157,6 +237,76 @@ public class SanPhamController : Controller
         await _http.DeleteAsync($"sanphams/{id}");
         return RedirectToAction("Index");
     }
+    //load biến thể cần chỉnh sửa hàng loạt 
+    [HttpPost]
+    [ActionName("TaiBienThe")]
+    public async Task<IActionResult> TaiBienThe([FromForm] List<Guid> selectedIds)
+    {
+        if (selectedIds == null || !selectedIds.Any())
+        {
+            TempData["Error"] = "Vui lòng chọn ít nhất một sản phẩm.";
+            return RedirectToAction("Index");
+        }
+
+        var allVariants = new List<SanPhamChiTietDto>();
+
+        foreach (var id in selectedIds)
+        {
+            var response = await _http.GetAsync($"https://localhost:7130/api/SanPhamChiTiets");
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<List<SanPhamChiTietDto>>();
+                var filtered = data.Where(ct => ct.IdSanPham == id).ToList();
+                allVariants.AddRange(filtered);
+            }
+        }
+
+        var vm = new SanPhamBienTheHangLoatViewModel
+        {
+            BienThes = allVariants
+        };
+
+        return View("ChinhSuaBienThe", vm);
+    }
+
+
+    //trả cập nhật biến thể trở lại api 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChinhSuaBienThe(SanPhamBienTheHangLoatViewModel model)
+    {
+        if (!ModelState.IsValid || model.BienThes == null || model.BienThes.Count == 0)
+        {
+            TempData["Error"] = "Dữ liệu cập nhật không hợp lệ.";
+            return RedirectToAction("Index");
+        }
+
+        // ✅ Serialize thủ công toàn bộ danh sách để đảm bảo decimal không sai
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+        };
+
+        var json = JsonSerializer.Serialize(model.BienThes, options);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _http.PutAsync("sanphamchitiets/bulk", content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var msg = await response.Content.ReadAsStringAsync();
+            TempData["Error"] = $"Lỗi cập nhật hàng loạt: {msg}";
+            return RedirectToAction("Index");
+        }
+
+        TempData["Success"] = "Cập nhật hàng loạt thành công!";
+        return RedirectToAction("Index");
+    }
+
+
+
+
 
     private async Task LoadDropdownData()
     {

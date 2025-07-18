@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
+
 
 namespace QuanApi.Controllers
 {
@@ -16,9 +18,12 @@ namespace QuanApi.Controllers
     {
         private readonly BanQuanAu1DbContext _context;
 
-        public SanPhamChiTietsController(BanQuanAu1DbContext context)
+        private readonly ILogger<SanPhamChiTietsController> _logger;
+
+        public SanPhamChiTietsController(BanQuanAu1DbContext context, ILogger<SanPhamChiTietsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/sanphamchitiets
@@ -194,30 +199,57 @@ namespace QuanApi.Controllers
             try
             {
                 if (id != dto.IdSanPhamChiTiet)
+                {
+                    _logger.LogWarning("ID không khớp: id={Id}, dto.IdSanPhamChiTiet={DtoId}", id, dto.IdSanPhamChiTiet);
                     return BadRequest("ID sản phẩm chi tiết không khớp.");
+                }
 
-                var ct = await _context.SanPhamChiTiets.FindAsync(id);
-                if (ct == null)
-                    return NotFound("Không tìm thấy sản phẩm chi tiết.");
+                // Tìm bản ghi cũ trong database
+                var entity = await _context.SanPhamChiTiets.FindAsync(id);
+                if (entity == null)
+                {
+                    _logger.LogWarning("Không tìm thấy sản phẩm chi tiết với ID={Id}", id);
+                    return NotFound();
+                }
 
-                ct.IDSanPham = dto.IdSanPham;
-                ct.IDKichCo = dto.IdKichCo;
-                ct.IDMauSac = dto.IdMauSac;
-                ct.IDHoaTiet = dto.IdHoaTiet == Guid.Empty ? null : dto.IdHoaTiet;
-                ct.SoLuong = dto.SoLuong;
-                ct.GiaBan = dto.GiaBan;
-                ct.MaSPChiTiet = dto.MaSPChiTiet ?? ct.MaSPChiTiet;
+                _logger.LogInformation("[PUT] Trước update: ID={ID}, SoLuong={SoLuong}, GiaBan={GiaBan}", entity.IDSanPhamChiTiet, entity.SoLuong, entity.GiaBan);
 
-                _context.Entry(ct).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
+                // Cập nhật các trường cần thiết
+                entity.IDSanPham = dto.IdSanPham;
+                entity.IDKichCo = dto.IdKichCo;
+                entity.IDMauSac = dto.IdMauSac;
+                entity.IDHoaTiet = dto.IdHoaTiet == Guid.Empty ? null : dto.IdHoaTiet;
+                entity.SoLuong = dto.SoLuong;
+                entity.GiaBan = dto.GiaBan;
+                entity.MaSPChiTiet = string.IsNullOrEmpty(dto.MaSPChiTiet) ? entity.MaSPChiTiet : dto.MaSPChiTiet;
+
+                // Nếu có thêm trường nào cần cập nhật, hãy thêm ở đây
+
+                var result = await _context.SaveChangesAsync();
+
+                _logger.LogInformation("[PUT] SaveChangesAsync result: {Result}", result);
+
+                // Kiểm tra lại trực tiếp trên context
+                var ctCheck = await _context.SanPhamChiTiets.FindAsync(id);
+                if (ctCheck != null)
+                {
+                    _logger.LogInformation("[PUT] Sau update DB: ID={ID}, SoLuong={SoLuong}, GiaBan={GiaBan}", ctCheck.IDSanPhamChiTiet, ctCheck.SoLuong, ctCheck.GiaBan);
+                }
+                else
+                {
+                    _logger.LogWarning("[PUT] Không tìm thấy lại entity sau update với ID={ID}", id);
+                }
 
                 return NoContent();
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "[PUT] Exception khi update sản phẩm chi tiết: {Message}", ex.Message);
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }
+
+
 
         // DELETE: api/sanphamchitiets/{id}
         [HttpDelete("{id}")]
@@ -239,9 +271,37 @@ namespace QuanApi.Controllers
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }
-        
+
+        // PUT: api/sanphamchitiets/bulk
+        [HttpPut("bulk")]
+        public async Task<IActionResult> PutBulk([FromBody] List<SanPhamChiTietDto> dtos)
+        {
+            _logger.LogWarning("Received bulk update:\n{Data}", JsonSerializer.Serialize(dtos, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
 
 
+            if (dtos == null || !dtos.Any())
+                return BadRequest("Không có dữ liệu cập nhật.");
+
+            foreach (var dto in dtos)
+            {
+                _logger.LogInformation("✅ DTO nhận được - ID: {Id}, GiaBan: {GiaBan}, SoLuong: {SoLuong}", dto.IdSanPhamChiTiet, dto.GiaBan, dto.SoLuong);
+
+                var ct = await _context.SanPhamChiTiets.FindAsync(dto.IdSanPhamChiTiet);
+                if (ct == null)
+                    continue;
+
+                ct.SoLuong = dto.SoLuong;
+                ct.GiaBan = dto.GiaBan;
+
+                _context.Entry(ct).State = EntityState.Modified;
+            }
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
 
     }
 }
