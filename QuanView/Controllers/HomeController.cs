@@ -1,22 +1,27 @@
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using QuanView.Models;
+using System;
 using System.Diagnostics;
 
 namespace QuanView.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly BanQuanAu1DbContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(BanQuanAu1DbContext context)
         {
-            _logger = logger;
+            _context = context;
         }
 
         public IActionResult Index()
         {
-            return View();
+            var banners = _context.Banners.ToList();
+            return View(banners);
         }
+
+
 
         public IActionResult Privacy()
         {

@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using Microsoft.AspNetCore.Identity;
 
 namespace BanQuanAu1.Web.Data
 {
@@ -40,6 +40,7 @@ namespace BanQuanAu1.Web.Data
         public DbSet<PhongTroChuyen> PhongTroChuyens { get; set; }
         public DbSet<TinNhan> TinNhans { get; set; }
         public DbSet<SanPhamDotGiam> SanPhamDotGiams { get; set; }
+        public DbSet<Banner> Banners { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

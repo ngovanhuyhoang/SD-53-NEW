@@ -1,0 +1,692 @@
+@{
+    ViewBag.Title = "Bán hàng";
+}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <ul class="nav nav-tabs" id="invoiceTabs"></ul>
+        <button class="btn btn-primary" id="btnAddInvoice">+ Tạo hóa đơn</button>
+    </div>
+    <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-info me-2" id="btnQRCode">QR Code</button>
+        <button class="btn btn-success" id="btnAddProduct">Thêm sản phẩm</button>
+    </div>
+    <div id="invoiceContent"></div>
+    <div class="row mt-4">
+        <div class="col-md-7">
+            <div class="card mb-3">
+                <div class="card-header fw-bold">Tài khoản</div>
+                <div class="card-body" id="accountInfo">
+                    <div class="mb-2">
+                        <span class="fw-bold">Tên khách hàng:</span>
+                        <span id="customerName" class="badge bg-secondary">khách lẻ</span>
+                    </div>
+                    <div id="customerDetails" style="display:none;">
+                        <div><span class="fw-bold">Số điện thoại:</span> <span id="customerPhone"></span></div>
+                        <div><span class="fw-bold">email:</span> <span id="customerEmail"></span></div>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="showCustomerModal()">Chọn tài khoản</button>
+                    <button class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
+                </div>
+            </div>
+
+            <!-- Form nhập địa chỉ giao hàng -->
+            <div class="card mb-3" id="shippingFormCard" style="display:none;">
+                <div class="card-header fw-bold">Khách hàng</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="shipName" placeholder="Nhập họ và tên">
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="shipPhone" placeholder="Nhập số điện thoại">
+                    </div>
+                    <div class="mb-2">
+                        <input type="email" class="form-control" id="shipEmail" placeholder="Nhập email">
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="shipAddress" placeholder="Nhập địa chỉ">
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <select class="form-select" id="shipProvince">
+                                <option>Chọn tỉnh</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <select class="form-select" id="shipDistrict">
+                                <option>Chọn Quận</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <select class="form-select" id="shipWard">
+                                <option>Chọn Phường xã</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="shipNote" placeholder="Ghi chú">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header fw-bold"><i class="bi bi-bag"></i> Thông tin thanh toán</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                    <span>Khách cần thanh toán</span>
+    <span class="float-end fw-bold" id="payAmount">0 VND</span>
+</div>
+                
+                    <div class="mb-2">
+                        <span>Tiền thối lại:</span>
+                        <span class="float-end fw-bold text-success" id="changeAmount">0 VND</span>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Mã giảm giá:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="discountCode" value="VC733483058 - HANGNT169">
+                            <button class="btn btn-outline-secondary" type="button" onclick="applyDiscount()">Chọn mã</button>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
+                        <label class="form-check-label" for="shippingSwitch">Giao Hàng</label>
+                    </div>
+                    <div class="mb-2">
+                        <span>Tiền hàng:</span>
+                        <span class="float-end" id="goodsAmount">0 VND</span>
+                    </div>
+                    <div class="mb-2">
+                        <span>Giảm giá:</span>
+                        <span class="float-end text-success" id="discountAmount">0 VND</span>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
+                        <label class="form-check-label" for="pointSwitch">Điểm hiện tại là <span id="customerPoint">0</span>:</label>
+                    </div>
+                    <div class="mb-2 d-flex align-items-center">
+    <span>Hình thức thanh toán:</span>
+    <span class="ms-auto d-flex align-items-center">
+        <span id="selectedPaymentMethod">Tiền mặt</span>
+        <a href="javascript:void(0)" onclick="openPaymentModal()" class="ms-2" title="Chỉnh sửa">
+            <i class="bi bi-pencil-square" style="font-size: 1.2em; cursor: pointer;"></i>
+        </a>
+    </span>
+</div>
+                    <div class="mb-2">
+                        <span class="fw-bold">Tổng tiền:</span>
+                        <span class="float-end fw-bold text-danger" id="totalAmount">0 VND</span>
+                    </div>
+                   <button class="btn btn-primary w-100" onclick="payInvoice()">Thanh toán</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chọn sản phẩm -->
+<div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="productList">
+                <!-- Danh sách sản phẩm sẽ được load ở đây -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chọn khách hàng -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Khách hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm kiếm theo số điện thoại, tên">
+                <button class="btn btn-primary mb-2" onclick="searchCustomer()">Tìm kiếm</button>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ảnh</th>
+                            <th>Tên khách hàng</th>
+                            <th>Email</th>
+                            <th>Số điện thoại</th>
+                            <th>Điểm</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerList"></tbody>
+                </table>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button class="btn btn-success float-end" onclick="addNewCustomer()">Thêm khách hàng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận thanh toán -->
+<div class="modal fade" id="confirmPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thanh toán</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <span>Số tiền phải thanh toán:</span>
+                    <span class="float-end fw-bold" id="modalPayAmount">0 đ</span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Hình thức thanh toán</label>
+                    <select class="form-select" id="paymentMethod">
+                        <!-- Option sẽ được load động từ API -->
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Tiền khách đưa</label>
+                    <input type="number" class="form-control" id="modalCustomerPaid" min="0" value="0" oninput="updateModalChangeAmount()" />
+                </div>
+                <div class="mb-2">
+                    <span>Tiền thối lại:</span>
+                    <span class="float-end fw-bold text-success" id="modalChangeAmount">0 đ</span>
+                </div>
+                <!-- Có thể thêm bảng lịch sử giao dịch nếu cần -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button class="btn btn-primary" onclick="updatePaymentInfoFromModal()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let invoices = [];
+    let currentInvoice = 0;
+    const maxInvoices = 5;
+
+    // Dữ liệu động
+    let products = [];
+    let customers = [];
+    let selectedCustomer = null;
+    let discountValue = 0;
+    let useShipping = false;
+    let usePoint = false;
+    let selectedPaymentCode;
+
+    // Lưu hóa đơn vào localStorage
+    function saveInvoicesToStorage() {
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+    }
+
+    // Load sản phẩm từ API
+    function loadProducts() {
+        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-san-pham', function(data) {
+            products = data;
+        });
+    }
+
+    // Load khách hàng từ API
+    function loadCustomers(callback) {
+        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-khach-hang', function(data) {
+            customers = data;
+            if (callback) callback();
+        });
+    }
+
+    // Tìm kiếm khách hàng
+    function searchCustomer() {
+        let q = $('#searchCustomer').val();
+        if (!q) {
+            renderCustomerList(customers);
+            return;
+        }
+        $.get('/Admin/ClientBanHangTaiQuay/tim-kiem-khach-hang', { query: q }, function(data) {
+            renderCustomerList(data);
+        });
+    }
+
+    // Thêm khách hàng mới
+    function addNewCustomer() {
+        let name = prompt('Nhập tên khách hàng mới:');
+        let phone = prompt('Nhập số điện thoại khách hàng:');
+        if (!name || !phone) return alert('Vui lòng nhập đủ thông tin!');
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/them-khach-hang',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ tenKhachHang: name, soDienThoai: phone }),
+            success: function(res) {
+                loadCustomers(function() {
+                    renderCustomerList(customers);
+                });
+                alert('Thêm khách hàng thành công!');
+            },
+            error: function(err) {
+                alert('Thêm khách hàng thất bại!');
+            }
+        });
+    }
+
+    // Áp dụng mã giảm giá
+    function applyDiscount() {
+        let code = $('#discountCode').val();
+        $.get('/Admin/ClientBanHangTaiQuay/kiem-tra-ma-giam-gia', { code: code }, function(res) {
+            if (res.success) {
+                discountValue = res.value;
+                alert('Áp dụng mã thành công!');
+            } else {
+                discountValue = 0;
+                alert('Mã giảm giá không hợp lệ!');
+            }
+            updatePaymentInfo();
+        });
+    }
+
+    // Thanh toán hóa đơn
+    function openPaymentModal() {
+        let pay = $('#payAmount').text();
+        $('#modalPayAmount').text(pay);
+        $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
+        // Đặt lại phương thức thanh toán trong modal theo ngoài giao diện
+        let currentMethod = $('#selectedPaymentMethod').text().trim();
+        $('#paymentMethod').val(
+            currentMethod === "Tiền mặt" ? "cash" :
+            currentMethod === "Chuyển khoản" ? "bank" :
+            currentMethod === "Thẻ" ? "card" : "cash"
+        );
+        updateModalChangeAmount();
+        $('#confirmPaymentModal').modal('show');
+    }
+
+    // Thêm hóa đơn mới
+    function addInvoice() {
+        invoices.push({products: []});
+        currentInvoice = invoices.length - 1;
+        saveInvoicesToStorage();
+    }
+
+    // Render tabs hóa đơn
+    function renderTabs() {
+        let html = '';
+        invoices.forEach((inv, idx) => {
+            html += `<li class="nav-item">
+                <a class="nav-link ${idx === currentInvoice ? 'active' : ''}" href="#" onclick="switchInvoice(${idx})">Hóa đơn ${idx+1}${inv.products.length > 0 ? '<span class=\'badge bg-danger ms-1\'>'+inv.products.length+'</span>' : ''}</a>
+            </li>`;
+        });
+        $('#invoiceTabs').html(html);
+    }
+
+    // Chuyển hóa đơn
+    function switchInvoice(idx) {
+        currentInvoice = idx;
+        renderTabs();
+        renderInvoice();
+    }
+
+    // Render danh sách sản phẩm trong hóa đơn
+    function renderInvoice() {
+        let inv = invoices[currentInvoice];
+        if (!inv || inv.products.length === 0) {
+            $('#invoiceContent').html(`
+                <div class="text-center my-5">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" width="100" />
+                    <p class="mt-3">Không có sản phẩm nào trong giỏ</p>
+                </div>
+            `);
+            return;
+        }
+        let rows = inv.products.map((p, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><img src="${p.img}" width="60"/></td>
+                <td>${p.name}<br><small>Kích cỡ: ${p.size}</small></td>
+                <td>${p.price.toLocaleString()} VND</td>
+                <td>
+                    <button class="btn btn-sm btn-light" onclick="changeQty(${i},-1)">-</button>
+                    <span class="mx-2">${p.qty}</span>
+                    <button class="btn btn-sm btn-light" onclick="changeQty(${i},1)">+</button>
+                </td>
+                <td>${(p.price * p.qty).toLocaleString()} VND</td>
+                <td><button class="btn btn-danger btn-sm" onclick="removeProduct(${i})">🗑</button></td>
+            </tr>
+        `).join('');
+        let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
+        $('#invoiceContent').html(`
+            <table class="table table-bordered align-middle">
+                <thead>
+                    <tr>
+                        <th>STT</th><th>Ảnh</th><th>Sản phẩm</th><th>Giá bán</th><th>Số lượng</th><th>Tổng tiền</th><th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div class="d-flex justify-content-end">
+                <h5 class="me-3">Tổng tiền: <span class="text-danger">${total.toLocaleString()} VND</span></h5>
+            </div>
+        `);
+        updatePaymentInfo();
+    }
+
+    // Thay đổi số lượng sản phẩm
+    function changeQty(idx, delta) {
+        let inv = invoices[currentInvoice];
+        let prod = inv.products[idx];
+        let productInfo = products.find(p => p.id == prod.id);
+        let maxQty = productInfo ? productInfo.stock : 1;
+
+        if (prod.qty + delta > maxQty) {
+            alert('Vượt quá số lượng tồn kho!');
+            return;
+        }
+        prod.qty += delta;
+        if (prod.qty < 1) prod.qty = 1;
+        renderInvoice();
+        saveInvoicesToStorage();
+    }
+
+    // Xóa sản phẩm khỏi hóa đơn
+    function removeProduct(idx) {
+        invoices[currentInvoice].products.splice(idx, 1);
+        renderTabs();
+        renderInvoice();
+        saveInvoicesToStorage();
+    }
+
+    // Render modal chọn sản phẩm
+    function renderProductModal() {
+        let html = `<table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${products.map(p => `
+                    <tr>
+                        <td><img src="${p.img}" width="60"/></td>
+                        <td>${p.name}</td>
+                        <td>${p.price.toLocaleString()} VND</td>
+                        <td>${p.size}</td>
+                        <td>${p.color}</td>
+                        <td><button class="btn btn-success btn-sm" onclick="addProductToInvoice('${p.id}')">Chọn</button></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
+        $('#productList').html(html);
+    }
+
+    // Thêm sản phẩm vào hóa đơn
+    function addProductToInvoice(productId) {
+        let prod = products.find(p => p.id == productId);
+        let inv = invoices[currentInvoice];
+        let exist = inv.products.find(p => p.id == productId);
+        let maxQty = prod.stock || 1; // cần có trường stock
+
+        if (exist) {
+            if (exist.qty + 1 > maxQty) {
+                alert('Vượt quá số lượng tồn kho!');
+                return;
+            }
+            exist.qty += 1;
+        } else {
+            if (maxQty < 1) {
+                alert('Sản phẩm đã hết hàng!');
+                return;
+            }
+            inv.products.push({ ...prod, qty: 1 });
+        }
+        $('#productModal').modal('hide');
+        renderTabs();
+        renderInvoice();
+        saveInvoicesToStorage();
+    }
+
+    function showCustomerModal() {
+        renderCustomerList(customers);
+        $('#customerModal').modal('show');
+    }
+
+    function renderCustomerList(list) {
+        let html = list.map((c, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><img src="${c.img}" width="40" class="rounded-circle"/></td>
+                <td>${c.name}</td>
+                <td>${c.email}</td>
+                <td>${c.phone}</td>
+                <td>${c.point}</td>
+                <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
+            </tr>
+        `).join('');
+        $('#customerList').html(html);
+    }
+
+    function selectCustomer(id) {
+        selectedCustomer = customers.find(c => c.id == id);
+        $('#customerModal').modal('hide');
+        $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary').addClass('bg-info');
+        $('#customerDetails').show();
+        $('#customerPhone').text(selectedCustomer.phone);
+        $('#customerEmail').text(selectedCustomer.email);
+        $('#customerPoint').text(selectedCustomer.point);
+        updatePaymentInfo();
+    }
+
+    // Toggle giao hàng
+    function toggleShipping() {
+        useShipping = $('#shippingSwitch').is(':checked');
+        if (useShipping) {
+            $('#shippingFormCard').show();
+            $('#btnShowAddress').show();
+        } else {
+            $('#shippingFormCard').hide();
+            $('#btnShowAddress').hide();
+        }
+        updatePaymentInfo();
+    }
+
+
+    // Toggle sử dụng điểm
+    function togglePoint() {
+        usePoint = $('#pointSwitch').is(':checked');
+        updatePaymentInfo();
+    }
+
+    // Cập nhật thông tin thanh toán
+    function updatePaymentInfo() {
+        let inv = invoices[currentInvoice];
+        let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
+        let discount = discountValue || 0;
+        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let shipping = useShipping ? 0 : 0; // bạn có thể thêm phí ship nếu muốn
+        let pay = total - discount - point + shipping;
+        if (pay < 0) pay = 0;
+
+        $('#goodsAmount').text(total.toLocaleString() + " VND");
+        $('#discountAmount').text(discount.toLocaleString() + " VND");
+        $('#payAmount').text(pay.toLocaleString() + " VND");
+        $('#totalAmount').text(pay.toLocaleString() + " VND");
+    }
+
+    // Gọi lại khi render hóa đơn
+    let oldRenderInvoice = renderInvoice;
+    renderInvoice = function() {
+        oldRenderInvoice();
+        updatePaymentInfo();
+    }
+
+    function updateModalChangeAmount() {
+        let pay = parseInt($('#modalPayAmount').text().replace(/\D/g, '')) || 0;
+        let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
+        let change = customerPaid - pay;
+        let $change = $('#modalChangeAmount');
+        $change.text(change.toLocaleString() + " đ");
+        if (change < 0) {
+            $change.removeClass('text-success').addClass('text-danger');
+        } else {
+            $change.removeClass('text-danger').addClass('text-success');
+        }
+    }
+
+        function updatePaymentInfoFromModal() {
+        // Lấy dữ liệu từ modal
+        selectedPaymentCode = $('#paymentMethod').val();
+        let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
+        let pay = parseInt($('#modalPayAmount').text().replace(/\D/g, '')) || 0;
+        let change = customerPaid - pay;
+
+        // Cập nhật ra ngoài
+        let $change = $('#changeAmount');
+        $change.text(change.toLocaleString() + " VND");
+        if (change < 0) {
+            $change.removeClass('text-success').addClass('text-danger');
+        } else {
+            $change.removeClass('text-danger').addClass('text-success');
+        }
+
+        // Hiển thị tên phương thức thanh toán ra ngoài
+        $('#selectedPaymentMethod').text($('#paymentMethod option:selected').text());
+
+        // Đóng modal
+        $('#confirmPaymentModal').modal('hide');
+    }
+
+    function payInvoice() {
+        let inv = invoices[currentInvoice];
+        if (!inv || inv.products.length === 0) return alert('Không có sản phẩm trong hóa đơn!');
+
+        // Lấy lại các thông tin đã chọn từ ngoài giao diện
+        let paymentMethod = $('#selectedPaymentMethod').text() || "Tiền mặt";
+        let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
+        let pay = parseInt($('#payAmount').text().replace(/\D/g, '')) || 0;
+
+        if (customerPaid < pay) {
+            alert('Khách đưa chưa đủ tiền!');
+            return;
+        }
+
+        // Dữ liệu gửi đi
+        let dto = {
+            CustomerId: selectedCustomer ? selectedCustomer.id : null,
+            CustomerName: selectedCustomer ? selectedCustomer.name : $('#shipName').val(),
+            CustomerPhone: selectedCustomer ? selectedCustomer.phone : $('#shipPhone').val(),
+            CustomerEmail: selectedCustomer ? selectedCustomer.email : $('#shipEmail').val(),
+            Address: $('#shipAddress').val(),
+            Products: inv.products.map(p => ({ ProductDetailId: p.id, Quantity: p.qty })),
+            DiscountCode: $('#discountCode').val(),
+            UsePoint: usePoint,
+            Shipping: useShipping,
+            PaymentMethod: paymentMethod,
+            CustomerPaid: customerPaid
+        };
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/thanh-toan',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                alert('Thanh toán thành công!');
+                $('#confirmPaymentModal').modal('hide');
+                invoices.splice(currentInvoice, 1);
+                if (invoices.length === 0) addInvoice();
+                currentInvoice = 0;
+                renderTabs();
+                renderInvoice();
+                saveInvoicesToStorage(); // Thêm dòng này
+            },
+            error: function(err) {
+                alert('Thanh toán thất bại!');
+            }
+        });
+    }
+
+    // Khởi tạo tỉnh (giữ nguyên nếu muốn dữ liệu mẫu)
+    const provinces = ["Hà Nội", "Hồ Chí Minh"];
+    const districts = { "Hà Nội": ["Ba Đình", "Cầu Giấy"], "Hồ Chí Minh": ["Quận 1", "Quận 3"] };
+    const wards = { "Ba Đình": ["Phường 1", "Phường 2"], "Cầu Giấy": ["Phường 3", "Phường 4"], "Quận 1": ["Phường 5"], "Quận 3": ["Phường 6"] };
+    $('#shipProvince').on('change', function() {
+        let val = $(this).val();
+        let opts = (districts[val] || []).map(d => `<option>${d}</option>`).join('');
+        $('#shipDistrict').html('<option>Chọn Quận</option>' + opts);
+        $('#shipWard').html('<option>Chọn Phường xã</option>');
+    });
+    $('#shipDistrict').on('change', function() {
+        let val = $(this).val();
+        let opts = (wards[val] || []).map(w => `<option>${w}</option>`).join('');
+        $('#shipWard').html('<option>Chọn Phường xã</option>' + opts);
+    });
+    $('#shipProvince').html('<option>Chọn tỉnh</option>' + provinces.map(p => `<option>${p}</option>`).join(''));
+
+    // Load phương thức thanh toán động từ API
+    function loadPaymentMethods() {
+        $.get('/api/BanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan', function(data) {
+            let html = '';
+            data.forEach(function(method) {
+                html += `<option value="${method.maPhuongThuc}">${method.tenPhuongThuc}</option>`;
+            });
+            $('#paymentMethod').html(html);
+        });
+    }
+
+    // Khởi tạo hóa đơn đầu tiên và load dữ liệu động
+    $(document).ready(function() {
+        let storedInvoices = localStorage.getItem('invoices');
+        if (storedInvoices) {
+            invoices = JSON.parse(storedInvoices);
+            if (invoices.length === 0) addInvoice();
+        } else {
+            addInvoice();
+        }
+        renderTabs();
+        renderInvoice();
+        loadProducts();
+        loadCustomers();
+        loadPaymentMethods(); // Load phương thức thanh toán động từ API
+
+        $('#btnAddInvoice').click(function() {
+            if (invoices.length < maxInvoices) {
+                addInvoice();
+                renderTabs();
+                renderInvoice();
+            } else {
+                alert('Chỉ được tối đa 5 hóa đơn chờ!');
+            }
+        });
+
+        $('#btnAddProduct').click(function() {
+            renderProductModal();
+            $('#productModal').modal('show');
+        });
+    });
+
+    function loadPaymentMethods() {
+    $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan', function(data) {
+        let html = '';
+        data.forEach(function(method) {
+            html += `<option value="${method.maPhuongThuc}">${method.tenPhuongThuc}</option>`;
+        });
+        $('#paymentMethod').html(html);
+        // Set mặc định từ DB (phương thức đầu tiên)
+        if (data.length > 0) {
+            selectedPaymentCode = data[0].maPhuongThuc;
+            $('#selectedPaymentMethod').text(data[0].tenPhuongThuc);
+            $('#paymentMethod').val(selectedPaymentCode);
+        }
+    });
+}
+</script>

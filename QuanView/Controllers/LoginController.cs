@@ -10,7 +10,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Nhom10ModuleDiemDanh.Controllers
+namespace QuanView.Controllers
 {
     public class LoginController : Controller
     {

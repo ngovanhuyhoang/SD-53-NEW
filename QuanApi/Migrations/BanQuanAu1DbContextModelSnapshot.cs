@@ -119,6 +119,28 @@ namespace QuanApi.Migrations
                     b.ToTable("AnhSanPhams");
                 });
 
+            modelBuilder.Entity("QuanApi.Data.Banner", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Link")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Banners");
+                });
+
             modelBuilder.Entity("QuanApi.Data.ChatLieu", b =>
                 {
                     b.Property<Guid>("IDChatLieu")
