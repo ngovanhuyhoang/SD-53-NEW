@@ -2,10 +2,6 @@
 using QuanApi.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace QuanApi.Repository
 {
@@ -18,115 +14,218 @@ namespace QuanApi.Repository
             _context = context;
         }
 
-        public async Task<HoaDon> TaoHoaDonAsync(HoaDon hoaDon)
+        public List<HoaDon> GetAll()
         {
-            _context.HoaDons.Add(hoaDon);
-            await _context.SaveChangesAsync();
-            return hoaDon;
+            return _context.HoaDons.Include(h => h.ChiTietHoaDons).ToList();
         }
 
-
-        public async Task<HoaDon?> GetHoaDonByIdAsync(Guid id)
+        public HoaDon? GetById(Guid id)
         {
-            return await _context.HoaDons
+            return _context.HoaDons
                 .Include(h => h.ChiTietHoaDons)
-                .ThenInclude(c => c.SanPhamChiTiet)
-                .FirstOrDefaultAsync(h => h.IDHoaDon == id && h.TrangThaiHoaDon);
+                .FirstOrDefault(h => h.IDHoaDon == id);
         }
 
-        public async Task<IEnumerable<HoaDon>> GetAllHoaDonAsync()
+        public bool CreateHoaDon(HoaDon hoaDon)
         {
-            return await _context.HoaDons
-                .Where(h => h.TrangThaiHoaDon)
-                .Include(h => h.ChiTietHoaDons)
-                .ToListAsync();
-        }
-
-        public async Task<bool> ThemSanPhamVaoHoaDonAsync(Guid hoaDonId, ChiTietHoaDon chiTiet)
-        {
-            var hoaDon = await _context.HoaDons.FindAsync(hoaDonId);
-            if (hoaDon == null || !hoaDon.TrangThaiHoaDon) return false;
-
-            chiTiet.IDChiTietHoaDon = Guid.NewGuid();
-            chiTiet.MaChiTietHoaDon = $"CTHD-{DateTime.Now:yyyyMMddHHmmss}";
-            chiTiet.IDHoaDon = hoaDonId;
-            chiTiet.ThanhTien = chiTiet.SoLuong * chiTiet.DonGia;
-            chiTiet.NgayTao = DateTime.Now;
-
-            _context.ChiTietHoaDons.Add(chiTiet);
-
-            hoaDon.TongTien += chiTiet.ThanhTien;
-            _context.HoaDons.Update(hoaDon);
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> XoaSanPhamKhoiHoaDonAsync(Guid hoaDonId, Guid chiTietId)
-        {
-            var chiTiet = await _context.ChiTietHoaDons
-                .FirstOrDefaultAsync(c => c.IDChiTietHoaDon == chiTietId && c.IDHoaDon == hoaDonId && c.TrangThai);
-            if (chiTiet == null) return false;
-
-            var hoaDon = await _context.HoaDons.FindAsync(hoaDonId);
-            if (hoaDon == null) return false;
-
-            hoaDon.TongTien -= chiTiet.ThanhTien;
-            _context.ChiTietHoaDons.Remove(chiTiet);
-            _context.HoaDons.Update(hoaDon);
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> CapNhatKhachHangAsync(Guid hoaDonId, Guid khachHangId)
-        {
-            var hoaDon = await _context.HoaDons.FindAsync(hoaDonId);
-            if (hoaDon == null) return false;
-
-            hoaDon.IDKhachHang = khachHangId;
-            hoaDon.LanCapNhatCuoi = DateTime.Now;
-
-            _context.HoaDons.Update(hoaDon);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> ThanhToanHoaDonAsync(Guid hoaDonId)
-        {
-            var hoaDon = await _context.HoaDons
-                .Include(h => h.ChiTietHoaDons)
-                .FirstOrDefaultAsync(h => h.IDHoaDon == hoaDonId && h.TrangThaiHoaDon);
-
-            if (hoaDon == null) return false;
-
-            if (hoaDon.TrangThai == TrangThaiHoaDon.DaThanhToan.ToString())
+            try
+            {
+                _context.HoaDons.Add(hoaDon);
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
                 return false;
-
-            hoaDon.TrangThai = TrangThaiHoaDon.DaThanhToan.ToString();
-            hoaDon.LanCapNhatCuoi = DateTime.Now;
-
-            if (hoaDon.TongTien == 0 && hoaDon.ChiTietHoaDons != null)
-            {
-                hoaDon.TongTien = hoaDon.ChiTietHoaDons.Sum(x => x.ThanhTien);
             }
-
-            if (hoaDon.TienGiam.HasValue)
-            {
-                hoaDon.TongTien -= hoaDon.TienGiam.Value;
-                if (hoaDon.TongTien < 0) hoaDon.TongTien = 0;
-            }
-
-            _context.HoaDons.Update(hoaDon);
-            await _context.SaveChangesAsync();
-            return true;
         }
 
-
-        public enum TrangThaiHoaDon
+        public bool UpdateTrangThai(Guid id, string trangThai)
         {
-            ChuaThanhToan,
-            DaThanhToan
+            try
+            {
+                var hd = _context.HoaDons.Find(id);
+                if (hd == null) return false;
+                hd.TrangThai = trangThai;
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
+
+        public bool DeleteHoaDon(Guid idHoaDon)
+        {
+            try
+            {
+                var chiTiets = _context.ChiTietHoaDons.Where(ct => ct.IDHoaDon == idHoaDon).ToList();
+                _context.ChiTietHoaDons.RemoveRange(chiTiets);
+
+                var hoaDon = _context.HoaDons.Find(idHoaDon);
+                if (hoaDon != null)
+                {
+                    _context.HoaDons.Remove(hoaDon);
+                }
+
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool ThemChiTietHoaDon(Guid idHoaDon, Guid idSanPhamChiTiet, int soLuong, decimal donGia)
+        {
+            try
+            {
+                var sanPham = _context.SanPhamChiTiets.Find(idSanPhamChiTiet);
+                if (sanPham == null || sanPham.SoLuong < soLuong) return false;
+
+                var ct = _context.ChiTietHoaDons.FirstOrDefault(c =>
+                    c.IDHoaDon == idHoaDon && c.IDSanPhamChiTiet == idSanPhamChiTiet);
+
+                if (ct != null)
+                {
+                    ct.SoLuong += soLuong;
+                    ct.ThanhTien = ct.SoLuong * donGia;
+                    ct.LanCapNhatCuoi = DateTime.Now;
+                }
+                else
+                {
+                    ct = new ChiTietHoaDon
+                    {
+                        IDHoaDon = idHoaDon,
+                        IDSanPhamChiTiet = idSanPhamChiTiet,
+                        SoLuong = soLuong,
+                        DonGia = donGia,
+                        ThanhTien = soLuong * donGia,
+                        NgayTao = DateTime.Now,
+                        TrangThai = true
+                    };
+                    _context.ChiTietHoaDons.Add(ct);
+                }
+
+                sanPham.SoLuong -= soLuong;
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool CapNhatSoLuongChiTiet(Guid idChiTiet, int soLuongMoi, decimal donGia)
+        {
+            try
+            {
+                var ct = _context.ChiTietHoaDons.Find(idChiTiet);
+                if (ct == null) return false;
+
+                var sanPham = _context.SanPhamChiTiets.Find(ct.IDSanPhamChiTiet);
+                if (sanPham == null) return false;
+
+                int chenhlech = soLuongMoi - ct.SoLuong;
+                if (sanPham.SoLuong < chenhlech) return false;
+
+                sanPham.SoLuong -= chenhlech;
+                ct.SoLuong = soLuongMoi;
+                ct.DonGia = donGia;
+                ct.ThanhTien = soLuongMoi * donGia;
+                ct.LanCapNhatCuoi = DateTime.Now;
+
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool XoaChiTietHoaDon(Guid idChiTiet)
+        {
+            try
+            {
+                var ct = _context.ChiTietHoaDons.Find(idChiTiet);
+                if (ct == null) return false;
+
+                var sanPham = _context.SanPhamChiTiets.Find(ct.IDSanPhamChiTiet);
+                if (sanPham != null)
+                {
+                    sanPham.SoLuong += ct.SoLuong;
+                }
+
+                _context.ChiTietHoaDons.Remove(ct);
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public List<ChiTietHoaDon> LayChiTietTheoHoaDon(Guid idHoaDon)
+        {
+            return _context.ChiTietHoaDons
+                .Where(ct => ct.IDHoaDon == idHoaDon)
+                .Include(ct => ct.SanPhamChiTiet)
+                .ToList();
+        }
+
+        public bool CapNhatKhachHang(Guid idHoaDon, Guid idKhachHang)
+        {
+            try
+            {
+                var hoaDon = _context.HoaDons.Find(idHoaDon);
+                if (hoaDon == null) return false;
+
+                hoaDon.IDKhachHang = idKhachHang;
+                hoaDon.LanCapNhatCuoi = DateTime.Now;
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool ThanhToanHoaDon(Guid idHoaDon, string maPhuongThucThanhToan)
+        {
+            try
+            {
+                var hoaDon = _context.HoaDons.Find(idHoaDon);
+                if (hoaDon == null) return false;
+
+                hoaDon.TrangThai = "Đã thanh toán";
+
+                var pttt = _context.PhuongThucThanhToans
+                    .FirstOrDefault(p => p.MaPhuongThuc == maPhuongThucThanhToan);
+
+                if (pttt == null)
+                {
+                    return false; 
+                }
+
+                hoaDon.IDPhuongThucThanhToan = pttt.IDPhuongThucThanhToan;
+
+                hoaDon.LanCapNhatCuoi = DateTime.Now;
+
+                _context.SaveChanges();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
     }
 }

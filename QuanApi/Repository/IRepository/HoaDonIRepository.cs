@@ -1,24 +1,23 @@
 ﻿using QuanApi.Data;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace QuanApi.Repository.IRepository
 {
     public interface HoaDonIRepository
     {
-        Task<HoaDon> TaoHoaDonAsync(HoaDon hoaDon);
+        List<HoaDon> GetAll();
+        HoaDon? GetById(Guid id);
+        bool CreateHoaDon(HoaDon hoaDon);
+        bool UpdateTrangThai(Guid id, string trangThai);
+        bool DeleteHoaDon(Guid idHoaDon);
 
-        Task<IEnumerable<HoaDon>> GetAllHoaDonAsync();
+        bool ThemChiTietHoaDon(Guid idHoaDon, Guid idSanPhamChiTiet, int soLuong, decimal donGia);
+        bool CapNhatSoLuongChiTiet(Guid idChiTiet, int soLuongMoi, decimal donGia);
+        bool XoaChiTietHoaDon(Guid idChiTiet);
+        List<ChiTietHoaDon> LayChiTietTheoHoaDon(Guid idHoaDon);
 
-        Task<HoaDon?> GetHoaDonByIdAsync(Guid id);
-
-        Task<bool> ThemSanPhamVaoHoaDonAsync(Guid hoaDonId, ChiTietHoaDon chiTiet);
-
-        Task<bool> XoaSanPhamKhoiHoaDonAsync(Guid hoaDonId, Guid chiTietId);
-
-        Task<bool> CapNhatKhachHangAsync(Guid hoaDonId, Guid khachHangId);
-
-        Task<bool> ThanhToanHoaDonAsync(Guid hoaDonId);
+        bool CapNhatKhachHang(Guid idHoaDon, Guid idKhachHang);
+        bool ThanhToanHoaDon(Guid idHoaDon, string maPhuongThucThanhToan);
     }
 }

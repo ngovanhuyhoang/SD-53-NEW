@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using QuanApi.Repository.IRepository;
 using QuanApi.Data;
+using QuanApi.Repository.IRepository;
 using System;
 using System.Threading.Tasks;
-using QuanApi.Repository;
-using QuanApi.Dtos;
 
 namespace QuanApi.Controllers
 {
@@ -12,89 +10,70 @@ namespace QuanApi.Controllers
     [Route("api/[controller]")]
     public class BanHangTaiQuaysController : ControllerBase
     {
-        private readonly HoaDonIRepository _hd;
+        private readonly HoaDonIRepository _hoaDonRepo;
 
-        public BanHangTaiQuaysController(HoaDonIRepository hd)
+        public BanHangTaiQuaysController(HoaDonIRepository hoaDonRepo)
         {
-            _hd = hd;
+            _hoaDonRepo = hoaDonRepo;
         }
 
         [HttpPost("TaoHoaDon")]
-        public async Task<IActionResult> TaoHoaDon()
+        public IActionResult TaoHoaDon()
         {
             var hoaDon = new HoaDon
             {
-                IDKhachHang = null, 
-                IDNhanVien = null,  
-                MaHoaDon = $"HD-{DateTime.Now:yyyyMMddHHmmss}",
+                IDHoaDon = Guid.NewGuid(),
                 NgayTao = DateTime.Now,
-                TongTien = 0,
-                TrangThai = "ChuaThanhToan",
-                TrangThaiHoaDon = true
+                TrangThai = "Chờ thanh toán",
+                IDKhachHang = null
             };
 
-            var result = await _hd.TaoHoaDonAsync(hoaDon);
-            return Ok(result);
+            var result = _hoaDonRepo.CreateHoaDon(hoaDon);
+            return result ? Ok(hoaDon) : BadRequest("Tạo thất bại");
         }
 
 
 
-
-
-        // GET: api/BanHangTaiQuays
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var result = await _hd.GetAllHoaDonAsync();
-
-            if (result == null)
-            {
-                return Ok(new List<HoaDon>());
-            }
-
-            return Ok(result);
-        }
-
-        // GET: api/BanHangTaiQuays/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var hoaDon = await _hd.GetHoaDonByIdAsync(id);
-            if (hoaDon == null)
-                return NotFound();
-            return Ok(hoaDon);
-        }
-
-        // POST: api/BanHangTaiQuays/ThemSanPham
         [HttpPost("ThemSanPham")]
-        public async Task<IActionResult> ThemSanPham([FromQuery] Guid hoaDonId, [FromBody] ChiTietHoaDon chiTiet)
+        public IActionResult ThemSanPham(Guid idHoaDon, Guid idSanPhamChiTiet, int soLuong, decimal donGia)
         {
-            var result = await _hd.ThemSanPhamVaoHoaDonAsync(hoaDonId, chiTiet);
-            return result ? Ok("Đã thêm sản phẩm") : BadRequest("Thêm sản phẩm thất bại");
+            var result = _hoaDonRepo.ThemChiTietHoaDon(idHoaDon, idSanPhamChiTiet, soLuong, donGia);
+            return result ? Ok("Thêm sản phẩm thành công") : BadRequest("Thêm thất bại");
         }
 
-        // DELETE: api/BanHangTaiQuays/XoaSanPham?hoaDonId=...&chiTietId=...
-        [HttpDelete("XoaSanPham")]
-        public async Task<IActionResult> XoaSanPham(Guid hoaDonId, Guid chiTietId)
+        [HttpPut("CapNhatSoLuong")]
+        public IActionResult CapNhatSoLuong(Guid idChiTiet, int soLuongMoi, decimal donGia)
         {
-            var result = await _hd.XoaSanPhamKhoiHoaDonAsync(hoaDonId, chiTietId);
-            return result ? Ok("Đã xoá sản phẩm") : BadRequest("Xoá thất bại");
+            var result = _hoaDonRepo.CapNhatSoLuongChiTiet(idChiTiet, soLuongMoi, donGia);
+            return result ? Ok("Cập nhật thành công") : BadRequest("Cập nhật thất bại");
         }
 
-        // PUT: api/BanHangTaiQuays/CapNhatKhachHang?hoaDonId=...&khachHangId=...
+        [HttpDelete("XoaSanPham/{idChiTiet}")]
+        public IActionResult XoaSanPham(Guid idChiTiet)
+        {
+            var result = _hoaDonRepo.XoaChiTietHoaDon(idChiTiet);
+            return result ? Ok("Đã xóa sản phẩm") : BadRequest("Xóa thất bại");
+        }
+
+        [HttpGet("LayChiTiet/{idHoaDon}")]
+        public IActionResult LayChiTiet(Guid idHoaDon)
+        {
+            var result = _hoaDonRepo.LayChiTietTheoHoaDon(idHoaDon);
+            return Ok(result);
+        }
+
         [HttpPut("CapNhatKhachHang")]
-        public async Task<IActionResult> CapNhatKhachHang(Guid hoaDonId, Guid khachHangId)
+        public IActionResult CapNhatKhachHang(Guid idHoaDon, Guid idKhachHang)
         {
-            var result = await _hd.CapNhatKhachHangAsync(hoaDonId, khachHangId);
-            return result ? Ok("Đã cập nhật khách hàng") : BadRequest("Cập nhật thất bại");
+            var result = _hoaDonRepo.CapNhatKhachHang(idHoaDon, idKhachHang);
+            return result ? Ok("Cập nhật khách hàng thành công") : BadRequest("Thất bại");
         }
 
-        // PUT: api/BanHangTaiQuays/ThanhToan?hoaDonId=...
         [HttpPut("ThanhToan")]
-        public async Task<IActionResult> ThanhToan(Guid hoaDonId)
+        public IActionResult ThanhToan(Guid idHoaDon, string maPhuongThucThanhToan)
         {
-            var result = await _hd.ThanhToanHoaDonAsync(hoaDonId);
-            return result ? Ok("Đã thanh toán") : BadRequest("Thanh toán thất bại");
+            var result = _hoaDonRepo.ThanhToanHoaDon(idHoaDon, maPhuongThucThanhToan);
+            return result ? Ok("Thanh toán thành công") : BadRequest("Thanh toán thất bại");
         }
     }
 }

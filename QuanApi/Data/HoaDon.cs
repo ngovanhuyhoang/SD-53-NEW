@@ -18,8 +18,7 @@ namespace QuanApi.Data
 
         public Guid? IDPhieuGiamGia { get; set; }
 
-        [Required]
-        public Guid IDPhuongThucThanhToan { get; set; }
+        public Guid? IDPhuongThucThanhToan { get; set; }
 
         [Required]
         [Range(0, double.MaxValue, ErrorMessage = "Tổng tiền phải lớn hơn hoặc bằng 0.")]
