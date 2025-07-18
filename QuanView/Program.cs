@@ -6,30 +6,44 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1️⃣ Cấu hình DbContext
+// 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2️⃣ Cấu hình HttpClient gọi API
-builder.Services.AddHttpClient("MyApi", client =>
+// 2️⃣ CẤU HÌNH HttpClient GỌI API
+builder.Services.AddHttpClient("QuanApi", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7130/api/");
+    var baseUrl = builder.Configuration["ApiSettings:KhachHangApiBaseUrl"];
+    if (string.IsNullOrEmpty(baseUrl))
+    {
+        throw new InvalidOperationException("Thiếu cấu hình 'ApiSettings:KhachHangApiBaseUrl' trong appsettings.json.");
+    }
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
-// 3️⃣ Cấu hình xác thực Google + Cookie
+// 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 })
-.AddCookie()
+.AddCookie(options =>
+{
+    options.LoginPath = "/Login/Index";
+    options.LogoutPath = "/Login/Logout";
+    options.AccessDeniedPath = "/Login/AccessDenied";
+})
 .AddGoogle(options =>
 {
     options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
     options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.CallbackPath = "/signin-google";
     options.Scope.Add("profile");
     options.ClaimActions.MapJsonKey("picture", "picture", "url");
@@ -38,15 +52,23 @@ builder.Services.AddAuthentication(options =>
     {
         OnRemoteFailure = context =>
         {
-            // 🔁 Redirect về Home/Index kèm error
             context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
             context.HandleResponse();
+            return Task.CompletedTask;
+        },
+        OnCreatingTicket = ctx =>
+        {
+            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
+            if (!string.IsNullOrEmpty(name))
+            {
+                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
+            }
             return Task.CompletedTask;
         }
     };
 });
 
-// 4️⃣ CORS để gọi từ frontend
+// 4️⃣ CẤU HÌNH CORS CHO FRONTEND
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -58,19 +80,20 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 5️⃣ Cấu hình dịch vụ MVC
+// 5️⃣ CẤU HÌNH JSON VÀ MVC
 builder.Services.AddControllersWithViews();
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 
-// ✅ Thêm HttpContextAccessor để dùng trong controller
+// 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// 6️⃣ Pipeline xử lý request
+// 7️⃣ MIDDLEWARE PIPELINE
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -83,7 +106,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 7️⃣ Cấu hình routing
+// 8️⃣ ROUTING
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=ProductManage}/{action=Index}/{id?}");
