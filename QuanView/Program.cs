@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using QuanView.Models;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 
@@ -25,6 +25,21 @@ builder.Services.AddHttpClient("QuanApi", client =>
     client.BaseAddress = new Uri(baseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
+//builder.Services.AddHttpClient("QuanApi", client =>
+//{
+//    client.BaseAddress = new Uri("https://localhost:7130/"); 
+//    client.DefaultRequestHeaders.Accept.Add(
+//        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+//});
+builder.Services.AddHttpClient("QuanApi", c => c.BaseAddress = new Uri("https://localhost:7130/api/"));
+
+// Đọc cấu hình từ appsettings
+var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailConfig>();
+
+// Đăng ký cấu hình và dịch vụ Email
+builder.Services.AddSingleton(emailConfig);
+builder.Services.AddSingleton<IEmailService, EmailService>();
+
 
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
 builder.Services.AddAuthentication(options =>
@@ -99,6 +114,13 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+app.UseRouting();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -116,3 +138,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+

@@ -1,0 +1,69 @@
+﻿@model List<QuanApi.Data.PhieuGiamGia>
+
+@{
+    ViewData["Title"] = "Danh sách phiếu giảm giá";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Tạo phiếu mới</a>
+</p>
+
+<table class="table table-bordered table-hover">
+    <thead class="thead-dark">
+        <tr>
+            <th>Mã Code</th>
+            <th>Tên phiếu</th>
+            <th>Giá trị giảm</th>
+            <th>Giảm tối đa</th>
+            <th>Đơn tối thiểu</th>
+            <th>Số lượng</th>
+            <th>Ngày bắt đầu</th>
+            <th>Ngày kết thúc</th>
+            <th>Công khai</th>
+            <th>Trạng thái</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Count == 0)
+        {
+            <tr>
+                <td colspan="11" class="text-center">Không có phiếu giảm giá nào.</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.MaCode</td>
+                    <td>@item.TenPhieu</td>
+                    <td>@($"{item.GiaTriGiam:n0}")</td>
+                    <td>@(item.GiaTriGiamToiDa?.ToString("n0") ?? "-")</td>
+                    <td>@(item.DonToiThieu?.ToString("n0") ?? "-")</td>
+                    <td>@item.SoLuong</td>
+                    <td>@item.NgayBatDau.ToString("dd/MM/yyyy")</td>
+                    <td>@item.NgayKetThuc.ToString("dd/MM/yyyy")</td>
+                    <td>@(item.LaCongKhai ? "✔️" : "❌")</td>
+                    <td>@(item.TrangThai ? "Hoạt động" : "Ngừng")</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-info">Chi tiết</a>
+                        <a asp-action="Edit" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-warning">Sửa</a>
+                        <a asp-action="Delete" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-danger">Xoá</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
