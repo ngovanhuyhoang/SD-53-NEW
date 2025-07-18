@@ -32,7 +32,6 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
-                            .ThenInclude(sp => sp.AnhSanPhams) 
 
                     .ToListAsync();
 
@@ -51,7 +50,6 @@ namespace QuanApi.Controllers
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
                     TrangThai = ct.SanPham?.TrangThai ?? true,
-                    AnhDaiDien = $"/images/sanpham/{ct.SanPham?.AnhSanPhams?.FirstOrDefault(x => x.LaAnhChinh)?.UrlAnh ?? "no-image.jpg"}"
 
 
                 }).ToList();
@@ -75,7 +73,6 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
-                            .ThenInclude(sp => sp.AnhSanPhams) 
 
                     .FirstOrDefaultAsync(ct => ct.IDSanPhamChiTiet == id);
 
@@ -97,7 +94,6 @@ namespace QuanApi.Controllers
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
                     TrangThai = ct.SanPham?.TrangThai ?? true,
-                    AnhDaiDien = $"/images/sanpham/{ct.SanPham?.AnhSanPhams?.FirstOrDefault(x => x.LaAnhChinh)?.UrlAnh ?? "no-image.jpg"}"
 
                 };
 
@@ -124,7 +120,6 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
-                            .ThenInclude(sp => sp.AnhSanPhams)
 
                     .ToListAsync();
 
@@ -146,7 +141,6 @@ namespace QuanApi.Controllers
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
                     TrangThai = ct.SanPham?.TrangThai ?? true,
-                    AnhDaiDien = $"/images/sanpham/{ct.SanPham?.AnhSanPhams?.FirstOrDefault(x => x.LaAnhChinh)?.UrlAnh ?? "no-image.jpg"}"
 
                 }).ToList();
 
@@ -245,5 +239,9 @@ namespace QuanApi.Controllers
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }
+        
+
+
+
     }
 }

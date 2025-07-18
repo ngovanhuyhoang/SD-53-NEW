@@ -1,4 +1,5 @@
 ﻿using BanQuanAu1.Web.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using QuanApi.Data;
 using QuanApi.Dtos;
 
@@ -13,8 +14,8 @@ namespace QuanApi.Repository.IRepository
 
         Task<bool> CreateAsync(DotGiamGia dotGiamGia, List<Guid> selectedChiTietIds);
 
-        Task<bool> UpdateAsync(DotGiamGia dotGiamGia);
-
+        Task<bool> UpdateAsync(DotGiamGia dotGiamGia, List<Guid> selectedChiTietIds);
+        Task<List<SelectListItem>> GetAllSanPhamChiTietWithSelected(Guid idDot);
         Task<bool> DeleteAsync(Guid id);
 
         Task<bool> UpdateTrangThaiAsync(Guid id, bool trangThai);

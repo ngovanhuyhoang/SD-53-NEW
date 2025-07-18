@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace QuanApi.Repository
 {
@@ -102,7 +103,7 @@ namespace QuanApi.Repository
             return true;
         }
 
-        public async Task<bool> UpdateAsync(DotGiamGia dot)
+        public async Task<bool> UpdateAsync(DotGiamGia dot, List<Guid> chiTietIds)
         {
             if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.Today)
                 return false;
@@ -110,26 +111,86 @@ namespace QuanApi.Repository
             dot.LanCapNhatCuoi = DateTime.Now;
             _context.DotGiamGias.Update(dot);
 
-            var spGiams = await _context.SanPhamDotGiams
-                                        .Where(x => x.IDDotGiamGia == dot.IDDotGiamGia)
-                                        .ToListAsync();
+            var oldSpGiam = await _context.SanPhamDotGiams
+                .Where(x => x.IDDotGiamGia == dot.IDDotGiamGia)
+                .ToListAsync();
 
-            var chiTietIds = spGiams.Select(x => x.IDSanPhamChiTiet).ToList();
-            var chiTiets = await _context.SanPhamChiTiets
-                                         .Where(x => chiTietIds.Contains(x.IDSanPhamChiTiet))
-                                         .ToDictionaryAsync(x => x.IDSanPhamChiTiet);
+            var giaGocDict = oldSpGiam.ToDictionary(x => x.IDSanPhamChiTiet, x => x.GiaGoc);
 
-            foreach (var sp in spGiams)
+            var oldChiTietIds = oldSpGiam.Select(x => x.IDSanPhamChiTiet).ToList();
+
+            var allChiTiets = await _context.SanPhamChiTiets
+                .Where(x => oldChiTietIds.Contains(x.IDSanPhamChiTiet) || chiTietIds.Contains(x.IDSanPhamChiTiet))
+                .ToDictionaryAsync(x => x.IDSanPhamChiTiet);
+
+            foreach (var sp in oldSpGiam)
             {
-                if (chiTiets.TryGetValue(sp.IDSanPhamChiTiet, out var ct))
+                if (!chiTietIds.Contains(sp.IDSanPhamChiTiet))
                 {
-                    ct.GiaBan = Math.Max(0, sp.GiaGoc - sp.GiaGoc * dot.PhanTramGiam / 100m);
+                    if (allChiTiets.TryGetValue(sp.IDSanPhamChiTiet, out var ct))
+                    {
+                        ct.GiaBan = sp.GiaGoc;
+                        ct.IDDotGiamGia = null;
+                    }
+                }
+            }
+
+            _context.SanPhamDotGiams.RemoveRange(oldSpGiam);
+
+            foreach (var id in chiTietIds)
+            {
+                if (allChiTiets.TryGetValue(id, out var ct))
+                {
+                    decimal giaGoc = giaGocDict.ContainsKey(id) ? giaGocDict[id] : ct.GiaBan;
+
+                    _context.SanPhamDotGiams.Add(new SanPhamDotGiam
+                    {
+                        IDSanPhamDotGiam = Guid.NewGuid(),
+                        IDDotGiamGia = dot.IDDotGiamGia,
+                        IDSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                        MaSanPhamDotGiam = "SPDG_" + Guid.NewGuid().ToString("N").Substring(0, 8),
+                        GiaGoc = giaGoc,
+                        NgayTao = DateTime.Now,
+                        TrangThai = true
+                    });
+
+                    ct.GiaBan = Math.Max(0, giaGoc - giaGoc * dot.PhanTramGiam / 100m);
+                    ct.IDDotGiamGia = dot.IDDotGiamGia;
                 }
             }
 
             await _context.SaveChangesAsync();
             return true;
         }
+
+
+
+
+        public async Task<List<SelectListItem>> GetAllSanPhamChiTietWithSelected(Guid idDot)
+        {
+            var selectedIds = await _context.SanPhamDotGiams
+                .Where(x => x.IDDotGiamGia == idDot)
+                .Select(x => x.IDSanPhamChiTiet)
+                .ToListAsync();
+
+            return await _context.SanPhamChiTiets
+                .Include(x => x.SanPham)
+                .Include(x => x.KichCo)
+                .Include(x => x.MauSac)
+                .Include(x => x.HoaTiet)
+                .Select(x => new SelectListItem
+                {
+                    Value = x.IDSanPhamChiTiet.ToString(),
+                    Text = $"{x.MaSPChiTiet} - {x.SanPham.TenSanPham} | Size: {x.KichCo.TenKichCo}, Màu: {x.MauSac.TenMauSac}, Họa tiết: {x.HoaTiet.TenHoaTiet}",
+                    Selected = selectedIds.Contains(x.IDSanPhamChiTiet)
+                })
+                .ToListAsync();
+        }
+
+
+
+
+
 
         public async Task<bool> DeleteAsync(Guid id)
         {
@@ -198,5 +259,6 @@ namespace QuanApi.Repository
             await _context.SaveChangesAsync();
             return true;
         }
+
     }
 }
