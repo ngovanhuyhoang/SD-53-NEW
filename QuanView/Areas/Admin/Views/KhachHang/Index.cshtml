@@ -92,11 +92,11 @@
                     }
                 </td>
                 <td>
-                    <a class="btn btn-sm btn-primary" asp-area="Admin" asp-controller="KhachHang" asp-action="Edit" asp-route-id="@item.IDKhachHang">Sửa</a>
-                    <a class="btn btn-sm btn-info" asp-area="Admin" asp-controller="KhachHang" asp-action="Details" asp-route-id="@item.IDKhachHang">Xem</a>
-                    <a class="btn btn-sm btn-danger" asp-area="Admin" asp-controller="KhachHang" asp-action="Delete" asp-route-id="@item.IDKhachHang">Xóa</a>
+                  @*   <a class="btn btn-sm btn-primary" asp-area="Admin" asp-controller="KhachHang" asp-action="Edit" asp-route-id="@item.IDKhachHang">Sửa</a>
+                    <a class="btn btn-sm btn-info" asp-area="Admin" asp-controller="KhachHang" asp-action="Details" asp-route-id="@item.IDKhachHang">Xem</a> *@
+                    <a class="btn btn-sm btn-danger" asp-area="Admin" asp-controller="KhachHang" asp-action="Delete" asp-route-id="@item.IDKhachHang">Xem</a>
                     <form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus" asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-warning">Đổi trạng thái</button>
+                        @* <button type="submit" class="btn btn-sm btn-warning">Đổi trạng thái</button> *@
                         @Html.AntiForgeryToken()
                     </form>
                 </td>

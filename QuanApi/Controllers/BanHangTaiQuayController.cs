@@ -184,6 +184,7 @@ namespace QuanApi.Controllers
         {
             var products = await _context.SanPhamChiTiets
                 .Include(x => x.SanPham)
+                    .ThenInclude(s => s.AnhSanPhams.Where(a => a.TrangThai))
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
                 .Where(x => x.TrangThai)
@@ -193,8 +194,27 @@ namespace QuanApi.Controllers
                     price = x.GiaBan,
                     size = x.KichCo.TenKichCo,
                     color = x.MauSac.TenMauSac,
-                    img = x.SanPham.AnhSanPhams.FirstOrDefault().UrlAnh, // hoặc trường ảnh phù hợp
-                    stock = x.SoLuong // Thêm trường tồn kho
+                    // Lấy ảnh chính hoặc ảnh đầu tiên
+                    img = x.SanPham.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault() ?? "/img/default-product.jpg",
+                    stock = x.SoLuong,
+                    // Thêm thông tin sản phẩm gốc
+                    productId = x.IDSanPham,
+                    productName = x.SanPham.TenSanPham,
+                    // Thêm danh sách ảnh
+                    images = x.SanPham.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => new {
+                            id = a.IDAnhSanPham,
+                            url = a.UrlAnh,
+                            isMain = a.LaAnhChinh
+                        }).ToList()
                 }).ToListAsync();
             return Ok(products);
         }
@@ -363,6 +383,37 @@ namespace QuanApi.Controllers
                 var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
                 if (discount != null)
                 {
+                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
+                    if (dto.CustomerId.HasValue)
+                    {
+                        var customerVoucher = await _context.KhachHangPhieuGiams
+                            .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia && 
+                                                     x.IDKhachHang == dto.CustomerId.Value &&
+                                                     x.TrangThai &&
+                                                     x.SoLuongDaSuDung < x.SoLuong);
+
+                        if (customerVoucher != null)
+                        {
+                            // Tăng số lượng đã sử dụng
+                            customerVoucher.SoLuongDaSuDung++;
+                            customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
+                            customerVoucher.NguoiCapNhat = "System";
+
+                            // Nếu đã sử dụng hết, vô hiệu hóa
+                            if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                            {
+                                customerVoucher.TrangThai = false;
+                            }
+
+                            Console.WriteLine($"[PayInvoice] Use voucher: {discount.MaCode}, Used: {customerVoucher.SoLuongDaSuDung}/{customerVoucher.SoLuong}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[PayInvoice] Customer voucher not found or used up: {dto.DiscountCode}");
+                            return BadRequest("Phiếu giảm giá không hợp lệ hoặc đã được sử dụng hết.");
+                        }
+                    }
+
                     hoaDon.TienGiam = discount.GiaTriGiam;
                     hoaDon.IDPhieuGiamGia = discount.IDPhieuGiamGia;
                     hoaDon.TongTien -= discount.GiaTriGiam;
@@ -371,6 +422,7 @@ namespace QuanApi.Controllers
                 else
                 {
                     Console.WriteLine($"[PayInvoice] Discount code not found or inactive: {dto.DiscountCode}");
+                    return BadRequest("Mã giảm giá không hợp lệ.");
                 }
             }
 
@@ -390,6 +442,95 @@ namespace QuanApi.Controllers
                 .Select(x => new { x.IDPhuongThucThanhToan, x.MaPhuongThuc, x.TenPhuongThuc })
                 .ToListAsync();
             return Ok(methods);
+        }
+
+        [HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
+        public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
+        {
+            var vouchers = await _context.KhachHangPhieuGiams
+                .Include(k => k.PhieuGiamGia)
+                .Where(x => x.IDKhachHang == customerId && 
+                           x.TrangThai && 
+                           x.PhieuGiamGia.TrangThai &&
+                           x.SoLuongDaSuDung < x.SoLuong && // Chỉ lấy phiếu còn số lượng
+                           x.PhieuGiamGia.NgayBatDau <= DateTime.UtcNow && // Kiểm tra thời gian hiệu lực
+                           x.PhieuGiamGia.NgayKetThuc >= DateTime.UtcNow)
+                .Select(x => new {
+                    id = x.IDPhieuGiamGia,
+                    maCode = x.PhieuGiamGia.MaCode,
+                    tenPhieu = x.PhieuGiamGia.TenPhieu,
+                    giaTriGiam = x.PhieuGiamGia.GiaTriGiam,
+                    giaTriGiamToiDa = x.PhieuGiamGia.GiaTriGiamToiDa,
+                    donToiThieu = x.PhieuGiamGia.DonToiThieu,
+                    ngayBatDau = x.PhieuGiamGia.NgayBatDau,
+                    ngayKetThuc = x.PhieuGiamGia.NgayKetThuc,
+                    soLuong = x.SoLuong,
+                    soLuongDaSuDung = x.SoLuongDaSuDung,
+                    soLuongConLai = x.SoLuong - x.SoLuongDaSuDung
+                })
+                .ToListAsync();
+            return Ok(vouchers);
+        }
+
+        // Lấy chi tiết sản phẩm với đầy đủ ảnh
+        [HttpGet("chi-tiet-san-pham/{id}")]
+        public async Task<IActionResult> GetProductDetail(Guid id)
+        {
+            var product = await _context.SanPhamChiTiets
+                .Include(x => x.SanPham)
+                    .ThenInclude(s => s.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(x => x.SanPham)
+                    .ThenInclude(s => s.ChatLieu)
+                .Include(x => x.SanPham)
+                    .ThenInclude(s => s.DanhMuc)
+                .Include(x => x.SanPham)
+                    .ThenInclude(s => s.ThuongHieu)
+                .Include(x => x.KichCo)
+                .Include(x => x.MauSac)
+                .Include(x => x.HoaTiet)
+                .Where(x => x.IDSanPhamChiTiet == id && x.TrangThai)
+                .Select(x => new {
+                    id = x.IDSanPhamChiTiet,
+                    productId = x.IDSanPham,
+                    name = x.SanPham.TenSanPham,
+                    description = $"Kích cỡ: {x.KichCo.TenKichCo}, Màu sắc: {x.MauSac.TenMauSac}" + 
+                                 (x.HoaTiet != null ? $", Họa tiết: {x.HoaTiet.TenHoaTiet}" : ""),
+                    price = x.GiaBan,
+                    stock = x.SoLuong,
+                    size = x.KichCo.TenKichCo,
+                    color = x.MauSac.TenMauSac,
+                    pattern = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : null,
+                    // Thông tin sản phẩm gốc
+                    material = x.SanPham.ChatLieu.TenChatLieu,
+                    category = x.SanPham.DanhMuc.TenDanhMuc,
+                    brand = x.SanPham.ThuongHieu.TenThuongHieu,
+                    hasPleats = x.SanPham.CoXepLy,
+                    hasElastic = x.SanPham.CoGian,
+                    // Ảnh chính
+                    mainImage = x.SanPham.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault() ?? "/img/default-product.jpg",
+                    // Danh sách tất cả ảnh
+                    images = x.SanPham.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => new {
+                            id = a.IDAnhSanPham,
+                            url = a.UrlAnh,
+                            isMain = a.LaAnhChinh,
+                            createdAt = a.NgayTao
+                        }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return NotFound("Không tìm thấy sản phẩm.");
+
+            return Ok(product);
         }
     }
 } 

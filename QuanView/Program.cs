@@ -7,15 +7,16 @@ using Microsoft.EntityFrameworkCore;
 using QuanView.Models;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SuaHangLoat")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 2️⃣ CẤU HÌNH HttpClient GỌI API
-builder.Services.AddHttpClient("QuanApi", client =>
+builder.Services.AddHttpClient("MyApi", client =>
 {
     var baseUrl = builder.Configuration["ApiSettings:KhachHangApiBaseUrl"];
     if (string.IsNullOrEmpty(baseUrl))
@@ -25,13 +26,7 @@ builder.Services.AddHttpClient("QuanApi", client =>
     client.BaseAddress = new Uri(baseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
-//builder.Services.AddHttpClient("QuanApi", client =>
-//{
-//    client.BaseAddress = new Uri("https://localhost:7130/"); 
-//    client.DefaultRequestHeaders.Accept.Add(
-//        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-//});
-builder.Services.AddHttpClient("QuanApi", c => c.BaseAddress = new Uri("https://localhost:7130/api/"));
+builder.Services.AddHttpClient("MyApi", c => c.BaseAddress = new Uri("https://localhost:7130/api/"));
 
 // Đọc cấu hình từ appsettings
 var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailConfig>();

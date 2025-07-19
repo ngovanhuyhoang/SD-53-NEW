@@ -21,7 +21,7 @@ namespace QuanView.Areas.Admin.Controllers
 
         public PhieuGiamGiaController(IHttpClientFactory factory, ILogger<PhieuGiamGiaController> logger, IEmailService emailService)
         {
-            _http = factory.CreateClient("QuanApi");
+            _http = factory.CreateClient("MyApi");
             _logger = logger;
             _emailService = emailService;
         }
@@ -62,8 +62,11 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreatePhieuGiamGiaDto model, bool LaCongKhai, Guid? khachHangId, bool GuiEmail = false)
-
         {
+            // Cập nhật model.LaCongKhai từ parameter
+            model.LaCongKhai = LaCongKhai;
+            
+            // Nếu là công khai hoặc không có khách hàng được chọn, set khachHangId = null
             if (LaCongKhai || khachHangId == Guid.Empty)
                 khachHangId = null;
 
@@ -89,7 +92,8 @@ namespace QuanView.Areas.Admin.Controllers
                     }
                 }
 
-                TempData["SuccessMessage"] = "Tạo phiếu giảm giá thành công!";
+                var message = LaCongKhai ? "Tạo phiếu giảm giá công khai thành công! Tất cả khách hàng đã được nhận 1 phiếu mỗi người." : "Tạo phiếu giảm giá thành công!";
+                TempData["SuccessMessage"] = message;
                 return RedirectToAction(nameof(Index));
             }
 

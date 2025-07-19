@@ -24,15 +24,15 @@
         <tr>
             <th>Mã Code</th>
             <th>Tên phiếu</th>
-            <th>Giá trị giảm</th>
-            <th>Giảm tối đa</th>
-            <th>Đơn tối thiểu</th>
+            <th>Phần trăm giảm</th>
+            <th>Giảm tối đa (VNĐ)</th>
+            <th>Đơn tối thiểu (VNĐ)</th>
             <th>Số lượng</th>
             <th>Ngày bắt đầu</th>
             <th>Ngày kết thúc</th>
-            <th>Công khai</th>
+            <th>Loại</th>
             <th>Trạng thái</th>
-            <th></th>
+            <th>Thao tác</th>
         </tr>
     </thead>
     <tbody>
@@ -49,21 +49,75 @@
                 <tr>
                     <td>@item.MaCode</td>
                     <td>@item.TenPhieu</td>
-                    <td>@($"{item.GiaTriGiam:n0}")</td>
+                    <td>@($"{item.GiaTriGiam:F1}%")</td>
                     <td>@(item.GiaTriGiamToiDa?.ToString("n0") ?? "-")</td>
                     <td>@(item.DonToiThieu?.ToString("n0") ?? "-")</td>
                     <td>@item.SoLuong</td>
                     <td>@item.NgayBatDau.ToString("dd/MM/yyyy")</td>
                     <td>@item.NgayKetThuc.ToString("dd/MM/yyyy")</td>
-                    <td>@(item.LaCongKhai ? "✔️" : "❌")</td>
-                    <td>@(item.TrangThai ? "Hoạt động" : "Ngừng")</td>
                     <td>
-                        <a asp-action="Details" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-info">Chi tiết</a>
-                        <a asp-action="Edit" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-warning">Sửa</a>
-                        <a asp-action="Delete" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-danger">Xoá</a>
+                        @if (item.LaCongKhai)
+                        {
+                            <span class="badge badge-success">Công khai</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-warning">Riêng tư</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.TrangThai)
+                        {
+                            <span class="badge badge-success">Hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-secondary">Ngừng</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a asp-action="Details" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-info" title="Chi tiết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-warning" title="Sửa">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-sm btn-danger" title="Xóa">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>
             }
         }
     </tbody>
 </table>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Chú thích</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Loại phiếu giảm giá:</strong></p>
+                        <ul>
+                            <li><span class="badge badge-success">Công khai</span> - Áp dụng cho tất cả khách hàng</li>
+                            <li><span class="badge badge-warning">Riêng tư</span> - Chỉ áp dụng cho khách hàng cụ thể</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Trạng thái:</strong></p>
+                        <ul>
+                            <li><span class="badge badge-success">Hoạt động</span> - Phiếu có thể sử dụng</li>
+                            <li><span class="badge badge-secondary">Ngừng</span> - Phiếu tạm thời không sử dụng</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

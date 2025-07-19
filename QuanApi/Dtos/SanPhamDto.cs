@@ -21,8 +21,11 @@
         public string? TenLoaiOng { get; set; }
         public string? TenKieuDang { get; set; }
         public string? TenLungQuan { get; set; }
+        
+        // Thông tin ảnh sản phẩm
+        public string? AnhChinh { get; set; }
+        public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
+        
         public List<SanPhamChiTietDto> ChiTietSanPhams { get; set; }
-
     }
-
 }

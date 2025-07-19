@@ -85,9 +85,40 @@ namespace QuanView.Areas.Admin.Controllers
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan")]
         public async Task<IActionResult> GetPaymentMethods()
         {
-            var response = await _httpClient.GetAsync("BanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan");
-            var result = await response.Content.ReadAsStringAsync();
-            return Content(result, "application/json");
+            try
+            {
+                var response = await _httpClient.GetAsync("BanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan");
+                if (response.IsSuccessStatusCode)
+                {
+                    var methods = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(methods);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phương thức thanh toán");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
+        public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(vouchers);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
         }
     }
 }

@@ -25,18 +25,21 @@
     </div>
 
     <div class="form-group">
-        <label asp-for="GiaTriGiam"></label>
-        <input asp-for="GiaTriGiam" class="form-control" />
+        <label asp-for="GiaTriGiam">Phần trăm giảm giá (%)</label>
+        <input asp-for="GiaTriGiam" class="form-control" type="number" min="0" max="100" />
+        <small class="form-text text-muted">Nhập phần trăm giảm giá từ 0 đến 100%</small>
     </div>
 
     <div class="form-group">
-        <label asp-for="GiaTriGiamToiDa"></label>
-        <input asp-for="GiaTriGiamToiDa" class="form-control" />
+        <label asp-for="GiaTriGiamToiDa">Giá trị giảm tối đa (VNĐ)</label>
+        <input asp-for="GiaTriGiamToiDa" class="form-control" type="number" min="0" />
+        <small class="form-text text-muted">Giá trị tiền tối đa được giảm (để trống nếu không giới hạn)</small>
     </div>
 
     <div class="form-group">
-        <label asp-for="DonToiThieu"></label>
-        <input asp-for="DonToiThieu" class="form-control" />
+        <label asp-for="DonToiThieu">Đơn hàng tối thiểu (VNĐ)</label>
+        <input asp-for="DonToiThieu" class="form-control" type="number" min="0" />
+        <small class="form-text text-muted">Giá trị đơn hàng tối thiểu để áp dụng phiếu giảm giá</small>
     </div>
 
     <div class="form-group">
@@ -55,34 +58,46 @@
     </div>
 
     <div class="form-group">
-        <label for="LaCongKhai">Công khai?</label>
-        <input type="checkbox" id="LaCongKhai" name="LaCongKhai" value="true" @(Model.LaCongKhai ? "checked" : "") onchange="toggleKhachHangTable()" />
+        <label>
+            <input type="checkbox" id="LaCongKhai" name="LaCongKhai" value="true" @(Model.LaCongKhai ? "checked" : "") onchange="toggleCustomerSelection()" />
+            Công khai (áp dụng cho tất cả khách hàng - mỗi người 1 phiếu)
+        </label>
+        <small class="form-text text-info">Khi chọn công khai, tất cả khách hàng sẽ được nhận 1 phiếu giảm giá mỗi người, bất kể số lượng cấu hình.</small>
     </div>
 
-    <div id="chonKhachHang" style="display:none;">
-        <h5>Chọn khách hàng áp dụng:</h5>
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>Tên khách hàng</th>
-                    <th>Email</th>
-                    <th>SĐT</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var kh in khachHangs)
-                {
-                    var isSelected = selectedKhachHangId.HasValue && selectedKhachHangId == kh.IDKhachHang;
-                    <tr class="khach-row @(isSelected ? "table-primary" : "")"
-                        data-id="@kh.IDKhachHang"
-                        style="cursor:pointer">
-                        <td>@kh.TenKhachHang</td>
-                        <td>@kh.Email</td>
-                        <td>@kh.SoDienThoai</td>
+    <div id="customerSelectionSection" style="display:@(Model.LaCongKhai ? "none" : "block");">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="TaoRiengCheckbox" name="TaoRieng" value="true" @(selectedKhachHangId.HasValue ? "checked" : "") onchange="toggleKhachHangTable()" />
+                Tạo riêng cho khách hàng cụ thể
+            </label>
+        </div>
+        
+        <div id="chonKhachHang" style="display:@(selectedKhachHangId.HasValue ? "block" : "none");">
+            <h5>Chọn khách hàng áp dụng:</h5>
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Tên khách hàng</th>
+                        <th>Email</th>
+                        <th>SĐT</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var kh in khachHangs)
+                    {
+                        var isSelected = selectedKhachHangId.HasValue && selectedKhachHangId == kh.IDKhachHang;
+                        <tr class="khach-row @(isSelected ? "table-primary" : "")"
+                            data-id="@kh.IDKhachHang"
+                            style="cursor:pointer">
+                            <td>@kh.TenKhachHang</td>
+                            <td>@kh.Email</td>
+                            <td>@kh.SoDienThoai</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="form-group">
@@ -101,14 +116,25 @@
 
 @section Scripts {
     <script>
-        function toggleKhachHangTable() {
+        function toggleCustomerSelection() {
             var isPublic = document.getElementById("LaCongKhai").checked;
-            document.getElementById("chonKhachHang").style.display = isPublic ? "none" : "block";
+            document.getElementById("customerSelectionSection").style.display = isPublic ? "none" : "block";
+            
+            if (isPublic) {
+                document.getElementById("SelectedKhachHangId").value = "";
+            }
+        }
+
+        function toggleKhachHangTable() {
+            var taoRieng = document.getElementById("TaoRiengCheckbox").checked;
+            document.getElementById("chonKhachHang").style.display = taoRieng ? "block" : "none";
+            
+            if (!taoRieng) {
+                document.getElementById("SelectedKhachHangId").value = "";
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            toggleKhachHangTable();
-
             document.querySelectorAll(".khach-row").forEach(row => {
                 row.addEventListener("click", function () {
                     document.querySelectorAll(".khach-row").forEach(r => r.classList.remove("table-primary"));

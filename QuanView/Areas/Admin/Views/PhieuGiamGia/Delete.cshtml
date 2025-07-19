@@ -6,7 +6,14 @@
 
 <h2>@ViewData["Title"]</h2>
 
-<h3>Bạn có chắc chắn muốn xoá phiếu này không?</h3>
+<div class="alert alert-warning">
+    <h4 class="alert-heading">Cảnh báo!</h4>
+    <p>Bạn có chắc chắn muốn xoá phiếu giảm giá này không?</p>
+    @if (!Model.LaCongKhai)
+    {
+        <p><strong>Lưu ý:</strong> Nếu phiếu này đã được áp dụng cho khách hàng cụ thể, tất cả liên kết với khách hàng sẽ bị xóa.</p>
+    }
+</div>
 
 <dl class="row">
     <dt class="col-sm-3">Mã Code</dt>
@@ -15,13 +22,59 @@
     <dt class="col-sm-3">Tên phiếu</dt>
     <dd class="col-sm-9">@Model.TenPhieu</dd>
 
-    <dt class="col-sm-3">Giá trị giảm</dt>
-    <dd class="col-sm-9">@Model.GiaTriGiam</dd>
+    <dt class="col-sm-3">Phần trăm giảm giá</dt>
+    <dd class="col-sm-9">@($"{Model.GiaTriGiam:F1}%")</dd>
+
+    <dt class="col-sm-3">Giá trị giảm tối đa</dt>
+    <dd class="col-sm-9">@(Model.GiaTriGiamToiDa?.ToString("n0") ?? "Không giới hạn") VNĐ</dd>
+
+    <dt class="col-sm-3">Đơn hàng tối thiểu</dt>
+    <dd class="col-sm-9">@(Model.DonToiThieu?.ToString("n0") ?? "Không yêu cầu") VNĐ</dd>
+
+    <dt class="col-sm-3">Số lượng</dt>
+    <dd class="col-sm-9">@Model.SoLuong</dd>
+
+    <dt class="col-sm-3">Thời gian áp dụng</dt>
+    <dd class="col-sm-9">@Model.NgayBatDau.ToString("dd/MM/yyyy") - @Model.NgayKetThuc.ToString("dd/MM/yyyy")</dd>
+
+    <dt class="col-sm-3">Loại phiếu</dt>
+    <dd class="col-sm-9">
+        @if (Model.LaCongKhai)
+        {
+            <span class="badge badge-success">Công khai (áp dụng cho tất cả khách hàng)</span>
+        }
+        else
+        {
+            <span class="badge badge-warning">Riêng tư (chỉ áp dụng cho khách hàng cụ thể)</span>
+        }
+    </dd>
+
+    <dt class="col-sm-3">Trạng thái</dt>
+    <dd class="col-sm-9">
+        @if (Model.TrangThai)
+        {
+            <span class="badge badge-success">Hoạt động</span>
+        }
+        else
+        {
+            <span class="badge badge-secondary">Ngừng</span>
+        }
+    </dd>
+
+    <dt class="col-sm-3">Người tạo</dt>
+    <dd class="col-sm-9">@Model.NguoiTao</dd>
+
+    <dt class="col-sm-3">Ngày tạo</dt>
+    <dd class="col-sm-9">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</dd>
 </dl>
 
 <form asp-action="Delete" method="post">
     <input type="hidden" asp-for="IDPhieuGiamGia" />
-    <button type="submit" class="btn btn-danger">Xác nhận xoá</button>
-    <a asp-action="Index" class="btn btn-secondary">Huỷ</a>
+    <button type="submit" class="btn btn-danger">
+        <i class="fas fa-trash"></i> Xác nhận xoá
+    </button>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Huỷ
+    </a>
 </form>
 

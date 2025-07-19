@@ -25,7 +25,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 
-var profileType = Type.GetType("QuanApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
+var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
 {
     Console.WriteLine($"[DIAGNOSTIC] Đã tìm thấy KhachHangMappingProfile: {profileType.FullName}");

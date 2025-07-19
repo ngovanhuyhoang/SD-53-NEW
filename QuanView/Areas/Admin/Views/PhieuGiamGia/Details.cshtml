@@ -13,8 +13,14 @@
     <dt class="col-sm-3">Tên phiếu</dt>
     <dd class="col-sm-9">@Model.TenPhieu</dd>
 
-    <dt class="col-sm-3">Giá trị giảm</dt>
-    <dd class="col-sm-9">@Model.GiaTriGiam</dd>
+    <dt class="col-sm-3">Phần trăm giảm giá</dt>
+    <dd class="col-sm-9">@($"{Model.GiaTriGiam:F1}%")</dd>
+
+    <dt class="col-sm-3">Giá trị giảm tối đa</dt>
+    <dd class="col-sm-9">@(Model.GiaTriGiamToiDa?.ToString("n0") ?? "Không giới hạn") VNĐ</dd>
+
+    <dt class="col-sm-3">Đơn hàng tối thiểu</dt>
+    <dd class="col-sm-9">@(Model.DonToiThieu?.ToString("n0") ?? "Không yêu cầu") VNĐ</dd>
 
     <dt class="col-sm-3">Số lượng</dt>
     <dd class="col-sm-9">@Model.SoLuong</dd>
@@ -23,11 +29,131 @@
     <dd class="col-sm-9">@Model.NgayBatDau.ToString("dd/MM/yyyy") - @Model.NgayKetThuc.ToString("dd/MM/yyyy")</dd>
 
     <dt class="col-sm-3">Công khai</dt>
-    <dd class="col-sm-9">@((Model.LaCongKhai) ? "✔️" : "❌")</dd>
+    <dd class="col-sm-9">
+        @if (Model.LaCongKhai)
+        {
+            <span>✔️ Có (áp dụng cho tất cả khách hàng - mỗi người 1 phiếu)</span>
+        }
+        else
+        {
+            <span>❌ Không (chỉ áp dụng cho khách hàng cụ thể)</span>
+        }
+    </dd>
 
     <dt class="col-sm-3">Trạng thái</dt>
     <dd class="col-sm-9">@((Model.TrangThai) ? "Hoạt động" : "Không hoạt động")</dd>
+
+    <dt class="col-sm-3">Người tạo</dt>
+    <dd class="col-sm-9">@Model.NguoiTao</dd>
+
+    <dt class="col-sm-3">Ngày tạo</dt>
+    <dd class="col-sm-9">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</dd>
+
+    @if (Model.LanCapNhatCuoi.HasValue)
+    {
+        <dt class="col-sm-3">Người cập nhật cuối</dt>
+        <dd class="col-sm-9">@Model.NguoiCapNhat</dd>
+
+        <dt class="col-sm-3">Lần cập nhật cuối</dt>
+        <dd class="col-sm-9">@Model.LanCapNhatCuoi.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+    }
 </dl>
 
-<a asp-action="Edit" asp-route-id="@Model.IDPhieuGiamGia" class="btn btn-warning">Sửa</a>
-<a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+<div class="row mt-3">
+    <div class="col-12">
+        <a asp-action="Edit" asp-route-id="@Model.IDPhieuGiamGia" class="btn btn-warning">Sửa</a>
+        <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+        
+        <a href="#" onclick="viewVoucherCustomers('@Model.IDPhieuGiamGia')" class="btn btn-info">
+            @if (Model.LaCongKhai)
+            {
+                <span>Xem danh sách khách hàng đã nhận phiếu</span>
+            }
+            else
+            {
+                <span>Xem danh sách khách hàng áp dụng</span>
+            }
+        </a>
+    </div>
+</div>
+
+<!-- Modal hiển thị danh sách khách hàng -->
+<div class="modal fade" id="customerModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Danh sách khách hàng áp dụng phiếu giảm giá</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="customerList">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">Đang tải...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function viewVoucherCustomers(voucherId) {
+            $('#customerModal').modal('show');
+            
+            // Gọi API để lấy danh sách khách hàng
+            fetch(`/api/PhieuGiamGias/customers/${voucherId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Cập nhật tiêu đề modal
+                    const modalTitle = document.getElementById('modalTitle');
+                    if (data.isPublic) {
+                        modalTitle.textContent = `Danh sách khách hàng đã nhận phiếu giảm giá (${data.totalCustomers} khách hàng)`;
+                    } else {
+                        modalTitle.textContent = `Danh sách khách hàng áp dụng phiếu giảm giá (${data.totalCustomers} khách hàng)`;
+                    }
+                    
+                    let html = '';
+                    if (data.customers.length === 0) {
+                        if (data.isPublic) {
+                            html = '<p class="text-center text-muted">Chưa có khách hàng nào nhận phiếu giảm giá này.</p>';
+                        } else {
+                            html = '<p class="text-center text-muted">Chưa có khách hàng nào được áp dụng phiếu giảm giá này.</p>';
+                        }
+                    } else {
+                        html = '<table class="table table-striped">';
+                        html += '<thead><tr><th>Mã KH</th><th>Tên khách hàng</th><th>Email</th><th>SĐT</th><th>Số lượng</th><th>Đã sử dụng</th><th>Còn lại</th><th>Trạng thái</th></tr></thead>';
+                        html += '<tbody>';
+                        data.customers.forEach(customer => {
+                            const statusClass = customer.trangThai ? 'text-success' : 'text-danger';
+                            const statusText = customer.trangThai ? 'Hoạt động' : 'Đã vô hiệu';
+                            html += `<tr>
+                                <td>${customer.maKhachHang}</td>
+                                <td>${customer.tenKhachHang}</td>
+                                <td>${customer.email || '-'}</td>
+                                <td>${customer.soDienThoai}</td>
+                                <td>${customer.soLuong}</td>
+                                <td>${customer.soLuongDaSuDung}</td>
+                                <td>${customer.soLuongConLai}</td>
+                                <td class="${statusClass}">${statusText}</td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                    }
+                    document.getElementById('customerList').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('customerList').innerHTML = 
+                        '<p class="text-center text-danger">Có lỗi xảy ra khi tải danh sách khách hàng.</p>';
+                });
+        }
+    </script>
+}

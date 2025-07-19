@@ -40,6 +40,7 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.MauSac)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.HoaTiet)
+                .Include(s => s.AnhSanPhams.Where(a => a.TrangThai))
                 .Select(s => new SanPhamDto
                 {
                     IDSanPham = s.IDSanPham,
@@ -60,6 +61,26 @@ namespace QuanApi.Controllers
                     TenLoaiOng = s.LoaiOng.TenLoaiOng,
                     TenKieuDang = s.KieuDang.TenKieuDang,
                     TenLungQuan = s.LungQuan.TenLungQuan,
+                    // Lấy ảnh chính hoặc ảnh đầu tiên
+                    AnhChinh = s.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault(),
+                    // Lấy tất cả ảnh sản phẩm
+                    DanhSachAnh = s.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => new AnhSanPhamDto
+                        {
+                            IDAnhSanPham = a.IDAnhSanPham,
+                            MaAnh = a.MaAnh,
+                            UrlAnh = a.UrlAnh,
+                            LaAnhChinh = a.LaAnhChinh,
+                            NgayTao = a.NgayTao
+                        }).ToList(),
                     ChiTietSanPhams = s.SanPhamChiTiets.Select(ct => new SanPhamChiTietDto
                     {
                         IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
@@ -181,6 +202,138 @@ namespace QuanApi.Controllers
         private bool SanPhamExists(Guid id)
         {
             return _context.SanPhams.Any(e => e.IDSanPham == id);
+        }
+
+        // Thêm ảnh cho sản phẩm
+        [HttpPost("{id}/images")]
+        public async Task<IActionResult> AddProductImage(Guid id, [FromBody] AddAnhSanPhamDto dto)
+        {
+            var sanPham = await _context.SanPhams.FindAsync(id);
+            if (sanPham == null)
+                return NotFound("Không tìm thấy sản phẩm.");
+
+            var anhSanPham = new AnhSanPham
+            {
+                IDAnhSanPham = Guid.NewGuid(),
+                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+                IDSanPham = id,
+                UrlAnh = dto.UrlAnh,
+                LaAnhChinh = dto.LaAnhChinh,
+                NgayTao = DateTime.UtcNow,
+                NguoiTao = User.Identity?.Name ?? "System",
+                TrangThai = true
+            };
+
+            // Nếu đặt làm ảnh chính, bỏ ảnh chính cũ
+            if (dto.LaAnhChinh)
+            {
+                var anhChinhCu = await _context.AnhSanPhams
+                    .Where(a => a.IDSanPham == id && a.LaAnhChinh && a.TrangThai)
+                    .FirstOrDefaultAsync();
+                
+                if (anhChinhCu != null)
+                {
+                    anhChinhCu.LaAnhChinh = false;
+                    anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
+                    anhChinhCu.NguoiCapNhat = User.Identity?.Name ?? "System";
+                }
+            }
+
+            _context.AnhSanPhams.Add(anhSanPham);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Thêm ảnh sản phẩm thành công.",
+                anhSanPham.IDAnhSanPham,
+                anhSanPham.MaAnh,
+                anhSanPham.UrlAnh,
+                anhSanPham.LaAnhChinh
+            });
+        }
+
+        // Xóa ảnh sản phẩm
+        [HttpDelete("images/{imageId}")]
+        public async Task<IActionResult> DeleteProductImage(Guid imageId)
+        {
+            var anhSanPham = await _context.AnhSanPhams.FindAsync(imageId);
+            if (anhSanPham == null)
+                return NotFound("Không tìm thấy ảnh sản phẩm.");
+
+            // Không xóa thực sự, chỉ đánh dấu vô hiệu
+            anhSanPham.TrangThai = false;
+            anhSanPham.LanCapNhatCuoi = DateTime.UtcNow;
+            anhSanPham.NguoiCapNhat = User.Identity?.Name ?? "System";
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Đã xóa ảnh sản phẩm.");
+        }
+
+        // Đặt ảnh chính
+        [HttpPut("images/{imageId}/set-main")]
+        public async Task<IActionResult> SetMainImage(Guid imageId)
+        {
+            var anhSanPham = await _context.AnhSanPhams.FindAsync(imageId);
+            if (anhSanPham == null)
+                return NotFound("Không tìm thấy ảnh sản phẩm.");
+
+            if (!anhSanPham.TrangThai)
+                return BadRequest("Ảnh sản phẩm đã bị vô hiệu hóa.");
+
+            // Bỏ ảnh chính cũ
+            var anhChinhCu = await _context.AnhSanPhams
+                .Where(a => a.IDSanPham == anhSanPham.IDSanPham && 
+                           a.LaAnhChinh && 
+                           a.TrangThai && 
+                           a.IDAnhSanPham != imageId)
+                .FirstOrDefaultAsync();
+            
+            if (anhChinhCu != null)
+            {
+                anhChinhCu.LaAnhChinh = false;
+                anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
+                anhChinhCu.NguoiCapNhat = User.Identity?.Name ?? "System";
+            }
+
+            // Đặt ảnh mới làm chính
+            anhSanPham.LaAnhChinh = true;
+            anhSanPham.LanCapNhatCuoi = DateTime.UtcNow;
+            anhSanPham.NguoiCapNhat = User.Identity?.Name ?? "System";
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Đã đặt ảnh làm ảnh chính.");
+        }
+
+        // Lấy danh sách ảnh của sản phẩm
+        [HttpGet("{id}/images")]
+        public async Task<IActionResult> GetProductImages(Guid id)
+        {
+            var sanPham = await _context.SanPhams.FindAsync(id);
+            if (sanPham == null)
+                return NotFound("Không tìm thấy sản phẩm.");
+
+            var images = await _context.AnhSanPhams
+                .Where(a => a.IDSanPham == id && a.TrangThai)
+                .OrderByDescending(a => a.LaAnhChinh)
+                .ThenBy(a => a.NgayTao)
+                .Select(a => new AnhSanPhamDto
+                {
+                    IDAnhSanPham = a.IDAnhSanPham,
+                    MaAnh = a.MaAnh,
+                    IDSanPham = a.IDSanPham,
+                    UrlAnh = a.UrlAnh,
+                    LaAnhChinh = a.LaAnhChinh,
+                    NgayTao = a.NgayTao,
+                    NguoiTao = a.NguoiTao,
+                    LanCapNhatCuoi = a.LanCapNhatCuoi,
+                    NguoiCapNhat = a.NguoiCapNhat,
+                    TrangThai = a.TrangThai
+                })
+                .ToListAsync();
+
+            return Ok(images);
         }
     }
 }
