@@ -477,7 +477,16 @@
                 <td>${i+1}</td>
                 <td><img src="${p.img}" width="60"/></td>
                 <td>${p.name}<br><small>Kích cỡ: ${p.size}</small></td>
-                <td>${p.price.toLocaleString()} VND</td>
+                <td>
+    ${
+        (p.originalPrice && p.originalPrice > p.price)
+        ? `<div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;">
+      <span style="color:#888;text-decoration:line-through;font-size:0.95em;">${p.originalPrice.toLocaleString()} VND</span>
+      <span style="color:#d32f2f;font-weight:bold;font-size:1em;">${p.price.toLocaleString()} VND</span>
+   </div>`
+        : `<span style="font-weight:bold;">${p.price.toLocaleString()} VND</span>`
+    }
+</td>
                 <td>
                     <button class="btn btn-sm btn-light" onclick="changeQty(${i},-1)">-</button>
                     <span class="mx-2">${p.qty}</span>
@@ -542,7 +551,16 @@
                     <tr>
                         <td><img src="${p.img}" width="60"/></td>
                         <td>${p.name}</td>
-                        <td>${p.price.toLocaleString()} VND</td>
+                        <td>
+    ${
+        (p.originalPrice && p.originalPrice > p.price)
+        ? `<span style="display:inline-flex;align-items:center;gap:8px;">
+      <span style="color:#888;text-decoration:line-through;font-size:0.95em;">${p.originalPrice.toLocaleString()} VND</span>
+      <span style="color:#d32f2f;font-weight:bold;font-size:1em;">${p.price.toLocaleString()} VND</span>
+   </span>`
+        : `<span style="font-weight:bold;">${p.price.toLocaleString()} VND</span>`
+    }
+</td>
                         <td>${p.size}</td>
                         <td>${p.color}</td>
                         <td><button class="btn btn-success btn-sm" onclick="addProductToInvoice('${p.id}')">Chọn</button></td>

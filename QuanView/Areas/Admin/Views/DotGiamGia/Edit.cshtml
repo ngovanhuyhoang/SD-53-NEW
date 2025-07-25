@@ -6,6 +6,76 @@
     var selectedIds = ViewBag.SelectedSanPhamList as List<SelectListItem>;
 }
 
+<style>
+    .product-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        transition: background 0.2s;
+        background: #fff;
+        border: 1px solid #e3e6f0;
+    }
+    .product-item:hover {
+        background: #f0f4ff;
+    }
+    .product-item input[type="checkbox"] {
+        margin-right: 12px;
+        accent-color: #2563eb;
+    }
+    .product-item.selected {
+        background: #e0f7fa;
+        font-weight: bold;
+        border-color: #2563eb;
+    }
+    .product-code {
+        color: #2563eb;
+        font-weight: 600;
+        margin-right: 8px;
+        min-width: 110px;
+        display: inline-block;
+    }
+    .product-name {
+        color: #333;
+    }
+    .product-item-row {
+        display: flex;
+        align-items: center;
+        background: #eaf8fb;
+        border: 1px solid #b6e0f2;
+        border-radius: 8px;
+        padding: 6px 12px;
+        margin-bottom: 6px;
+        min-width: 0;
+        cursor: pointer;
+        transition: background 0.2s, border 0.2s, font-weight 0.2s;
+    }
+    .product-item-row.selected {
+        background: #d1eaff;
+        border-color: #2563eb;
+        font-weight: bold;
+        box-shadow: 0 0 0 2px #2563eb33;
+    }
+    .product-item-row label {
+        flex: 1 1 0;
+        margin-bottom: 0;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .product-item-row input[type="checkbox"] {
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+</style>
+
 <div class="container py-4">
     <h2 class="mb-4 text-primary fw-bold">@ViewData["Title"]</h2>
 
@@ -26,12 +96,12 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label asp-for="MaDot" class="form-label fw-semibold">Mã khuyến mãi</label>
-                <input asp-for="MaDot" class="form-control border-primary" placeholder="VD: KM2025" />
+                <input asp-for="MaDot" class="form-control border-primary" placeholder="KM2025" />
                 <span asp-validation-for="MaDot" class="text-danger small"></span>
             </div>
             <div class="col-md-6">
                 <label asp-for="TenDot" class="form-label fw-semibold">Tên đợt giảm giá</label>
-                <input asp-for="TenDot" class="form-control border-primary" placeholder="VD: Giảm giá mùa hè" />
+                <input asp-for="TenDot" class="form-control border-primary" placeholder="Giảm giá mùa hè" />
                 <span asp-validation-for="TenDot" class="text-danger small"></span>
             </div>
         </div>
@@ -39,7 +109,7 @@
         <div class="row mb-3">
             <div class="col-md-4">
                 <label asp-for="PhanTramGiam" class="form-label fw-semibold">Giá trị giảm (%)</label>
-                <input asp-for="PhanTramGiam" class="form-control border-success" min="1" max="100" placeholder="VD: 20" />
+                <input asp-for="PhanTramGiam" class="form-control border-success" min="1" max="100" placeholder="20" />
                 <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
@@ -56,17 +126,23 @@
 
         <div class="mb-4">
             <label class="form-label fw-semibold">Danh sách sản phẩm áp dụng</label>
-            <div class="border rounded shadow-sm p-2" style="max-height: 350px; overflow-y: auto;">
+            <div class="border rounded shadow-sm p-2" style="max-height: 350px; overflow-y: auto;" id="product-list-container">
                 @if (selectedIds != null && selectedIds.Any())
                 {
+                    int idx = 0;
                     foreach (var sp in selectedIds)
                     {
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" name="SelectedSanPhamChiTietIds" value="@sp.Value" @(sp.Selected ? "checked" : "") id="sp_@sp.Value" />
-                            <label class="form-check-label" for="sp_@sp.Value">
-                                <span class="fw-medium">@sp.Text</span>
+                        var codeAndName = sp.Text.Split('|')[0].Trim();
+                        var code = codeAndName.Split('-')[0].Trim();
+                        var name = codeAndName.Split('-').Length > 1 ? codeAndName.Split('-')[1].Trim() : "";
+                        var isSelected = sp.Selected ? "selected" : "";
+                        <div class="product-item-row @isSelected" data-id="@sp.Value" tabindex="0">
+                            <label class="form-check-label fw-bold" style="width:100%;cursor:pointer;">
+                                <span style="color:#2563eb;">@code</span>
+                                <span style="color:#222; font-weight:normal;">@name</span>
                             </label>
                         </div>
+                        idx++;
                     }
                 }
                 else
@@ -87,3 +163,47 @@
 
     </form>
 </div>
+
+@section Scripts {
+    <script>
+        // Tạo input hidden cho từng id được chọn
+        function updateSelectedIds() {
+            // Xóa input cũ
+            document.querySelectorAll('input[name="SelectedSanPhamChiTietIds"]').forEach(e => e.remove());
+            // Thêm input mới cho từng id
+            var selected = Array.from(document.querySelectorAll('.product-item-row.selected'));
+            var ids = selected.map(row => row.getAttribute('data-id'));
+            var container = document.getElementById('product-list-container');
+            ids.forEach(id => {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'SelectedSanPhamChiTietIds';
+                input.value = id;
+                container.appendChild(input);
+            });
+        }
+        // Toggle chọn khi click vào ô sản phẩm hoặc label bên trong
+        document.querySelectorAll('.product-item-row').forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                // Chỉ toggle nếu click vào chính row hoặc label bên trong
+                if (e.target === row || e.target.tagName === 'LABEL' || e.target.tagName === 'SPAN') {
+                    row.classList.toggle('selected');
+                    updateSelectedIds();
+                }
+            });
+            row.addEventListener('keydown', function(e) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    row.classList.toggle('selected');
+                    updateSelectedIds();
+                }
+            });
+        });
+        // Đảm bảo luôn cập nhật input hidden trước khi submit
+        document.querySelector('form').addEventListener('submit', function() {
+            updateSelectedIds();
+        });
+        // Khởi tạo giá trị ban đầu
+        updateSelectedIds();
+    </script>
+}

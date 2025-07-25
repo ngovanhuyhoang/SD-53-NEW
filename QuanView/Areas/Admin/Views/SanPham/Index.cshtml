@@ -89,7 +89,23 @@
                                                     <td>@ct.TenMauSac</td>
                                                     <td>@ct.TenHoaTiet</td>
                                                     <td>@ct.SoLuong</td>
-                                                    <td>@ct.GiaBan.ToString("N0") ₫</td>
+                                                    <td>
+                                                        @if (ct.originalPrice > ct.price)
+                                                        {
+                                                            <span style="color:#888;text-decoration:line-through;font-size:0.95em;margin-right:6px">
+                                                                @ct.originalPrice.ToString("N0") đ
+                                                            </span>
+                                                            <span style="color:#d32f2f;font-weight:bold;font-size:1.1em">
+                                                                @ct.price.ToString("N0") đ
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span style="font-weight:bold">
+                                                                @ct.price.ToString("N0") đ
+                                                            </span>
+                                                        }
+                                                    </td>
                                                 </tr>
                                             }
                                         </tbody>

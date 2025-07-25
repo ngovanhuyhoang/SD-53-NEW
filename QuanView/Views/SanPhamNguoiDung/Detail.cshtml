@@ -1,0 +1,226 @@
+@model QuanApi.Dtos.SanPhamKhachHangViewModel
+@{
+    ViewData["Title"] = "Chi tiết sản phẩm";
+    var userId = ViewBag.UserId ?? ""; // Lấy từ ViewBag, nếu chưa có thì để rỗng
+}
+<style>
+.product-detail-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    padding: 32px 24px;
+    margin-top: 24px;
+}
+.product-detail-img-main {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.product-detail-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+.product-detail-price {
+    font-size: 2rem;
+    color: #d32f2f;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+.product-detail-oldprice {
+    text-decoration: line-through;
+    color: #888;
+    font-size: 1.2rem;
+    margin-left: 12px;
+}
+.product-detail-btn-group label {
+    margin-right: 8px;
+    font-weight: 500;
+}
+.product-detail-btn-option {
+    display: inline-block;
+    margin: 0 6px 6px 0;
+    padding: 8px 18px;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: border 0.2s, color 0.2s;
+}
+.product-detail-btn-option.selected, .product-detail-btn-option:active {
+    border: 2px solid #d32f2f;
+    color: #d32f2f;
+    font-weight: bold;
+    background: #fff0f0;
+}
+.product-detail-qty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+.product-detail-qty-btn {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid #ddd;
+    background: #fafafa;
+    font-size: 1.3rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border 0.2s;
+}
+.product-detail-qty-btn:active {
+    border: 2px solid #d32f2f;
+}
+.product-detail-addcart {
+    width: 100%;
+    padding: 14px 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    background: #d32f2f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    margin-top: 18px;
+    transition: background 0.2s;
+}
+.product-detail-addcart:hover {
+    background: #b71c1c;
+}
+media (max-width: 900px) {
+    .product-detail-container { padding: 12px 2vw; }
+    .product-detail-title { font-size: 1.3rem; }
+    .product-detail-price { font-size: 1.3rem; }
+}
+.back-to-index-btn {
+    display: inline-block;
+    margin-bottom: 18px;
+    padding: 8px 22px;
+    background: #f5f5f5;
+    color: #333;
+    border: 1.5px solid #bbb;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.back-to-index-btn:hover {
+    background: #d32f2f;
+    color: #fff;
+    border: 1.5px solid #d32f2f;
+}
+</style>
+<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn"><i class="fa fa-arrow-left"></i> Quay lại</a>
+<div class="container product-detail-container">
+    <div class="row">
+        <div class="col-md-6 d-flex flex-column align-items-center">
+            <img src="@Model.UrlAnh" class="product-detail-img-main mb-3" alt="@Model.TenSanPham">
+        </div>
+        <div class="col-md-6">
+            <div class="product-detail-title">@Model.TenSanPham</div>
+            <div class="mb-2 text-muted">@Model.DanhMuc</div>
+            <div class="mb-2">
+                <span class="product-detail-price" id="giaBan"></span>
+                <span class="product-detail-oldprice" id="giaGoc"></span>
+            </div>
+            <div class="mb-3 product-detail-btn-group">
+                <label>Màu sắc:</label>
+                <span id="colorOptions"></span>
+            </div>
+            <div class="mb-3 product-detail-btn-group">
+                <label>Size:</label>
+                <span id="sizeOptions"></span>
+            </div>
+            <div class="product-detail-qty">
+                <label>Số lượng:</label>
+                <button type="button" class="product-detail-qty-btn" id="btnMinus">-</button>
+                <input type="number" id="soLuong" class="form-control" style="width:60px;display:inline-block;" min="1" value="1">
+                <button type="button" class="product-detail-qty-btn" id="btnPlus">+</button>
+            </div>
+            <button class="product-detail-addcart" onclick="themGioHang()">Thêm vào giỏ hàng</button>
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+let bienThes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BienThes));
+let selectedSize = '';
+let selectedColor = '';
+function renderOptions() {
+    const colors = [...new Set(bienThes.map(b => b.Mau))];
+    let colorHtml = '';
+    colors.forEach(mau => {
+        colorHtml += `<button type="button" class="product-detail-btn-option" data-mau="${mau}">${mau}</button>`;
+    });
+    $('#colorOptions').html(colorHtml);
+    const sizes = [...new Set(bienThes.map(b => b.Size))];
+    let sizeHtml = '';
+    sizes.forEach(size => {
+        sizeHtml += `<button type="button" class="product-detail-btn-option" data-size="${size}">${size}</button>`;
+    });
+    $('#sizeOptions').html(sizeHtml);
+}
+function updatePriceAndQty() {
+    const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
+    if (bienThe) {
+        $('#giaBan').text(bienThe.GiaSauGiam.toLocaleString() + ' VND');
+        if (bienThe.GiaSauGiam < bienThe.GiaGoc) {
+            $('#giaGoc').text(bienThe.GiaGoc.toLocaleString() + ' VND');
+        } else {
+            $('#giaGoc').text('');
+        }
+        $('#soLuong').attr('max', bienThe.SoLuong);
+    } else {
+        $('#giaBan').text('');
+        $('#giaGoc').text('');
+        $('#soLuong').attr('max', 1);
+    }
+}
+$(document).on('click', '.product-detail-btn-option[data-mau]', function() {
+    $('.product-detail-btn-option[data-mau]').removeClass('selected');
+    $(this).addClass('selected');
+    selectedColor = $(this).data('mau');
+    updatePriceAndQty();
+});
+$(document).on('click', '.product-detail-btn-option[data-size]', function() {
+    $('.product-detail-btn-option[data-size]').removeClass('selected');
+    $(this).addClass('selected');
+    selectedSize = $(this).data('size');
+    updatePriceAndQty();
+});
+$('#btnMinus').on('click', function() {
+    let val = parseInt($('#soLuong').val()) || 1;
+    if (val > 1) $('#soLuong').val(val - 1);
+});
+$('#btnPlus').on('click', function() {
+    let val = parseInt($('#soLuong').val()) || 1;
+    let max = parseInt($('#soLuong').attr('max')) || 1;
+    if (val < max) $('#soLuong').val(val + 1);
+});
+$(document).ready(function() {
+    renderOptions();
+    const firstColor = $('.product-detail-btn-option[data-mau]').first();
+    if (firstColor.length) { firstColor.click(); }
+    const firstSize = $('.product-detail-btn-option[data-size]').first();
+    if (firstSize.length) { firstSize.click(); }
+});
+function themGioHang() {
+    if (!selectedSize || !selectedColor) return alert('Vui lòng chọn size và màu!');
+    const soLuong = parseInt($('#soLuong').val());
+    const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
+    if (!bienThe) return alert('Vui lòng chọn đúng biến thể!');
+    $.post('/GioHang/Add', {
+        idsp: bienThe.IDSanPhamChiTiet,
+        soluong: soLuong
+    }, function(res) {
+        alert('Đã thêm vào giỏ hàng!');
+    }).fail(function(xhr) {
+        alert('Thêm vào giỏ hàng thất bại!');
+    });
+}
+</script>
+} 

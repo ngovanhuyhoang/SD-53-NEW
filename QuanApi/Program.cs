@@ -24,6 +24,7 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddTransient<IEmailService, EmailService>();
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
+builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
