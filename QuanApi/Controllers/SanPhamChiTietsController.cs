@@ -55,8 +55,29 @@ namespace QuanApi.Controllers
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
                     TrangThai = ct.SanPham?.TrangThai ?? true,
-
-
+                    originalPrice = ct.GiaBan,
+                    price = (
+                        (from dgg in _context.DotGiamGias
+                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                         where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                            && dgg.TrangThai == true
+                            && dgg.NgayBatDau <= DateTime.Now
+                            && dgg.NgayKetThuc >= DateTime.Now
+                         select dgg.PhanTramGiam
+                        ).FirstOrDefault() > 0
+                        ? ct.GiaBan * (1 - (decimal)(
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= DateTime.Now
+                                && dgg.NgayKetThuc >= DateTime.Now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() / 100.0m))
+                        : ct.GiaBan
+                    ),
+                    TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
+                    AnhDaiDien = ct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
                 }).ToList();
 
                 return Ok(result);
@@ -99,7 +120,29 @@ namespace QuanApi.Controllers
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
                     TrangThai = ct.SanPham?.TrangThai ?? true,
-
+                    originalPrice = ct.GiaBan,
+                    price = (
+                        (from dgg in _context.DotGiamGias
+                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                         where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                            && dgg.TrangThai == true
+                            && dgg.NgayBatDau <= DateTime.Now
+                            && dgg.NgayKetThuc >= DateTime.Now
+                         select dgg.PhanTramGiam
+                        ).FirstOrDefault() > 0
+                        ? ct.GiaBan * (1 - (decimal)(
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= DateTime.Now
+                                && dgg.NgayKetThuc >= DateTime.Now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() / 100.0m))
+                        : ct.GiaBan
+                    ),
+                    TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
+                    AnhDaiDien = ct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
                 };
 
                 return Ok(result);
@@ -146,7 +189,29 @@ namespace QuanApi.Controllers
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
                     TrangThai = ct.SanPham?.TrangThai ?? true,
-
+                    originalPrice = ct.GiaBan,
+                    price = (
+                        (from dgg in _context.DotGiamGias
+                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                         where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                            && dgg.TrangThai == true
+                            && dgg.NgayBatDau <= DateTime.Now
+                            && dgg.NgayKetThuc >= DateTime.Now
+                         select dgg.PhanTramGiam
+                        ).FirstOrDefault() > 0
+                        ? ct.GiaBan * (1 - (decimal)(
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= DateTime.Now
+                                && dgg.NgayKetThuc >= DateTime.Now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() / 100.0m))
+                        : ct.GiaBan
+                    ),
+                    TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
+                    AnhDaiDien = ct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
                 }).ToList();
 
                 return Ok(result);

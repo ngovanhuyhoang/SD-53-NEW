@@ -191,7 +191,29 @@ namespace QuanApi.Controllers
                 .Select(x => new {
                     id = x.IDSanPhamChiTiet,
                     name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}]",
-                    price = x.GiaBan,
+                    // Giá gốc
+                    originalPrice = x.GiaBan,
+                    // Tính giá giảm nếu có đợt giảm giá đang áp dụng
+                    price = (
+                        (from dgg in _context.DotGiamGias
+                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                         where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
+                            && dgg.TrangThai == true
+                            && dgg.NgayBatDau <= DateTime.Now
+                            && dgg.NgayKetThuc >= DateTime.Now
+                         select dgg.PhanTramGiam
+                        ).FirstOrDefault() > 0
+                        ? x.GiaBan * (1 - (decimal)(
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= DateTime.Now
+                                && dgg.NgayKetThuc >= DateTime.Now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() / 100.0m))
+                        : x.GiaBan
+                    ),
                     size = x.KichCo.TenKichCo,
                     color = x.MauSac.TenMauSac,
                     // Lấy ảnh chính hoặc ảnh đầu tiên

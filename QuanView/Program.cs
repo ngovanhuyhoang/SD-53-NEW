@@ -92,6 +92,7 @@ builder.Services.AddCors(options =>
 
 // 5️⃣ CẤU HÌNH JSON VÀ MVC
 builder.Services.AddControllersWithViews();
+builder.Services.AddSession();
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -110,6 +111,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 app.UseRouting();
+app.UseSession();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();

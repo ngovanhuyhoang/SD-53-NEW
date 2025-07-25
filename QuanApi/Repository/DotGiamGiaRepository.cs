@@ -93,8 +93,6 @@ namespace QuanApi.Repository
                         NgayTao = DateTime.Now,
                         TrangThai = true
                     });
-
-                    ct.GiaBan = Math.Max(0, ct.GiaBan - ct.GiaBan * dot.PhanTramGiam / 100m);
                     ct.IDDotGiamGia = dot.IDDotGiamGia;
                 }
             }
@@ -153,8 +151,6 @@ namespace QuanApi.Repository
                         NgayTao = DateTime.Now,
                         TrangThai = true
                     });
-
-                    ct.GiaBan = Math.Max(0, giaGoc - giaGoc * dot.PhanTramGiam / 100m);
                     ct.IDDotGiamGia = dot.IDDotGiamGia;
                 }
             }
@@ -245,7 +241,6 @@ namespace QuanApi.Repository
                 {
                     if (trangThai)
                     {
-                        ct.GiaBan = Math.Max(0, sp.GiaGoc - sp.GiaGoc * dot.PhanTramGiam / 100m);
                         ct.IDDotGiamGia = id;
                     }
                     else
