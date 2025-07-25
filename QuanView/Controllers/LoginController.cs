@@ -69,7 +69,8 @@ namespace QuanView.Controllers
             {
                 Console.WriteLine($"Tìm thấy NhanVien: {nhanVien.Email}, IDVaiTro: {nhanVien.IDVaiTro}, VaiTro: {(nhanVien.VaiTro != null ? nhanVien.VaiTro.MaVaiTro : "null")}");
 
-                if (nhanVien.VaiTro != null && nhanVien.VaiTro.MaVaiTro?.ToLower() == "admin")
+                if (nhanVien.VaiTro != null && 
+                    (nhanVien.VaiTro.MaVaiTro?.ToLower() == "admin" || nhanVien.VaiTro.MaVaiTro?.ToLower() == "nhanvien"))
                 {
                     var claims = new List<Claim>
                     {

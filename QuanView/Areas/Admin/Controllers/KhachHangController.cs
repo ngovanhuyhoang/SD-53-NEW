@@ -121,7 +121,7 @@ namespace BanQuanAu1.Web.Areas.Admin.Controllers
         // POST: Admin/KhachHang/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MaKhachHang,Email,MatKhau,TenKhachHang,SoDienThoai,NguoiTao")] CreateKhachHangDto createKhachHangDto)
+        public async Task<IActionResult> Create([Bind("MaKhachHang,Email,MatKhau,TenKhachHang,SoDienThoai,NguoiTao,DiaChis")] CreateKhachHangDto createKhachHangDto)
         {
             if (ModelState.IsValid)
             {
@@ -194,7 +194,6 @@ namespace BanQuanAu1.Web.Areas.Admin.Controllers
                     {
                         return NotFound();
                     }
-                    
                     var updateKhachHangDto = new UpdateKhachHangDto
                     {
                         IDKhachHang = khachHangDto.IDKhachHang,
@@ -203,7 +202,8 @@ namespace BanQuanAu1.Web.Areas.Admin.Controllers
                         TenKhachHang = khachHangDto.TenKhachHang,
                         SoDienThoai = khachHangDto.SoDienThoai,
                         TrangThai = khachHangDto.TrangThai,
-                        NguoiCapNhat = khachHangDto.NguoiCapNhat
+                        NguoiCapNhat = khachHangDto.NguoiCapNhat,
+                        DiaChis = khachHangDto.DiaChis // truyền địa chỉ sang view
                     };
                     return View(updateKhachHangDto);
                 }
@@ -228,7 +228,7 @@ namespace BanQuanAu1.Web.Areas.Admin.Controllers
         // POST: Admin/KhachHang/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("IDKhachHang,MaKhachHang,Email,TenKhachHang,SoDienThoai,TrangThai,NguoiCapNhat")] UpdateKhachHangDto updateKhachHangDto)
+        public async Task<IActionResult> Edit(Guid id, [Bind("IDKhachHang,MaKhachHang,Email,TenKhachHang,SoDienThoai,TrangThai,NguoiCapNhat,DiaChis")] UpdateKhachHangDto updateKhachHangDto)
         {
             if (id != updateKhachHangDto.IDKhachHang)
             {
