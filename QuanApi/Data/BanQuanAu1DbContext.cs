@@ -48,6 +48,9 @@ namespace BanQuanAu1.Web.Data
                 .HasOne(nv => nv.VaiTro)
                 .WithMany(vt => vt.NhanViens)
                 .HasForeignKey(nv => nv.IDVaiTro);
+
+            // Seed data
+            SeedData.SeedPhuongThucThanhToan(modelBuilder);
         }
         public DbSet<QuanApi.Data.HoaTiet> HoaTiet { get; set; } = default!;
     }

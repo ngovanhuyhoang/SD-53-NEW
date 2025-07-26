@@ -81,6 +81,10 @@
                         <span>Tiền hàng:</span>
                         <span class="float-end" id="goodsAmount">0 VND</span>
                     </div>
+                    <div class="mb-2">
+                        <label class="form-label">Phí vận chuyển:</label>
+                        <input type="number" class="form-control" id="shippingFee" value="0" min="0" onchange="updatePaymentInfo()" />
+                    </div>
                  
                     <div class="mb-2">
                         <label class="form-label">Mã giảm giá:</label>
@@ -254,6 +258,7 @@
     let useShipping = false;
     let usePoint = false;
     let selectedPaymentCode;
+    let shippingFee = 0;
 
     // Lưu hóa đơn vào localStorage
     function saveInvoicesToStorage() {
@@ -640,6 +645,21 @@
         if (useShipping) {
             $('#shippingFormCard').show();
             $('#btnShowAddress').show();
+            // Nếu đã chọn khách hàng thì tự động điền địa chỉ
+            if (selectedCustomer) {
+                $.get('/api/BanHangTaiQuay/dia-chi-khach-hang', { customerId: selectedCustomer.id }, function(data) {
+                    if (data) {
+                        $('#shipName').val(data.tenNguoiNhan || selectedCustomer.name);
+                        $('#shipPhone').val(data.sdtNguoiNhan || selectedCustomer.phone);
+                        $('#shipAddress').val(data.diaChiChiTiet || '');
+                    } else {
+                        // Nếu không có địa chỉ thì xóa trắng
+                        $('#shipName').val(selectedCustomer.name);
+                        $('#shipPhone').val(selectedCustomer.phone);
+                        $('#shipAddress').val('');
+                    }
+                });
+            }
         } else {
             $('#shippingFormCard').hide();
             $('#btnShowAddress').hide();
@@ -660,8 +680,8 @@
         let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
         let discount = discountValue || 0;
         let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
-        let shipping = useShipping ? 0 : 0; // bạn có thể thêm phí ship nếu muốn
-        let pay = total - discount - point + shipping;
+        shippingFee = parseInt($('#shippingFee').val()) || 0;
+        let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
@@ -739,7 +759,8 @@
             UsePoint: usePoint,
             Shipping: useShipping,
             PaymentMethod: paymentMethod,
-            CustomerPaid: customerPaid
+            CustomerPaid: customerPaid,
+            ShippingFee: shippingFee
         };
         $.ajax({
             url: '/Admin/ClientBanHangTaiQuay/thanh-toan',

@@ -1,0 +1,431 @@
+@{
+    ViewData["Title"] = "Thanh toán";
+    var cartItems = ViewBag.CartItems as List<QuanApi.Data.ChiTietGioHang> ?? new List<QuanApi.Data.ChiTietGioHang>();
+    var tongTien = cartItems.Sum(x => x.GiaBan * x.SoLuong);
+}
+
+<style>
+    .checkout-section {
+        padding: 60px 0;
+        background: #f8f9fa;
+    }
+    
+    .checkout-form {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .checkout-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 30px;
+        color: #333;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 8px;
+    }
+    
+    .form-control {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 12px 15px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    .order-summary {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .order-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-total {
+        font-size: 18px;
+        font-weight: 600;
+        color: #dc3545;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 2px solid #eee;
+    }
+    
+    .payment-method {
+        margin: 15px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .payment-method:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
+    }
+    
+    .payment-method.selected {
+        border-color: #007bff;
+        background: #e3f2fd;
+    }
+    
+    .btn-checkout {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        width: 100%;
+        margin-top: 20px;
+        transition: background 0.3s;
+    }
+    
+    .btn-checkout:hover {
+        background: #218838;
+    }
+    
+    .coupon-section {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .coupon-input {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .coupon-input input {
+        flex: 1;
+    }
+    
+    .coupon-input button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+</style>
+
+<div class="checkout-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="checkout-form">
+                    <h4 class="checkout-title">Thông tin giao hàng</h4>
+                    
+                    <form id="checkoutForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Họ và tên <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="tenNguoiNhan" name="tenNguoiNhan" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Số điện thoại <span class="required">*</span></label>
+                                    <input type="tel" class="form-control" id="soDienThoaiNguoiNhan" name="soDienThoaiNguoiNhan" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Địa chỉ giao hàng <span class="required">*</span></label>
+                            <textarea class="form-control" id="diaChiGiaoHang" name="diaChiGiaoHang" rows="3" required placeholder="Nhập địa chỉ chi tiết"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Ghi chú</label>
+                            <textarea class="form-control" id="ghiChu" name="ghiChu" rows="2" placeholder="Ghi chú về đơn hàng (tùy chọn)"></textarea>
+                        </div>
+                        
+                        <div class="coupon-section">
+                            <h6><i class="fa fa-tag"></i> Mã giảm giá</h6>
+                            <div class="coupon-input">
+                                <input type="text" class="form-control" id="maGiamGia" placeholder="Nhập mã giảm giá">
+                                <button type="button" class="btn btn-primary" onclick="apDungMaGiamGia()">Áp dụng</button>
+                            </div>
+                        </div>
+                        
+                        <h5 class="checkout-title">Phương thức thanh toán</h5>
+                        <div id="paymentMethods">
+                            <!-- Phương thức thanh toán sẽ được load từ API -->
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="order-summary">
+                    <h5 class="order-title">Đơn hàng của bạn</h5>
+                    <div id="orderItems">
+                        @foreach (var item in cartItems)
+                        {
+                            var spct = item.SanPhamChiTiet;
+                            var sp = spct?.SanPham;
+                            var img = sp?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
+                            var thanhTien = item.GiaBan * item.SoLuong;
+                            
+                            <div class="order-item">
+                                <div>
+                                    <div style="font-weight: 500;">@sp?.TenSanPham</div>
+                                    <small style="color: #666;">Số lượng: @item.SoLuong</small>
+                                </div>
+                                <span>@thanhTien.ToString("N0") VNĐ</span>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="order-total">
+                        <div class="order-item">
+                            <span>Tạm tính:</span>
+                            <span id="tamTinh">@tongTien.ToString("N0") VNĐ</span>
+                        </div>
+                        <div class="order-item">
+                            <span>Giảm giá:</span>
+                            <span id="giamGia">0 VNĐ</span>
+                        </div>
+                        <div class="order-item">
+                            <strong>Tổng cộng:</strong>
+                            <strong id="tongCong">@tongTien.ToString("N0") VNĐ</strong>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn-checkout" onclick="datHang()">
+                        ĐẶT HÀNG NGAY
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let gioHangData = null;
+let phuongThucThanhToan = null;
+
+// Load dữ liệu khi trang được tải
+document.addEventListener('DOMContentLoaded', function() {
+    loadGioHang();
+    loadPhuongThucThanhToan();
+});
+
+// Load thông tin giỏ hàng
+async function loadGioHang() {
+    try {
+        const response = await fetch('/GioHang/GetGioHang');
+        if (response.ok) {
+            gioHangData = await response.json();
+            hienThiDonHang();
+        }
+    } catch (error) {
+        console.error('Lỗi khi tải giỏ hàng:', error);
+    }
+}
+
+// Hiển thị thông tin đơn hàng
+function hienThiDonHang() {
+    if (!gioHangData || !gioHangData.chiTietGioHangs) return;
+    
+    const orderItemsContainer = document.getElementById('orderItems');
+    let html = '';
+    let tamTinh = 0;
+    
+    gioHangData.chiTietGioHangs.forEach(item => {
+        const thanhTien = item.giaBan * item.soLuong;
+        tamTinh += thanhTien;
+        
+        html += `
+            <div class="order-item">
+                <div>
+                    <div style="font-weight: 500;">${item.sanPhamChiTiet?.sanPham?.tenSanPham || 'Sản phẩm'}</div>
+                    <small style="color: #666;">Số lượng: ${item.soLuong}</small>
+                </div>
+                <span>${thanhTien.toLocaleString('vi-VN')} VNĐ</span>
+            </div>
+        `;
+    });
+    
+    orderItemsContainer.innerHTML = html;
+    document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+    document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+}
+
+// Load phương thức thanh toán
+async function loadPhuongThucThanhToan() {
+    try {
+        const response = await fetch('/Checkout/GetPaymentMethods');
+        if (response.ok) {
+            const methods = await response.json();
+            hienThiPhuongThucThanhToan(methods);
+        }
+    } catch (error) {
+        console.error('Lỗi khi tải phương thức thanh toán:', error);
+    }
+}
+
+// Hiển thị phương thức thanh toán
+function hienThiPhuongThucThanhToan(methods) {
+    const container = document.getElementById('paymentMethods');
+    let html = '';
+    
+    methods.forEach(method => {
+        html += `
+            <div class="payment-method" onclick="chonPhuongThucThanhToan('${method.idPhuongThucThanhToan}', this)">
+                <input type="radio" name="paymentMethod" value="${method.idPhuongThucThanhToan}" style="margin-right: 10px;">
+                <strong>${method.tenPhuongThuc}</strong>
+                <div style="color: #666; font-size: 14px; margin-top: 5px;">${method.moTa || ''}</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Chọn phương thức thanh toán
+function chonPhuongThucThanhToan(methodId, element) {
+    // Bỏ chọn tất cả
+    document.querySelectorAll('.payment-method').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Chọn phương thức được click
+    element.classList.add('selected');
+    phuongThucThanhToan = methodId;
+    
+    // Check radio button
+    const radio = element.querySelector('input[type="radio"]');
+    radio.checked = true;
+}
+
+// Áp dụng mã giảm giá
+async function apDungMaGiamGia() {
+    const maGiamGia = document.getElementById('maGiamGia').value;
+    if (!maGiamGia) {
+        alert('Vui lòng nhập mã giảm giá');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/Checkout/KiemTraMaGiamGia?code=${encodeURIComponent(maGiamGia)}`);
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                alert('Áp dụng mã giảm giá thành công!');
+                // Cập nhật giá trị giảm giá
+                document.getElementById('giamGia').textContent = result.tienGiam.toLocaleString('vi-VN') + ' VNĐ';
+                const tongCong = parseFloat(document.getElementById('tamTinh').textContent.replace(/[^\d]/g, '')) - result.tienGiam;
+                document.getElementById('tongCong').textContent = tongCong.toLocaleString('vi-VN') + ' VNĐ';
+            } else {
+                alert(result.message || 'Mã giảm giá không hợp lệ');
+            }
+        }
+    } catch (error) {
+        console.error('Lỗi khi kiểm tra mã giảm giá:', error);
+        alert('Có lỗi xảy ra khi kiểm tra mã giảm giá');
+    }
+}
+
+// Đặt hàng
+async function datHang() {
+    // Kiểm tra form
+    const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
+    const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
+    const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
+    
+    if (!tenNguoiNhan || !soDienThoaiNguoiNhan || !diaChiGiaoHang) {
+        alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+        return;
+    }
+    
+    if (!phuongThucThanhToan) {
+        alert('Vui lòng chọn phương thức thanh toán');
+        return;
+    }
+    
+    if (!gioHangData || !gioHangData.chiTietGioHangs || gioHangData.chiTietGioHangs.length === 0) {
+        alert('Giỏ hàng trống');
+        return;
+    }
+    
+    // Tạo dữ liệu đặt hàng
+    const checkoutData = {
+        tenNguoiNhan: tenNguoiNhan,
+        soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+        diaChiGiaoHang: diaChiGiaoHang,
+        phuongThucThanhToanId: phuongThucThanhToan,
+        ghiChu: document.getElementById('ghiChu').value,
+        tongTien: parseFloat(document.getElementById('tongCong').textContent.replace(/[^\d]/g, '')),
+        tienGiam: parseFloat(document.getElementById('giamGia').textContent.replace(/[^\d]/g, '')) || 0
+    };
+    
+    try {
+        const response = await fetch('/Checkout/ProcessOrder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(checkoutData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Đặt hàng thành công!');
+            // Xóa giỏ hàng session
+            await fetch('/Checkout/ClearCart', { method: 'POST' });
+            window.location.href = '/Home/Index';
+        } else {
+            alert(result.message || 'Có lỗi xảy ra khi đặt hàng');
+        }
+    } catch (error) {
+        console.error('Lỗi khi đặt hàng:', error);
+        alert('Có lỗi xảy ra khi đặt hàng');
+    }
+}
+</script> 

@@ -162,5 +162,66 @@ namespace QuanView.Controllers
             }
             return RedirectToAction("Index", new { iduser });
         }
+
+        // GET: /GioHang/GetGioHang
+        [HttpGet]
+        public async Task<IActionResult> GetGioHang()
+        {
+            try
+            {
+                // Lấy giỏ hàng từ session hoặc database
+                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                
+                // Cập nhật thông tin sản phẩm cho từng item
+                foreach (var item in cart)
+                {
+                    var responseSpct = await _http.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                    if (responseSpct.IsSuccessStatusCode)
+                    {
+                        var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                        if (spct != null)
+                        {
+                            item.GiaBan = spct.price;
+                            item.SanPhamChiTiet = new SanPhamChiTiet
+                            {
+                                SanPham = new SanPham
+                                {
+                                    TenSanPham = spct.TenSanPham,
+                                    AnhSanPhams = new List<AnhSanPham> {
+                                        new AnhSanPham { UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg", LaAnhChinh = true }
+                                    }
+                                },
+                                GiaBan = spct.price
+                            };
+                        }
+                    }
+                }
+
+                var gioHang = new
+                {
+                    chiTietGioHangs = cart.Select(item => new
+                    {
+                        idChiTietGioHang = item.IDChiTietGioHang,
+                        idSanPhamChiTiet = item.IDSanPhamChiTiet,
+                        soLuong = item.SoLuong,
+                        giaBan = item.GiaBan,
+                        sanPhamChiTiet = new
+                        {
+                            sanPham = new
+                            {
+                                tenSanPham = item.SanPhamChiTiet?.SanPham?.TenSanPham,
+                                anhSanPhams = item.SanPhamChiTiet?.SanPham?.AnhSanPhams?.Select(a => new { urlAnh = a.UrlAnh, laAnhChinh = a.LaAnhChinh }).ToList()
+                            }
+                        }
+                    }).ToList()
+                };
+
+                return Json(gioHang);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
     }
 }

@@ -574,5 +574,49 @@ namespace QuanApi.Controllers
 
             return Ok("Đã reset số lượng sử dụng phiếu giảm giá.");
         }
+
+        // Kiểm tra mã giảm giá
+        [HttpGet("kiem-tra")]
+        public async Task<IActionResult> KiemTraMaGiamGia([FromQuery] string code)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(code))
+                    return BadRequest("Mã giảm giá không được để trống.");
+
+                var phieuGiamGia = await _context.PhieuGiamGias
+                    .FirstOrDefaultAsync(pgg => pgg.MaCode == code && pgg.TrangThai);
+
+                if (phieuGiamGia == null)
+                    return Ok(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa." });
+
+                // Kiểm tra thời gian hiệu lực
+                if (phieuGiamGia.NgayBatDau > DateTime.Now)
+                    return Ok(new { success = false, message = "Mã giảm giá chưa có hiệu lực." });
+
+                if (phieuGiamGia.NgayKetThuc < DateTime.Now)
+                    return Ok(new { success = false, message = "Mã giảm giá đã hết hạn." });
+
+                // Tính toán giá trị giảm giá
+                decimal tienGiam = phieuGiamGia.GiaTriGiam;
+                if (phieuGiamGia.GiaTriGiamToiDa.HasValue && tienGiam > phieuGiamGia.GiaTriGiamToiDa.Value)
+                {
+                    tienGiam = phieuGiamGia.GiaTriGiamToiDa.Value;
+                }
+
+                return Ok(new { 
+                    success = true, 
+                    message = "Mã giảm giá hợp lệ.",
+                    tienGiam = tienGiam,
+                    phanTramGiam = phieuGiamGia.GiaTriGiam,
+                    giaTriToiDa = phieuGiamGia.GiaTriGiamToiDa,
+                    donToiThieu = phieuGiamGia.DonToiThieu
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
     }
 }
