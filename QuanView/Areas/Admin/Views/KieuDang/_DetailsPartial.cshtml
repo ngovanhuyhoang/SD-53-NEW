@@ -32,13 +32,34 @@
             <td>
                 @if (Model.TrangThai)
                 {
-                    <span class="badge bg-success">Hoạt động</span>
+                    <span class="status-badge status-active">Kích hoạt</span>
                 }
                 else
                 {
-                    <span class="badge bg-secondary">Ngừng hoạt động</span>
+                    <span class="status-badge status-inactive">Ẩn</span>
                 }
             </td>
         </tr>
     </table>
 </div>
+
+<style>
+.status-badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    background: #e6f4ea;
+    color: #218838;
+    border: none;
+}
+.status-inactive {
+    background: #f0f0f0;
+    color: #888;
+}
+.status-active {
+    background: #e6f4ea;
+    color: #218838;
+}
+</style>

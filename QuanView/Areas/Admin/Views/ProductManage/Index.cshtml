@@ -8,77 +8,88 @@
 
 <h2>@ViewData["Title"]</h2>
 <partial name="_Notification" />
-<!-- Nút thêm mới -->
-<p>
-    <a class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal" asp-area="Admin" asp-controller="ProductManage" asp-action="Create">+ Thêm danh mục mới</a>
-</p>
-
-<!-- Form tìm kiếm -->
-<form id="searchForm" class="mb-3 d-flex">
-    <input type="text" id="searchString" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control me-2" placeholder="🔍 Tìm kiếm danh mục..." />
-    <button type="submit" class="btn btn-primary">Tìm</button>
-</form>
-
 <!-- Bảng danh mục -->
-<div class="table-responsive">
-    <table class="table table-bordered table-hover table-striped">
-        <thead>
-            <tr>
-                <th>@Html.DisplayNameFor(model => model.First().MaDanhMuc)</th>
-                <th>@Html.DisplayNameFor(model => model.First().TenDanhMuc)</th>
-                <th>Ngày tạo</th>
-                <th>Người tạo</th>
-                <th>Cập nhật</th>
-                <th>Người cập nhật</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@Html.Raw(item.MaDanhMuc)</td>
-                    <td>@Html.Raw(item.TenDanhMuc)</td>
-                    <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@Html.Raw(item.NguoiTao)</td>
-                    <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@Html.Raw(item.NguoiCapNhat)</td>
-                    <td>
-                        <div class="form-check form-switch">
-                            <input type="checkbox" class="form-check-input toggle-status" data-id="@item.IDDanhMuc" @(item.TrangThai ? "checked" : "") />
-                            <span class="badge bg-@(item.TrangThai ? "success" : "secondary")">
-                                @(item.TrangThai ? "Kích hoạt" : "Ẩn")
-                            </span>
-                        </div>
-                    </td>
-                    <td>
-                        <a class="btn btn-sm btn-primary edit-btn" data-id="@item.IDDanhMuc" data-bs-toggle="modal" data-bs-target="#editModal">Sửa</a>
-                        <a class="btn btn-sm btn-info details-btn" data-id="@item.IDDanhMuc" data-bs-toggle="modal" data-bs-target="#detailsModal">🔍</a>
-                        <a class="btn btn-sm btn-danger delete-btn" data-id="@item.IDDanhMuc">🗑️</a>
-                    </td>
-                </tr>
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">Danh Sách Danh Mục</h6>
+        <a class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal" asp-area="Admin" asp-controller="ProductManage" asp-action="Create">+ Thêm danh mục mới</a>
+    </div>
+    <div class="card-body">
+        <!-- Form tìm kiếm -->
+        <form id="searchForm" class="mb-3 d-flex">
+            <div class="input-group me-2">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" id="searchString" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control border-start-0" placeholder="Tìm kiếm danh mục..." />
+            </div>
+            <button type="submit" class="btn btn-primary">Tìm</button>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-hover danhmuc-table">
+                <thead>
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.First().MaDanhMuc)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().TenDanhMuc)</th>
+                        <th>Ngày tạo</th>
+                        <th>Người tạo</th>
+                        <th>Cập nhật</th>
+                        <th>Người cập nhật</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@Html.Raw(item.MaDanhMuc)</td>
+                            <td>@Html.Raw(item.TenDanhMuc)</td>
+                            <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@Html.Raw(item.NguoiTao)</td>
+                            <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@Html.Raw(item.NguoiCapNhat)</td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input toggle-status" data-id="@item.IDDanhMuc" @(item.TrangThai ? "checked" : "") />
+                                    <span class="status-badge @(item.TrangThai ? "status-active" : "status-inactive")">
+                                        @(item.TrangThai ? "Kích hoạt" : "Ẩn")
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-action btn-edit edit-btn" data-id="@item.IDDanhMuc" data-bs-toggle="modal" data-bs-target="#editModal">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-action btn-details details-btn" data-id="@item.IDDanhMuc" data-bs-toggle="modal" data-bs-target="#detailsModal">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-action btn-delete delete-btn" data-id="@item.IDDanhMuc">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @{
+                int totalItems = ViewBag.TotalItems ?? 0;
+                int pageSize = ViewBag.PageSize ?? 10;
+                int currentPage = ViewBag.Page ?? 1;
+                int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
             }
-        </tbody>
-    </table>
-    @{
-        int totalItems = ViewBag.TotalItems ?? 0;
-        int pageSize = ViewBag.PageSize ?? 10;
-        int currentPage = ViewBag.Page ?? 1;
-        int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-    }
-
-    <nav>
-        <ul class="pagination">
-            @for (int i = 1; i <= totalPages; i++)
-            {
-                <li class="page-item @(i == currentPage ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = pageSize })">@i</a>
-                </li>
-            }
-        </ul>
-    </nav>
-
+            <nav>
+                <ul class="pagination">
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = pageSize })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </div>
 </div>
 
 <!-- CSRF Token -->
@@ -152,6 +163,73 @@
         to {
             transform: rotate(360deg);
         }
+    }
+    .danhmuc-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .danhmuc-table th {
+        background: #f8f9fa;
+        border: none;
+        font-weight: 600;
+        color: #333;
+    }
+    .danhmuc-table td {
+        vertical-align: middle;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-edit {
+        background: #ffc107;
+        color: white;
+    }
+    .btn-edit:hover {
+        background: #e0a800;
+        color: white;
+    }
+    .btn-details {
+        background: #17a2b8;
+        color: white;
+    }
+    .btn-details:hover {
+        background: #117a8b;
+        color: white;
+    }
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+    .btn-delete:hover {
+        background: #bd2130;
+        color: white;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #e6f4ea;
+        color: #218838;
+        border: none;
+    }
+    .status-inactive {
+        background: #f0f0f0;
+        color: #888;
+    }
+    .status-active {
+        background: #e6f4ea;
+        color: #218838;
     }
 </style>
 
@@ -332,15 +410,15 @@
                 data: JSON.stringify({ id: id }), // ✅ TRUYỀN OBJECT, TRÙNG VỚI ToggleStatusRequest
                 beforeSend: function () {
                     checkbox.prop('disabled', true);
-                    checkbox.siblings('span').html('<span class="spinner"></span> Đang xử lý...').removeClass('bg-success bg-secondary');
+                    checkbox.siblings('span').html('<span class="spinner"></span> Đang xử lý...').removeClass('status-active status-inactive');
                 },
                 success: function (response) {
                     if (response.success) {
                         var isActive = response.trangThai === true;
                         checkbox.siblings('span')
                             .text(isActive ? 'Kích hoạt' : 'Ẩn')
-                            .removeClass('bg-success bg-secondary')
-                            .addClass(isActive ? 'bg-success' : 'bg-secondary');
+                            .removeClass('status-active status-inactive')
+                            .addClass(isActive ? 'status-active' : 'status-inactive');
                     } else {
                         alert("Không cập nhật được trạng thái");
                         checkbox.prop('checked', !isChecked);
