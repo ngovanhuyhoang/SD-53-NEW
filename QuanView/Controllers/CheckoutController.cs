@@ -41,12 +41,17 @@ namespace QuanView.Controllers
                         {
                             SanPham = new SanPham
                             {
-                                TenSanPham = spct.TenSanPham,
-                                AnhSanPhams = new List<AnhSanPham> {
-                                    new AnhSanPham { UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg", LaAnhChinh = true }
-                                }
+                                TenSanPham = spct.TenSanPham
                             },
-                            GiaBan = spct.price
+                            GiaBan = spct.price,
+                            AnhSanPhams = new List<AnhSanPham>
+                            {
+                                new AnhSanPham
+                                {
+                                    UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                    LaAnhChinh = true
+                                }
+                            }
                         };
                     }
                 }
@@ -69,14 +74,43 @@ namespace QuanView.Controllers
                     return Json(new { success = false, message = "Giỏ hàng trống" });
                 }
 
-                // Tạo danh sách chi tiết hóa đơn
+                // Cập nhật lại thông tin sản phẩm và giá trước khi tạo hóa đơn
+                foreach (var item in cart)
+                {
+                    var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                    if (responseSpct.IsSuccessStatusCode)
+                    {
+                        var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                        if (spct != null && spct.price > 0)
+                        {
+                            item.GiaBan = spct.price;
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = $"Không thể lấy giá sản phẩm cho ID: {item.IDSanPhamChiTiet}" });
+                        }
+                    }
+                    else
+                    {
+                        return Json(new { success = false, message = $"Không thể lấy thông tin sản phẩm cho ID: {item.IDSanPhamChiTiet}" });
+                    }
+                }
+
+                // Tạo danh sách chi tiết hóa đơn với giá đã được cập nhật
                 var chiTietHoaDons = cart.Select(item => new
                 {
                     idSanPhamChiTiet = item.IDSanPhamChiTiet,
                     soLuong = item.SoLuong,
                     donGia = item.GiaBan,
-                    thanhTien = item.GiaBan * item.SoLuong
+                    thanhTien = Math.Round(item.GiaBan * item.SoLuong, 2)
                 }).ToList();
+
+                // Log để debug
+                Console.WriteLine($"Số lượng chi tiết hóa đơn: {chiTietHoaDons.Count}");
+                foreach (var ct in chiTietHoaDons)
+                {
+                    Console.WriteLine($"SPCT ID: {ct.idSanPhamChiTiet}, SL: {ct.soLuong}, Đơn giá: {ct.donGia}, Thành tiền: {ct.thanhTien}");
+                }
 
                 // Tạo dữ liệu hóa đơn
                 var hoaDonData = new

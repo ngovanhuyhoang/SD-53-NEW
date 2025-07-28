@@ -4,6 +4,7 @@ using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace QuanApi.Migrations
 {
     [DbContext(typeof(BanQuanAu1DbContext))]
-    partial class BanQuanAu1DbContextModelSnapshot : ModelSnapshot
+    [Migration("20250727194120_li")]
+    partial class li
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,6 +107,9 @@ namespace QuanApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<Guid?>("ThuVienAnhIDThuVienAnh")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("TrangThai")
                         .HasColumnType("bit");
 
@@ -115,6 +121,8 @@ namespace QuanApi.Migrations
                     b.HasKey("IDAnhSanPham");
 
                     b.HasIndex("IDSanPhamChiTiet");
+
+                    b.HasIndex("ThuVienAnhIDThuVienAnh");
 
                     b.ToTable("AnhSanPhams");
                 });
@@ -1250,6 +1258,78 @@ namespace QuanApi.Migrations
                     b.ToTable("SanPhamDotGiams");
                 });
 
+            modelBuilder.Entity("QuanApi.Data.ThuVienAnh", b =>
+                {
+                    b.Property<Guid>("IDThuVienAnh")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ChieuCao")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ChieuRong")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DinhDang")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<long>("KichThuoc")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("LaAnhChinh")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LanCapNhatCuoi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LoaiAnh")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MaAnh")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NguoiCapNhat")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NguoiTao")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TenAnh")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("TrangThai")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UrlAnh")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("IDThuVienAnh");
+
+                    b.ToTable("ThuVienAnhs");
+                });
+
             modelBuilder.Entity("QuanApi.Data.ThuongHieu", b =>
                 {
                     b.Property<Guid>("IDThuongHieu")
@@ -1382,6 +1462,10 @@ namespace QuanApi.Migrations
                         .HasForeignKey("IDSanPhamChiTiet")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("QuanApi.Data.ThuVienAnh", null)
+                        .WithMany("AnhSanPhams")
+                        .HasForeignKey("ThuVienAnhIDThuVienAnh");
 
                     b.Navigation("SanPhamChiTiet");
                 });
@@ -1779,6 +1863,11 @@ namespace QuanApi.Migrations
                     b.Navigation("ChiTietHoaDons");
 
                     b.Navigation("SanPhamDotGiams");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.ThuVienAnh", b =>
+                {
+                    b.Navigation("AnhSanPhams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.ThuongHieu", b =>

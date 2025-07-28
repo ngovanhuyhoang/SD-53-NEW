@@ -147,12 +147,34 @@
                                         <span class="product-price">@sp.BienThes.First().GiaGoc.ToString("N0") ₫</span>
                                     }
                                 </div>
+                                
+                                <!-- Hiển thị số lượng tồn kho -->
+                                <div class="mb-2">
+                                    @{
+                                        var totalStock = sp.BienThes?.Sum(b => b.SoLuong) ?? 0;
+                                        var stockClass = totalStock > 10 ? "text-success" : totalStock > 0 ? "text-warning" : "text-danger";
+                                        var stockText = totalStock > 0 ? $"Còn {totalStock} sản phẩm" : "Hết hàng";
+                                    }
+                                    <small class="@stockClass fw-bold">
+                                        <i class="bi bi-box-seam"></i> @stockText
+                                    </small>
+                                </div>
+                                
                                 @if (sp.BienThes != null && sp.BienThes.Any())
                                 {
-                                    <a class="btn btn-outline-danger btn-sm mt-3 w-100"
-                                       href="/SanPhamNguoiDung/Detail/@sp.BienThes.First().IDSanPhamChiTiet">
-                                        Xem chi tiết
-                                    </a>
+                                    @if (totalStock > 0)
+                                    {
+                                        <a class="btn btn-outline-danger btn-sm mt-2 w-100"
+                                           href="/SanPhamNguoiDung/Detail/@sp.BienThes.First().IDSanPhamChiTiet">
+                                            Xem chi tiết
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-secondary btn-sm mt-2 w-100" disabled>
+                                            <i class="bi bi-x-circle"></i> Hết hàng
+                                        </button>
+                                    }
                                 }
                                 else
                                 {

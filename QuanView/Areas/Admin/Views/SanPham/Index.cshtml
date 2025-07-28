@@ -4,6 +4,10 @@
     ViewData["Title"] = "Danh sách sản phẩm";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-product-images.css" />
+}
+
 <h2 class="mb-4">Danh sách sản phẩm</h2>
 
 <p>
@@ -24,6 +28,7 @@
             <thead class="thead-dark">
                 <tr>
                     <th><input type="checkbox" id="select-all" /></th>
+                    <th>Ảnh</th>
                     <th>Mã SP</th>
                     <th>Tên SP</th>
                     <th>Chất liệu</th>
@@ -44,6 +49,9 @@
                     <tr>
                         <td>
                             <input type="checkbox" name="selectedIds" value="@item.IDSanPham" class="select-checkbox" />
+                        </td>
+                        <td>
+                            <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
                         </td>
                         <td>@item.MaSanPham</td>
                         <td>@item.TenSanPham</td>
@@ -69,7 +77,7 @@
                     @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
                     {
                         <tr>
-                            <td colspan="13" class="p-0">
+                            <td colspan="14" class="p-0">
                                 <div class="table-responsive px-3 py-2">
                                     <table class="table table-sm table-bordered mb-0">
                                         <thead class="table-light">
@@ -79,6 +87,8 @@
                                                 <th>Họa tiết</th>
                                                 <th>Số lượng</th>
                                                 <th>Giá bán</th>
+                                                <th>Ảnh sản phẩm</th>
+                                                <th>Thao tác ảnh</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -106,6 +116,33 @@
                                                             </span>
                                                         }
                                                     </td>
+                                                    <td>
+                                                        <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
+                                                            <div class="images-preview">
+                                                                @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
+                                                                {
+                                                                    <img src="@ct.AnhDaiDien" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted small">Chưa có ảnh</span>
+                                                                }
+                                                            </div>
+                                                            <div class="images-list" style="display:none;">
+                                                                <!-- Danh sách ảnh sẽ được load bằng JavaScript -->
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                                onclick="loadImages('@ct.IdSanPhamChiTiet')">
+                                                            <i class="fas fa-images"></i> Xem ảnh
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                                                onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
+                                                            <i class="fas fa-plus"></i> Thêm ảnh
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             }
                                         </tbody>
@@ -117,9 +154,62 @@
                 }
             </tbody>
         </table>
-        <button type="submit" class="btn btn-warning mt-2">✏️ Sửa hàng loạt biến thể</button>
     }
 </form>
+
+<!-- Modal thêm ảnh -->
+<div class="modal fade" id="addImageModal" tabindex="-1" aria-labelledby="addImageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addImageModalLabel">Thêm ảnh sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addImageForm">
+                    <input type="hidden" id="sanPhamChiTietId" />
+                    <div class="mb-3">
+                        <label for="imageUrl" class="form-label">URL ảnh</label>
+                        <input type="url" class="form-control" id="imageUrl" required placeholder="Nhập URL ảnh" onchange="previewImage()">
+                        <div id="imagePreview" class="image-upload-preview" style="display:none;">
+                            <img id="previewImg" src="" alt="Preview" onerror="this.style.display='none'; document.getElementById('imagePreview').style.display='none';">
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isMainImage">
+                        <label class="form-check-label" for="isMainImage">
+                            Đặt làm ảnh chính
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addImage()">Thêm ảnh</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xem ảnh -->
+<div class="modal fade" id="viewImagesModal" tabindex="-1" aria-labelledby="viewImagesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewImagesModalLabel">Quản lý ảnh sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="imagesContainer">
+                    <!-- Danh sách ảnh sẽ được load ở đây -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
@@ -127,5 +217,370 @@
             var checked = this.checked;
             document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = checked);
         });
+
+        // Load danh sách ảnh
+        function loadImages(sanPhamChiTietId) {
+            // Hiển thị loading trong modal
+            const container = document.getElementById('imagesContainer');
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 20px;"></div>
+                    <p class="text-muted">Đang tải danh sách ảnh...</p>
+                </div>
+            `;
+            
+            // Hiển thị modal trước
+            const modalElement = document.getElementById('viewImagesModal');
+            if (modalElement) {
+                // Bootstrap 4
+                $(modalElement).modal('show');
+            }
+
+            fetch(`/Admin/AnhSanPham/GetImages?sanPhamChiTietId=${sanPhamChiTietId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text().then(text => {
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.error('Invalid JSON response:', text);
+                            throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                        }
+                    });
+                })
+                .then(data => {
+                    if (data.success) {
+                        showImagesModal(data.data, sanPhamChiTietId);
+                    } else {
+                        showNotification('Lỗi: ' + (data.message || 'Không thể tải danh sách ảnh'), 'error');
+                        container.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                <p class="text-muted">Không thể tải danh sách ảnh</p>
+                                <small class="text-danger">${data.message || ''}</small>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Có lỗi xảy ra khi tải danh sách ảnh: ' + error.message, 'error');
+                    container.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                            <p class="text-muted">Có lỗi xảy ra khi tải danh sách ảnh</p>
+                            <small class="text-danger">${error.message}</small>
+                        </div>
+                    `;
+                });
+        }
+
+        // Hiển thị modal xem ảnh
+        function showImagesModal(images, sanPhamChiTietId) {
+            const container = document.getElementById('imagesContainer');
+            container.innerHTML = '';
+
+            if (images && images.length > 0) {
+                const imagesHtml = images.map(image => `
+                    <div class="image-item mb-3 p-3 border rounded">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <img src="${image.urlAnh}" class="img-fluid rounded" style="max-height: 100px;" alt="Ảnh sản phẩm" 
+                                     onerror="this.src='/img/default-product.jpg'">
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Mã ảnh:</strong> ${image.maAnh}</p>
+                                <p class="mb-1"><strong>Ngày tạo:</strong> ${new Date(image.ngayTao).toLocaleDateString('vi-VN')}</p>
+                                <p class="mb-1"><strong>Trạng thái:</strong> 
+                                    <span class="badge ${image.trangThai ? 'badge-status-active' : 'badge-status-inactive'}">
+                                        ${image.trangThai ? 'Hoạt động' : 'Đã xóa'}
+                                    </span>
+                                </p>
+                                ${image.laAnhChinh ? '<p class="mb-1"><span class="badge badge-main-image"><i class="fas fa-star"></i> Ảnh chính</span></p>' : ''}
+                                <p class="mb-1"><strong>URL:</strong> <small class="text-muted">${image.urlAnh}</small></p>
+                            </div>
+                            <div class="col-md-3">
+                                ${!image.laAnhChinh ? `
+                                    <button class="btn btn-sm btn-warning mb-1 w-100 btn-image-action" onclick="setMainImage('${image.idAnhSanPham}')">
+                                        <i class="fas fa-star"></i> Đặt chính
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-danger w-100 btn-image-action" onclick="deleteImage('${image.idAnhSanPham}')">
+                                    <i class="fas fa-trash"></i> Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                container.innerHTML = imagesHtml;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Chưa có ảnh nào cho sản phẩm này.</p>
+                        <button class="btn btn-primary" onclick="showAddImageModal('${sanPhamChiTietId}')">
+                            <i class="fas fa-plus"></i> Thêm ảnh đầu tiên
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Lưu ID để sử dụng trong các hàm khác
+            container.dataset.sanPhamChiTietId = sanPhamChiTietId;
+        }
+
+        // Hiển thị modal thêm ảnh
+        function showAddImageModal(sanPhamChiTietId) {
+            document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('isMainImage').checked = false;
+            document.getElementById('imagePreview').style.display = 'none';
+            
+            const modalElement = document.getElementById('addImageModal');
+            if (modalElement) {
+                // Bootstrap 4
+                $(modalElement).modal('show');
+            }
+        }
+
+        // Preview ảnh khi nhập URL
+        function previewImage() {
+            const imageUrl = document.getElementById('imageUrl').value;
+            const previewDiv = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            if (imageUrl) {
+                previewImg.src = imageUrl;
+                previewImg.style.display = 'block';
+                previewDiv.style.display = 'block';
+            } else {
+                previewDiv.style.display = 'none';
+            }
+        }
+
+        // Thêm ảnh mới
+        function addImage() {
+            const sanPhamChiTietId = document.getElementById('sanPhamChiTietId').value;
+            const imageUrl = document.getElementById('imageUrl').value;
+            const isMainImage = document.getElementById('isMainImage').checked;
+            const addButton = document.querySelector('#addImageModal .btn-primary');
+
+            if (!imageUrl) {
+                alert('Vui lòng nhập URL ảnh');
+                return;
+            }
+
+            // Hiển thị loading state
+            const originalText = addButton.innerHTML;
+            addButton.innerHTML = '<span class="loading-spinner"></span> Đang thêm...';
+            addButton.disabled = true;
+
+            const data = {
+                urlAnh: imageUrl,
+                laAnhChinh: isMainImage
+            };
+
+            fetch(`/Admin/AnhSanPham/AddImage?sanPhamChiTietId=${sanPhamChiTietId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON response:', text);
+                        throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                    }
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    // Hiển thị thông báo thành công
+                    showNotification('Thêm ảnh thành công!', 'success');
+                    // Đóng modal và reload ảnh
+                    const modalElement = document.getElementById('addImageModal');
+                    if (modalElement) {
+                        // Bootstrap 4
+                        $(modalElement).modal('hide');
+                    }
+                    // Reload ảnh trong modal và cập nhật giao diện chính
+                    loadImages(sanPhamChiTietId);
+                    updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage);
+                } else {
+                    showNotification('Lỗi: ' + (data.message || 'Không thể thêm ảnh'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Có lỗi xảy ra khi thêm ảnh: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Khôi phục button
+                addButton.innerHTML = originalText;
+                addButton.disabled = false;
+            });
+        }
+
+        // Hiển thị thông báo
+        function showNotification(message, type) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="${icon}"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Tự động ẩn sau 5 giây
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Đặt ảnh làm ảnh chính
+        function setMainImage(imageId) {
+            if (!confirm('Bạn có chắc muốn đặt ảnh này làm ảnh chính?')) {
+                return;
+            }
+
+            fetch(`/Admin/AnhSanPham/SetMainImage?imageId=${imageId}`, {
+                method: 'PUT'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON response:', text);
+                        throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                    }
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotification('Đã đặt ảnh làm ảnh chính!', 'success');
+                    // Reload danh sách ảnh
+                    const container = document.getElementById('imagesContainer');
+                    const sanPhamChiTietId = container.dataset.sanPhamChiTietId;
+                    loadImages(sanPhamChiTietId);
+                    
+                    // Cập nhật giao diện chính - cần lấy URL của ảnh vừa đặt làm chính
+                    // Tạm thời reload lại toàn bộ để đảm bảo hiển thị đúng
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Lỗi: ' + (data.message || 'Không thể đặt ảnh chính'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Có lỗi xảy ra khi đặt ảnh chính: ' + error.message, 'error');
+            });
+        }
+
+        // Xóa ảnh
+        function deleteImage(imageId) {
+            if (!confirm('Bạn có chắc muốn xóa ảnh này?')) {
+                return;
+            }
+
+            fetch(`/Admin/AnhSanPham/DeleteImage?imageId=${imageId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON response:', text);
+                        throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                    }
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotification('Đã xóa ảnh thành công!', 'success');
+                    // Reload danh sách ảnh
+                    const container = document.getElementById('imagesContainer');
+                    const sanPhamChiTietId = container.dataset.sanPhamChiTietId;
+                    loadImages(sanPhamChiTietId);
+                    
+                    // Cập nhật giao diện chính nếu xóa ảnh chính
+                    // Tạm thời reload lại toàn bộ để đảm bảo hiển thị đúng
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Lỗi: ' + (data.message || 'Không thể xóa ảnh'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Có lỗi xảy ra khi xóa ảnh: ' + error.message, 'error');
+            });
+        }
+
+        // Cập nhật hiển thị ảnh trong bảng chính
+        function updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage) {
+            // Tìm container ảnh sản phẩm trong bảng
+            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
+            if (!container) {
+                console.warn('Không tìm thấy container cho sanPhamChiTietId:', sanPhamChiTietId);
+                return;
+            }
+
+            const previewDiv = container.querySelector('.images-preview');
+            if (!previewDiv) {
+                console.warn('Không tìm thấy preview div');
+                return;
+            }
+
+            // Nếu là ảnh chính hoặc chưa có ảnh nào, cập nhật hiển thị
+            if (isMainImage || previewDiv.querySelector('span.text-muted')) {
+                previewDiv.innerHTML = `
+                    <img src="${imageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
+                `;
+            }
+        }
+
+        // Cập nhật hiển thị ảnh sau khi đặt ảnh chính
+        function updateMainImageDisplay(sanPhamChiTietId, mainImageUrl) {
+            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
+            if (!container) return;
+
+            const previewDiv = container.querySelector('.images-preview');
+            if (!previewDiv) return;
+
+            if (mainImageUrl) {
+                previewDiv.innerHTML = `
+                    <img src="${mainImageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
+                `;
+            } else {
+                previewDiv.innerHTML = '<span class="text-muted small">Chưa có ảnh</span>';
+            }
+        }
     </script>
 }

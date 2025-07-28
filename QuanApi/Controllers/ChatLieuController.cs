@@ -105,9 +105,28 @@ namespace QuanApi.Controllers
         }
 
         [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> GetPaged(int page = 1, int pageSize = 10, string? keyword = null, string? trangThai = null)
         {
             var query = _context.ChatLieus.AsQueryable();
+
+            // Lọc theo từ khóa
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                query = query.Where(x => x.TenChatLieu.Contains(keyword) || x.MaChatLieu.Contains(keyword));
+            }
+
+            // Lọc theo trạng thái
+            if (!string.IsNullOrEmpty(trangThai))
+            {
+                if (trangThai == "active")
+                {
+                    query = query.Where(x => x.TrangThai == true);
+                }
+                else if (trangThai == "inactive")
+                {
+                    query = query.Where(x => x.TrangThai == false);
+                }
+            }
 
             var total = await query.CountAsync();
             var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

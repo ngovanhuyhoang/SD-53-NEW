@@ -13,7 +13,7 @@ namespace QuanApi.Data
         public string MaAnh { get; set; }
 
         [Required]
-        public Guid IDSanPham { get; set; }
+        public Guid IDSanPhamChiTiet { get; set; }
 
         [Required]
         [MaxLength(255)]
@@ -33,7 +33,7 @@ namespace QuanApi.Data
         public string? NguoiCapNhat { get; set; }
 
         public bool TrangThai { get; set; } = true;
-        [ForeignKey("IDSanPham")]
-        public virtual SanPham? SanPham { get; set; }
+        [ForeignKey("IDSanPhamChiTiet")]
+        public virtual SanPhamChiTiet? SanPhamChiTiet { get; set; }
     }
 }

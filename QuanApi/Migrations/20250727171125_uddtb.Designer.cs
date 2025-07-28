@@ -4,6 +4,7 @@ using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace QuanApi.Migrations
 {
     [DbContext(typeof(BanQuanAu1DbContext))]
-    partial class BanQuanAu1DbContextModelSnapshot : ModelSnapshot
+    [Migration("20250727171125_uddtb")]
+    partial class uddtb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1060,6 +1063,48 @@ namespace QuanApi.Migrations
                     b.HasKey("IDPhuongThucThanhToan");
 
                     b.ToTable("PhuongThucThanhToans");
+
+                    b.HasData(
+                        new
+                        {
+                            IDPhuongThucThanhToan = new Guid("11111111-1111-1111-1111-111111111111"),
+                            MaPhuongThuc = "TIEN_MAT",
+                            MoTa = "Thanh toán bằng tiền mặt khi nhận hàng",
+                            NgayTao = new DateTime(2025, 7, 27, 17, 11, 24, 298, DateTimeKind.Utc).AddTicks(8850),
+                            NguoiTao = "System",
+                            TenPhuongThuc = "Thanh toán tiền mặt",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDPhuongThucThanhToan = new Guid("22222222-2222-2222-2222-222222222222"),
+                            MaPhuongThuc = "CHUYEN_KHOAN",
+                            MoTa = "Thanh toán bằng chuyển khoản ngân hàng",
+                            NgayTao = new DateTime(2025, 7, 27, 17, 11, 24, 298, DateTimeKind.Utc).AddTicks(8853),
+                            NguoiTao = "System",
+                            TenPhuongThuc = "Chuyển khoản ngân hàng",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDPhuongThucThanhToan = new Guid("33333333-3333-3333-3333-333333333333"),
+                            MaPhuongThuc = "VIETTEL_PAY",
+                            MoTa = "Thanh toán qua ví điện tử ViettelPay",
+                            NgayTao = new DateTime(2025, 7, 27, 17, 11, 24, 298, DateTimeKind.Utc).AddTicks(8856),
+                            NguoiTao = "System",
+                            TenPhuongThuc = "ViettelPay",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDPhuongThucThanhToan = new Guid("44444444-4444-4444-4444-444444444444"),
+                            MaPhuongThuc = "MOMO",
+                            MoTa = "Thanh toán qua ví điện tử MoMo",
+                            NgayTao = new DateTime(2025, 7, 27, 17, 11, 24, 298, DateTimeKind.Utc).AddTicks(8858),
+                            NguoiTao = "System",
+                            TenPhuongThuc = "MoMo",
+                            TrangThai = true
+                        });
                 });
 
             modelBuilder.Entity("QuanApi.Data.SanPham", b =>

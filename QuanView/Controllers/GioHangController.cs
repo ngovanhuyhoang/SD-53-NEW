@@ -49,12 +49,17 @@ namespace QuanView.Controllers
                             {
                                 SanPham = new SanPham
                                 {
-                                    TenSanPham = spct.TenSanPham,
-                                    AnhSanPhams = new List<AnhSanPham> {
-                                        new AnhSanPham { UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg", LaAnhChinh = true }
-                                    }
+                                    TenSanPham = spct.TenSanPham
                                 },
-                                GiaBan = spct.price 
+                                GiaBan = spct.price,
+                                AnhSanPhams = new List<AnhSanPham>
+                                {
+                                    new AnhSanPham
+                                    {
+                                        UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                        LaAnhChinh = true
+                                    }
+                                }
                             };
                         }
                     }
@@ -186,12 +191,17 @@ namespace QuanView.Controllers
                             {
                                 SanPham = new SanPham
                                 {
-                                    TenSanPham = spct.TenSanPham,
-                                    AnhSanPhams = new List<AnhSanPham> {
-                                        new AnhSanPham { UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg", LaAnhChinh = true }
-                                    }
+                                    TenSanPham = spct.TenSanPham
                                 },
-                                GiaBan = spct.price
+                                GiaBan = spct.price,
+                                AnhSanPhams = new List<AnhSanPham>
+                                {
+                                    new AnhSanPham
+                                    {
+                                        UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                        LaAnhChinh = true
+                                    }
+                                }
                             };
                         }
                     }
@@ -210,7 +220,7 @@ namespace QuanView.Controllers
                             sanPham = new
                             {
                                 tenSanPham = item.SanPhamChiTiet?.SanPham?.TenSanPham,
-                                anhSanPhams = item.SanPhamChiTiet?.SanPham?.AnhSanPhams?.Select(a => new { urlAnh = a.UrlAnh, laAnhChinh = a.LaAnhChinh }).ToList()
+                                anhSanPhams = item.SanPhamChiTiet?.AnhSanPhams?.Select(a => new { urlAnh = a.UrlAnh, laAnhChinh = a.LaAnhChinh }).ToList()
                             }
                         }
                     }).ToList()

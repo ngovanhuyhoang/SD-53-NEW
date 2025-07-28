@@ -50,7 +50,6 @@ namespace BanQuanAu1.Web.Data
                 .HasForeignKey(nv => nv.IDVaiTro);
 
             // Seed data
-            SeedData.SeedPhuongThucThanhToan(modelBuilder);
         }
         public DbSet<QuanApi.Data.HoaTiet> HoaTiet { get; set; } = default!;
     }

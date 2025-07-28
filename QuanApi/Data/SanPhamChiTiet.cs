@@ -60,6 +60,7 @@ namespace QuanApi.Data
         [ForeignKey("IDHoaTiet")]
         public virtual HoaTiet? HoaTiet { get; set; }
 
+        public virtual ICollection<AnhSanPham>? AnhSanPhams { get; set; }
 
         public virtual ICollection<ChiTietGioHang>? ChiTietGioHangs { get; set; }
 

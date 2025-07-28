@@ -64,6 +64,81 @@
         <h1 class="h3 mb-0 text-gray-800">Quản lý đơn hàng</h1>
     </div>
 
+    <!-- Bộ lọc -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Bộ lọc</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Index")" id="filterForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="trangThai">Trạng thái:</label>
+                            <select class="form-control" id="trangThai" name="trangThai">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="Chờ xác nhận">Chờ xác nhận</option>
+                                <option value="Đã xác nhận">Đã xác nhận</option>
+                                <option value="Chờ lấy hàng">Chờ lấy hàng</option>
+                                <option value="Đã lấy hàng">Đã lấy hàng</option>
+                                <option value="Chờ giao hàng">Chờ giao hàng</option>
+                                <option value="Đang giao hàng">Đang giao hàng</option>
+                                <option value="Đã giao">Đã giao</option>
+                                <option value="Giao hàng thành công">Giao hàng thành công</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="tuNgay">Từ ngày:</label>
+                            <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@Context.Request.Query["tuNgay"]">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="denNgay">Đến ngày:</label>
+                            <input type="date" class="form-control" id="denNgay" name="denNgay" value="@Context.Request.Query["denNgay"]">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="loaiDonHang">Loại đơn hàng:</label>
+                            <select class="form-control" id="loaiDonHang" name="loaiDonHang">
+                                <option value="">Tất cả</option>
+                                <option value="online">Đơn hàng Online</option>
+                                <option value="taiquay">Đơn hàng tại quầy</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="khachHang">Tìm kiếm khách hàng:</label>
+                            <input type="text" class="form-control" id="khachHang" name="khachHang" placeholder="Nhập tên hoặc SĐT khách hàng" value="@Context.Request.Query["khachHang"]">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="maDonHang">Mã đơn hàng:</label>
+                            <input type="text" class="form-control" id="maDonHang" name="maDonHang" placeholder="Nhập mã đơn hàng" value="@Context.Request.Query["maDonHang"]">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Lọc
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Xóa bộ lọc
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -132,11 +207,13 @@
                                             var statusClass = hoaDon.TrangThai switch
                                             {
                                                 "Chờ xác nhận" => "status-pending",
-                                                "Chờ giao hàng" => "status-confirmed",
-                                                "Đang vận chuyển" => "status-shipping",
-                                                "Đã giao hàng" => "status-delivered",
-                                                "Thành công" => "status-success",
-                                                "Hoàn thành" => "status-completed",
+                                                "Đã xác nhận" => "status-confirmed",
+                                                "Chờ lấy hàng" => "status-pending",
+                                                "Đã lấy hàng" => "status-confirmed",
+                                                "Chờ giao hàng" => "status-shipping",
+                                                "Đang giao hàng" => "status-shipping",
+                                                "Đã giao" => "status-delivered",
+                                                "Giao hàng thành công" => "status-success",
                                                 _ => "status-pending"
                                             };
                                         }
@@ -163,4 +240,98 @@
             }
         </div>
     </div>
-</div> 
+
+    <!-- Thống kê -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Tổng đơn hàng
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Đơn hàng Online
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Đơn hàng tại quầy
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-store fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Chờ xử lý
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => h.TrangThai == "Chờ xác nhận")</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Giữ lại giá trị đã chọn trong dropdown
+    $(document).ready(function() {
+        // Lấy giá trị từ URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Set giá trị cho dropdown trạng thái
+        const trangThai = urlParams.get('trangThai');
+        if (trangThai) {
+            $('#trangThai').val(trangThai);
+        }
+        
+        // Set giá trị cho dropdown loại đơn hàng
+        const loaiDonHang = urlParams.get('loaiDonHang');
+        if (loaiDonHang) {
+            $('#loaiDonHang').val(loaiDonHang);
+        }
+    });
+</script> 

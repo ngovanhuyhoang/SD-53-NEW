@@ -141,7 +141,13 @@ media (max-width: 900px) {
                 <input type="number" id="soLuong" class="form-control" style="width:60px;display:inline-block;" min="1" value="1">
                 <button type="button" class="product-detail-qty-btn" id="btnPlus">+</button>
             </div>
-            <button class="product-detail-addcart" onclick="themGioHang()">Thêm vào giỏ hàng</button>
+            
+            <!-- Hiển thị thông tin tồn kho -->
+            <div class="mb-3" id="stockInfo">
+                <span class="text-muted">Chọn size và màu để xem thông tin tồn kho</span>
+            </div>
+            
+            <button class="product-detail-addcart" onclick="themGioHang()">Chọn size và màu</button>
         </div>
     </div>
 </div>
@@ -154,13 +160,20 @@ function renderOptions() {
     const colors = [...new Set(bienThes.map(b => b.Mau))];
     let colorHtml = '';
     colors.forEach(mau => {
-        colorHtml += `<button type="button" class="product-detail-btn-option" data-mau="${mau}">${mau}</button>`;
+        const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
+        const stockClass = stockForColor > 10 ? "text-success" : stockForColor > 0 ? "text-warning" : "text-danger";
+        const stockText = stockForColor > 0 ? `(${stockForColor})` : "(Hết)";
+        colorHtml += `<button type="button" class="product-detail-btn-option" data-mau="${mau}">${mau} <small class="${stockClass}">${stockText}</small></button>`;
     });
     $('#colorOptions').html(colorHtml);
+    
     const sizes = [...new Set(bienThes.map(b => b.Size))];
     let sizeHtml = '';
     sizes.forEach(size => {
-        sizeHtml += `<button type="button" class="product-detail-btn-option" data-size="${size}">${size}</button>`;
+        const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
+        const stockClass = stockForSize > 10 ? "text-success" : stockForSize > 0 ? "text-warning" : "text-danger";
+        const stockText = stockForSize > 0 ? `(${stockForSize})` : "(Hết)";
+        sizeHtml += `<button type="button" class="product-detail-btn-option" data-size="${size}">${size} <small class="${stockClass}">${stockText}</small></button>`;
     });
     $('#sizeOptions').html(sizeHtml);
 }
@@ -174,22 +187,66 @@ function updatePriceAndQty() {
             $('#giaGoc').text('');
         }
         $('#soLuong').attr('max', bienThe.SoLuong);
+        
+        // Cập nhật trạng thái nút thêm vào giỏ hàng
+        const addCartBtn = $('.product-detail-addcart');
+        if (bienThe.SoLuong <= 0) {
+            addCartBtn.text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
+        } else {
+            addCartBtn.text('Thêm vào giỏ hàng').prop('disabled', false).css('background', '#d32f2f');
+        }
+        
+        // Hiển thị thông tin số lượng
+        updateStockInfo(bienThe.SoLuong);
     } else {
         $('#giaBan').text('');
         $('#giaGoc').text('');
         $('#soLuong').attr('max', 1);
+        $('.product-detail-addcart').text('Chọn size và màu').prop('disabled', true).css('background', '#6c757d');
+        updateStockInfo(0);
     }
 }
+
+function updateStockInfo(stock) {
+    let stockHtml = '';
+    if (stock <= 0) {
+        stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Hết hàng</span>';
+    } else if (stock <= 5) {
+        stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Chỉ còn ${stock} sản phẩm</span>`;
+    } else {
+        stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Còn ${stock} sản phẩm</span>`;
+    }
+    $('#stockInfo').html(stockHtml);
+}
 $(document).on('click', '.product-detail-btn-option[data-mau]', function() {
+    const mau = $(this).data('mau');
+    const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
+    
+    // Không cho phép chọn màu hết hàng
+    if (stockForColor <= 0) {
+        alert('Màu này đã hết hàng!');
+        return;
+    }
+    
     $('.product-detail-btn-option[data-mau]').removeClass('selected');
     $(this).addClass('selected');
-    selectedColor = $(this).data('mau');
+    selectedColor = mau;
     updatePriceAndQty();
 });
+
 $(document).on('click', '.product-detail-btn-option[data-size]', function() {
+    const size = $(this).data('size');
+    const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
+    
+    // Không cho phép chọn size hết hàng
+    if (stockForSize <= 0) {
+        alert('Size này đã hết hàng!');
+        return;
+    }
+    
     $('.product-detail-btn-option[data-size]').removeClass('selected');
     $(this).addClass('selected');
-    selectedSize = $(this).data('size');
+    selectedSize = size;
     updatePriceAndQty();
 });
 $('#btnMinus').on('click', function() {
@@ -209,10 +266,34 @@ $(document).ready(function() {
     if (firstSize.length) { firstSize.click(); }
 });
 function themGioHang() {
-    if (!selectedSize || !selectedColor) return alert('Vui lòng chọn size và màu!');
-    const soLuong = parseInt($('#soLuong').val());
+    if (!selectedSize || !selectedColor) {
+        alert('Vui lòng chọn size và màu!');
+        return;
+    }
+    
     const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
-    if (!bienThe) return alert('Vui lòng chọn đúng biến thể!');
+    if (!bienThe) {
+        alert('Vui lòng chọn đúng biến thể!');
+        return;
+    }
+    
+    // Kiểm tra số lượng tồn kho
+    if (bienThe.SoLuong <= 0) {
+        alert('Sản phẩm đã hết hàng!');
+        return;
+    }
+    
+    const soLuong = parseInt($('#soLuong').val());
+    if (soLuong <= 0) {
+        alert('Số lượng phải lớn hơn 0!');
+        return;
+    }
+    
+    if (soLuong > bienThe.SoLuong) {
+        alert(`Số lượng vượt quá tồn kho! Hiện có: ${bienThe.SoLuong}`);
+        return;
+    }
+    
     $.post('/GioHang/Add', {
         idsp: bienThe.IDSanPhamChiTiet,
         soluong: soLuong

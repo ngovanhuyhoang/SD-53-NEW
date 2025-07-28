@@ -40,7 +40,9 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.MauSac)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.HoaTiet)
-                .Include(s => s.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
+
                 .Select(s => new SanPhamDto
                 {
                     IDSanPham = s.IDSanPham,
@@ -61,15 +63,19 @@ namespace QuanApi.Controllers
                     TenLoaiOng = s.LoaiOng.TenLoaiOng,
                     TenKieuDang = s.KieuDang.TenKieuDang,
                     TenLungQuan = s.LungQuan.TenLungQuan,
-                    // Lấy ảnh chính hoặc ảnh đầu tiên
-                    AnhChinh = s.AnhSanPhams
+                    // Lấy ảnh chính hoặc ảnh đầu tiên từ SanPhamChiTiet đầu tiên
+                    AnhChinh = s.SanPhamChiTiets
+                        .Where(ct => ct.AnhSanPhams != null)
+                        .SelectMany(ct => ct.AnhSanPhams)
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
                         .ThenBy(a => a.NgayTao)
                         .Select(a => a.UrlAnh)
                         .FirstOrDefault(),
-                    // Lấy tất cả ảnh sản phẩm
-                    DanhSachAnh = s.AnhSanPhams
+                    // Lấy tất cả ảnh sản phẩm từ tất cả SanPhamChiTiet
+                    DanhSachAnh = s.SanPhamChiTiets
+                        .Where(ct => ct.AnhSanPhams != null)
+                        .SelectMany(ct => ct.AnhSanPhams)
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
                         .ThenBy(a => a.NgayTao)
@@ -92,7 +98,8 @@ namespace QuanApi.Controllers
                         GiaBan = ct.GiaBan,
                         TenKichCo = ct.KichCo.TenKichCo,
                         TenMauSac = ct.MauSac.TenMauSac,
-                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null
+                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
+                        AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
                     }).ToList()
                 })
                 .ToListAsync();
@@ -204,19 +211,19 @@ namespace QuanApi.Controllers
             return _context.SanPhams.Any(e => e.IDSanPham == id);
         }
 
-        // Thêm ảnh cho sản phẩm
-        [HttpPost("{id}/images")]
-        public async Task<IActionResult> AddProductImage(Guid id, [FromBody] AddAnhSanPhamDto dto)
+        // Thêm ảnh cho sản phẩm chi tiết
+        [HttpPost("chitiet/{sanPhamChiTietId}/images")]
+        public async Task<IActionResult> AddProductImage(Guid sanPhamChiTietId, [FromBody] AddAnhSanPhamDto dto)
         {
-            var sanPham = await _context.SanPhams.FindAsync(id);
-            if (sanPham == null)
-                return NotFound("Không tìm thấy sản phẩm.");
+            var sanPhamChiTiet = await _context.SanPhamChiTiets.FindAsync(sanPhamChiTietId);
+            if (sanPhamChiTiet == null)
+                return NotFound("Không tìm thấy sản phẩm chi tiết.");
 
             var anhSanPham = new AnhSanPham
             {
                 IDAnhSanPham = Guid.NewGuid(),
                 MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
-                IDSanPham = id,
+                IDSanPhamChiTiet = sanPhamChiTietId,
                 UrlAnh = dto.UrlAnh,
                 LaAnhChinh = dto.LaAnhChinh,
                 NgayTao = DateTime.UtcNow,
@@ -228,7 +235,7 @@ namespace QuanApi.Controllers
             if (dto.LaAnhChinh)
             {
                 var anhChinhCu = await _context.AnhSanPhams
-                    .Where(a => a.IDSanPham == id && a.LaAnhChinh && a.TrangThai)
+                    .Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.LaAnhChinh && a.TrangThai)
                     .FirstOrDefaultAsync();
                 
                 if (anhChinhCu != null)
@@ -244,7 +251,7 @@ namespace QuanApi.Controllers
 
             return Ok(new
             {
-                message = "Thêm ảnh sản phẩm thành công.",
+                message = "Thêm ảnh sản phẩm chi tiết thành công.",
                 anhSanPham.IDAnhSanPham,
                 anhSanPham.MaAnh,
                 anhSanPham.UrlAnh,
@@ -283,7 +290,7 @@ namespace QuanApi.Controllers
 
             // Bỏ ảnh chính cũ
             var anhChinhCu = await _context.AnhSanPhams
-                .Where(a => a.IDSanPham == anhSanPham.IDSanPham && 
+                .Where(a => a.IDSanPhamChiTiet == anhSanPham.IDSanPhamChiTiet && 
                            a.LaAnhChinh && 
                            a.TrangThai && 
                            a.IDAnhSanPham != imageId)
@@ -306,23 +313,23 @@ namespace QuanApi.Controllers
             return Ok("Đã đặt ảnh làm ảnh chính.");
         }
 
-        // Lấy danh sách ảnh của sản phẩm
-        [HttpGet("{id}/images")]
-        public async Task<IActionResult> GetProductImages(Guid id)
+        // Lấy danh sách ảnh của sản phẩm chi tiết
+        [HttpGet("chitiet/{sanPhamChiTietId}/images")]
+        public async Task<IActionResult> GetProductImages(Guid sanPhamChiTietId)
         {
-            var sanPham = await _context.SanPhams.FindAsync(id);
-            if (sanPham == null)
-                return NotFound("Không tìm thấy sản phẩm.");
+            var sanPhamChiTiet = await _context.SanPhamChiTiets.FindAsync(sanPhamChiTietId);
+            if (sanPhamChiTiet == null)
+                return NotFound("Không tìm thấy sản phẩm chi tiết.");
 
             var images = await _context.AnhSanPhams
-                .Where(a => a.IDSanPham == id && a.TrangThai)
+                .Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai)
                 .OrderByDescending(a => a.LaAnhChinh)
                 .ThenBy(a => a.NgayTao)
                 .Select(a => new AnhSanPhamDto
                 {
                     IDAnhSanPham = a.IDAnhSanPham,
                     MaAnh = a.MaAnh,
-                    IDSanPham = a.IDSanPham,
+                    IDSanPhamChiTiet = a.IDSanPhamChiTiet,
                     UrlAnh = a.UrlAnh,
                     LaAnhChinh = a.LaAnhChinh,
                     NgayTao = a.NgayTao,

@@ -1,7 +1,45 @@
 ﻿@model QuanApi.Data.ThuongHieu
 
+<style>
+    .thuonghieu-details-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 0;
+    }
+    .thuonghieu-details-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+        width: 180px;
+        border: none;
+    }
+    .thuonghieu-details-table td {
+        border: none;
+        color: #222;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #e6f4ea;
+        color: #218838;
+        border: none;
+    }
+    .status-inactive {
+        background: #f0f0f0;
+        color: #888;
+    }
+    .status-active {
+        background: #e6f4ea;
+        color: #218838;
+    }
+</style>
+
 <div class="table-responsive">
-    <table class="table table-bordered">
+    <table class="table thuonghieu-details-table">
         <tr>
             <th>Mã thương hiệu</th>
             <td>@Model.MaThuongHieu</td>
@@ -25,18 +63,17 @@
         <tr>
             <th>Người cập nhật</th>
             <td>@(string.IsNullOrEmpty(Model.NguoiCapNhat) || Model.NguoiCapNhat == "unknown" ? "Không rõ" : Model.NguoiCapNhat)</td>
-
         </tr>
         <tr>
             <th>Trạng thái</th>
             <td>
                 @if (Model.TrangThai)
                 {
-                    <span class="badge bg-success">Hoạt động</span>
+                    <span class="status-badge status-active">Hoạt động</span>
                 }
                 else
                 {
-                    <span class="badge bg-secondary">Ngừng hoạt động</span>
+                    <span class="status-badge status-inactive">Ngừng hoạt động</span>
                 }
             </td>
         </tr>

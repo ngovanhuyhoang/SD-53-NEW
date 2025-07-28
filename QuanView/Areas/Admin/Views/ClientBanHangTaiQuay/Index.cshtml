@@ -31,6 +31,7 @@
                     </div>
                     <button class="btn btn-outline-secondary btn-sm mt-2" onclick="showCustomerModal()">Chọn tài khoản</button>
                     <button class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
+                <button class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openAddAddressModal()">Thêm địa chỉ mới</button>
                 </div>
             </div>
 
@@ -69,6 +70,11 @@
                     </div>
                     <div class="mb-2">
                         <input type="text" class="form-control" id="shipNote" placeholder="Ghi chú">
+                    </div>
+                    <div class="mb-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveAddressToCustomer()">
+                            <i class="bi bi-save"></i> Lưu địa chỉ cho khách hàng
+                        </button>
                     </div>
                 </div>
             </div>
@@ -240,6 +246,78 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal tạo địa chỉ mới -->
+<div class="modal fade" id="addAddressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm địa chỉ mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAddressForm">
+                    <div class="mb-3">
+                        <label class="form-label">Tên người nhận</label>
+                        <input type="text" class="form-control" id="newAddressName" placeholder="Nhập tên người nhận">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="newAddressPhone" placeholder="Nhập số điện thoại">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Địa chỉ chi tiết</label>
+                        <textarea class="form-control" id="newAddressDetail" rows="3" placeholder="Nhập địa chỉ chi tiết (số nhà, đường, phường, quận, tỉnh/thành phố)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="newAddressDefault">
+                            <label class="form-check-label" for="newAddressDefault">
+                                Đặt làm địa chỉ mặc định
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="createNewAddress()">Tạo địa chỉ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chọn địa chỉ -->
+<div class="modal fade" id="selectAddressModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn địa chỉ giao hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddAddressModal()">
+                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
+                    </button>
+                </div>
+                <div id="addressList">
+                    <!-- Danh sách địa chỉ sẽ được load ở đây -->
+                </div>
+                <div id="noAddressMessage" style="display:none;" class="text-center py-4">
+                    <i class="bi bi-geo-alt" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="mt-2 text-muted">Khách hàng chưa có địa chỉ nào</p>
+                    <button type="button" class="btn btn-primary" onclick="openAddAddressModal()">
+                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ đầu tiên
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
             </div>
         </div>
     </div>
@@ -546,14 +624,27 @@
 
     // Render modal chọn sản phẩm
     function renderProductModal() {
+        // Lọc sản phẩm có số lượng > 0
+        let availableProducts = products.filter(p => p.stock > 0);
+        
+        if (availableProducts.length === 0) {
+            $('#productList').html(`
+                <div class="text-center py-4">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: #ffc107;"></i>
+                    <p class="mt-2 text-muted">Không có sản phẩm nào trong kho</p>
+                </div>
+            `);
+            return;
+        }
+        
         let html = `<table class="table table-hover">
             <thead>
                 <tr>
-                    <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Hành động</th>
+                    <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Tồn kho</th><th>Hành động</th>
                 </tr>
             </thead>
             <tbody>
-                ${products.map(p => `
+                ${availableProducts.map(p => `
                     <tr>
                         <td><img src="${p.img}" width="60"/></td>
                         <td>${p.name}</td>
@@ -569,7 +660,8 @@
 </td>
                         <td>${p.size}</td>
                         <td>${p.color}</td>
-                        <td><button class="btn btn-success btn-sm" onclick="addProductToInvoice('${p.id}')">Chọn</button></td>
+                        <td><span class="badge ${p.stock > 10 ? 'bg-success' : p.stock > 5 ? 'bg-warning' : 'bg-danger'}">${p.stock}</span></td>
+                        <td><button class="btn btn-success btn-sm" onclick="addProductToInvoice('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>Chọn</button></td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -582,19 +674,26 @@
         let prod = products.find(p => p.id == productId);
         let inv = invoices[currentInvoice];
         let exist = inv.products.find(p => p.id == productId);
-        let maxQty = prod.stock || 1; // cần có trường stock
+        let maxQty = prod.stock || 0;
+
+        // Kiểm tra sản phẩm có tồn tại và có hàng không
+        if (!prod) {
+            alert('Không tìm thấy sản phẩm!');
+            return;
+        }
+        
+        if (maxQty <= 0) {
+            alert('Sản phẩm đã hết hàng!');
+            return;
+        }
 
         if (exist) {
             if (exist.qty + 1 > maxQty) {
-                alert('Vượt quá số lượng tồn kho!');
+                alert(`Vượt quá số lượng tồn kho! Hiện có: ${maxQty}`);
                 return;
             }
             exist.qty += 1;
         } else {
-            if (maxQty < 1) {
-                alert('Sản phẩm đã hết hàng!');
-                return;
-            }
             inv.products.push({ ...prod, qty: 1 });
         }
         $('#productModal').modal('hide');
@@ -636,6 +735,11 @@
         $('#discountCode').val('');
         discountValue = 0;
         
+        // Nếu đang bật giao hàng thì tự động load địa chỉ
+        if (useShipping) {
+            loadCustomerAddress();
+        }
+        
         updatePaymentInfo();
     }
 
@@ -645,26 +749,44 @@
         if (useShipping) {
             $('#shippingFormCard').show();
             $('#btnShowAddress').show();
+            $('#btnAddAddress').show();
             // Nếu đã chọn khách hàng thì tự động điền địa chỉ
             if (selectedCustomer) {
-                $.get('/api/BanHangTaiQuay/dia-chi-khach-hang', { customerId: selectedCustomer.id }, function(data) {
-                    if (data) {
-                        $('#shipName').val(data.tenNguoiNhan || selectedCustomer.name);
-                        $('#shipPhone').val(data.sdtNguoiNhan || selectedCustomer.phone);
-                        $('#shipAddress').val(data.diaChiChiTiet || '');
-                    } else {
-                        // Nếu không có địa chỉ thì xóa trắng
-                        $('#shipName').val(selectedCustomer.name);
-                        $('#shipPhone').val(selectedCustomer.phone);
-                        $('#shipAddress').val('');
-                    }
-                });
+                loadCustomerAddress();
             }
         } else {
             $('#shippingFormCard').hide();
             $('#btnShowAddress').hide();
+            $('#btnAddAddress').hide();
         }
         updatePaymentInfo();
+    }
+
+    // Load địa chỉ khách hàng
+    function loadCustomerAddress() {
+        if (!selectedCustomer) return;
+        
+        $.get('/Admin/ClientBanHangTaiQuay/dia-chi-khach-hang', { customerId: selectedCustomer.id }, function(data) {
+            if (data && data.tenNguoiNhan) {
+                // Có địa chỉ, điền thông tin
+                $('#shipName').val(data.tenNguoiNhan);
+                $('#shipPhone').val(data.sdtNguoiNhan || selectedCustomer.phone);
+                $('#shipAddress').val(data.diaChiChiTiet || '');
+                console.log('Đã điền địa chỉ khách hàng:', data);
+            } else {
+                // Không có địa chỉ, điền thông tin cơ bản
+                $('#shipName').val(selectedCustomer.name);
+                $('#shipPhone').val(selectedCustomer.phone);
+                $('#shipAddress').val('');
+                console.log('Không có địa chỉ, điền thông tin cơ bản');
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('Lỗi khi lấy địa chỉ khách hàng:', error);
+            // Fallback: điền thông tin cơ bản
+            $('#shipName').val(selectedCustomer.name);
+            $('#shipPhone').val(selectedCustomer.phone);
+            $('#shipAddress').val('');
+        });
     }
 
 
@@ -840,21 +962,307 @@
             renderProductModal();
             $('#productModal').modal('show');
         });
+
+
     });
 
     function loadPaymentMethods() {
-    $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan', function(data) {
-        let html = '';
-        data.forEach(function(method) {
-            html += `<option value="${method.maPhuongThuc}">${method.tenPhuongThuc}</option>`;
+        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan', function(data) {
+            let html = '';
+            data.forEach(function(method) {
+                html += `<option value="${method.maPhuongThuc}">${method.tenPhuongThuc}</option>`;
+            });
+            $('#paymentMethod').html(html);
+            // Set mặc định từ DB (phương thức đầu tiên)
+            if (data.length > 0) {
+                selectedPaymentCode = data[0].maPhuongThuc;
+                $('#selectedPaymentMethod').text(data[0].tenPhuongThuc);
+                $('#paymentMethod').val(selectedPaymentCode);
+            }
         });
-        $('#paymentMethod').html(html);
-        // Set mặc định từ DB (phương thức đầu tiên)
-        if (data.length > 0) {
-            selectedPaymentCode = data[0].maPhuongThuc;
-            $('#selectedPaymentMethod').text(data[0].tenPhuongThuc);
-            $('#paymentMethod').val(selectedPaymentCode);
+    }
+
+    // Mở modal chọn địa chỉ
+    function focusAddressForm() {
+        if (!selectedCustomer) {
+            alert('Vui lòng chọn khách hàng trước!');
+            return;
         }
+        
+        // Bật giao hàng nếu chưa bật
+        if (!useShipping) {
+            $('#shippingSwitch').prop('checked', true);
+            toggleShipping();
+        }
+        
+        // Mở modal chọn địa chỉ
+        openSelectAddressModal();
+    }
+
+    // Mở modal thêm địa chỉ mới
+    function openAddAddressModal() {
+        if (!selectedCustomer) {
+            alert('Vui lòng chọn khách hàng trước!');
+            return;
+        }
+        
+        // Đóng modal chọn địa chỉ nếu đang mở
+        $('#selectAddressModal').modal('hide');
+        
+        // Điền thông tin mặc định từ khách hàng
+        $('#newAddressName').val(selectedCustomer.name);
+        $('#newAddressPhone').val(selectedCustomer.phone);
+        $('#newAddressDetail').val('');
+        $('#newAddressDefault').prop('checked', false);
+        
+        // Mở modal thêm địa chỉ sau khi đóng modal chọn địa chỉ
+        setTimeout(function() {
+            $('#addAddressModal').modal('show');
+        }, 300);
+    }
+
+    // Mở modal chọn địa chỉ
+    function openSelectAddressModal() {
+        if (!selectedCustomer) {
+            alert('Vui lòng chọn khách hàng trước!');
+            return;
+        }
+        
+        // Load danh sách địa chỉ
+        loadCustomerAddresses();
+        
+        $('#selectAddressModal').modal('show');
+    }
+
+    // Load danh sách địa chỉ của khách hàng
+    function loadCustomerAddresses() {
+        if (!selectedCustomer) return;
+        
+        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang', { customerId: selectedCustomer.id }, function(data) {
+            if (data && Array.isArray(data) && data.length > 0) {
+                renderAddressList(data);
+                $('#addressList').show();
+                $('#noAddressMessage').hide();
+            } else {
+                $('#addressList').hide();
+                $('#noAddressMessage').show();
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('Lỗi khi lấy danh sách địa chỉ:', error);
+            $('#addressList').hide();
+            $('#noAddressMessage').show();
+        });
+    }
+
+    // Render danh sách địa chỉ
+    function renderAddressList(addresses) {
+        let html = '';
+        addresses.forEach((address, index) => {
+            const isDefault = address.laMacDinh ? '<span class="badge bg-primary ms-2">Mặc định</span>' : '';
+            const isSelected = (address.diaChiChiTiet === $('#shipAddress').val()) ? 'border-primary' : 'border-light';
+            
+            // Escape các ký tự đặc biệt để tránh lỗi JavaScript
+            const safeTenNguoiNhan = (address.tenNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+            const safeSdtNguoiNhan = (address.sdtNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+            const safeDiaChiChiTiet = (address.diaChiChiTiet || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+            
+            html += `
+                <div class="card mb-2 address-item ${isSelected}" style="cursor: pointer;" onclick="selectAddress('${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="card-title mb-1">
+                                    ${address.tenNguoiNhan || 'N/A'} ${isDefault}
+                                </h6>
+                                <p class="card-text mb-1">
+                                    <i class="bi bi-telephone"></i> ${address.sdtNguoiNhan || 'N/A'}
+                                </p>
+                                <p class="card-text text-muted mb-0">
+                                    <i class="bi bi-geo-alt"></i> ${address.diaChiChiTiet || 'N/A'}
+                                </p>
+                            </div>
+                            <div class="ms-2">
+                                <i class="bi bi-check-circle-fill text-primary" style="display: ${isSelected.includes('border-primary') ? 'block' : 'none'};"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        $('#addressList').html(html);
+    }
+
+    // Chọn địa chỉ
+    function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+        // Điền thông tin vào form giao hàng
+        $('#shipName').val(tenNguoiNhan);
+        $('#shipPhone').val(sdtNguoiNhan);
+        $('#shipAddress').val(diaChiChiTiet);
+        
+        // Đóng modal
+        $('#selectAddressModal').modal('hide');
+        
+        // Hiển thị thông báo
+        alert('Đã chọn địa chỉ giao hàng!');
+    }
+
+
+
+    // Thêm CSS cho modal chọn địa chỉ
+    $(document).ready(function() {
+        // Thêm CSS cho address-item
+        $('<style>')
+            .prop('type', 'text/css')
+            .html(`
+                .address-item {
+                    transition: all 0.3s ease;
+                    border: 2px solid #e9ecef;
+                }
+                .address-item:hover {
+                    border-color: #007bff;
+                    box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+                    transform: translateY(-1px);
+                }
+                .address-item.border-primary {
+                    border-color: #007bff;
+                    background-color: #f8f9ff;
+                }
+                .address-item .card-body {
+                    padding: 1rem;
+                }
+                .address-item .card-title {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #333;
+                }
+                .address-item .card-text {
+                    font-size: 0.9rem;
+                    line-height: 1.4;
+                }
+                .address-item .bi {
+                    margin-right: 0.5rem;
+                }
+            `)
+            .appendTo('head');
     });
-}
+
+
+
+    // Tạo địa chỉ mới
+    function createNewAddress() {
+        if (!selectedCustomer) {
+            alert('Vui lòng chọn khách hàng trước!');
+            return;
+        }
+
+        const addressData = {
+            idKhachHang: selectedCustomer.id,
+            diaChiChiTiet: $('#newAddressDetail').val().trim(),
+            tenNguoiNhan: $('#newAddressName').val().trim(),
+            sdtNguoiNhan: $('#newAddressPhone').val().trim(),
+            laMacDinh: $('#newAddressDefault').is(':checked')
+        };
+
+        // Validation
+        if (!addressData.diaChiChiTiet) {
+            alert('Vui lòng nhập địa chỉ chi tiết!');
+            return;
+        }
+
+        if (!addressData.tenNguoiNhan) {
+            alert('Vui lòng nhập tên người nhận!');
+            return;
+        }
+
+        // Gọi API tạo địa chỉ
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/tao-dia-chi',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(addressData),
+            success: function(response) {
+                alert('Tạo địa chỉ thành công!');
+                $('#addAddressModal').modal('hide');
+                
+                // Nếu đây là địa chỉ mặc định, tự động điền vào form giao hàng
+                if (addressData.laMacDinh && useShipping) {
+                    $('#shipName').val(addressData.tenNguoiNhan);
+                    $('#shipPhone').val(addressData.sdtNguoiNhan);
+                    $('#shipAddress').val(addressData.diaChiChiTiet);
+                }
+                
+                // Mở lại modal chọn địa chỉ và refresh danh sách
+                setTimeout(function() {
+                    $('#selectAddressModal').modal('show');
+                    loadCustomerAddresses();
+                }, 300);
+            },
+            error: function(xhr) {
+                let errorMessage = 'Lỗi khi tạo địa chỉ!';
+                if (xhr.responseText) {
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        errorMessage = error.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = xhr.responseText;
+                    }
+                }
+                alert(errorMessage);
+            }
+        });
+    }
+
+    // Lưu địa chỉ hiện tại cho khách hàng
+    function saveAddressToCustomer() {
+        if (!selectedCustomer) {
+            alert('Vui lòng chọn khách hàng trước!');
+            return;
+        }
+
+        const shipName = $('#shipName').val().trim();
+        const shipPhone = $('#shipPhone').val().trim();
+        const shipAddress = $('#shipAddress').val().trim();
+
+        if (!shipAddress) {
+            alert('Vui lòng nhập địa chỉ chi tiết!');
+            return;
+        }
+
+        if (!shipName) {
+            alert('Vui lòng nhập tên người nhận!');
+            return;
+        }
+
+        const addressData = {
+            idKhachHang: selectedCustomer.id,
+            diaChiChiTiet: shipAddress,
+            tenNguoiNhan: shipName,
+            sdtNguoiNhan: shipPhone,
+            laMacDinh: true // Đặt làm địa chỉ mặc định
+        };
+
+        // Gọi API tạo địa chỉ
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/tao-dia-chi',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(addressData),
+            success: function(response) {
+                alert('Lưu địa chỉ thành công!');
+            },
+            error: function(xhr) {
+                let errorMessage = 'Lỗi khi lưu địa chỉ!';
+                if (xhr.responseText) {
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        errorMessage = error.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = xhr.responseText;
+                    }
+                }
+                alert(errorMessage);
+            }
+        });
+    }
 </script>

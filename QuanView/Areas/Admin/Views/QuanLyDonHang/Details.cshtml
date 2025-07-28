@@ -2,18 +2,97 @@
 @using QuanView.Areas.Admin.Models
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
-    // Danh sách trạng thái theo quy trình
+    // Danh sách trạng thái theo quy trình mới - chỉ có các trạng thái "chờ"
     var statuses = new List<OrderStatus>
     {
         new OrderStatus { Name = "Chờ xác nhận", Icon = "fas fa-clock", Time = Model.NgayTao },
-        new OrderStatus { Name = "Chờ giao hàng", Icon = "fas fa-check", Time = null },
-        new OrderStatus { Name = "Đang vận chuyển", Icon = "fas fa-truck", Time = null },
-        new OrderStatus { Name = "Đã giao hàng", Icon = "fas fa-box", Time = null },
-        new OrderStatus { Name = "Thành công", Icon = "fas fa-check-circle", Time = null }
+        new OrderStatus { Name = "Chờ lấy hàng", Icon = "fas fa-box", Time = null },
+        new OrderStatus { Name = "Chờ giao hàng", Icon = "fas fa-shipping-fast", Time = null },
+        new OrderStatus { Name = "Chờ hoàn thành", Icon = "fas fa-check-circle", Time = null }
     };
-    var currentStatusIndex = statuses.FindIndex(s => s.Name == Model.TrangThai);
-    var isLastStatus = currentStatusIndex == statuses.Count - 1;
-    var nextStatus = !isLastStatus ? statuses[currentStatusIndex + 1].Name : null;
+    
+    // Xác định trạng thái hiện tại và các trạng thái đã hoàn thành
+    var orderCurrentStatus = Model.TrangThai;
+    var completedStatuses = new List<string>();
+    
+    // Logic xác định các trạng thái đã hoàn thành dựa trên trạng thái hiện tại
+    switch (orderCurrentStatus)
+    {
+        case "Chờ xác nhận":
+            completedStatuses = new List<string> { "Chờ xác nhận" };
+            break;
+        case "Đã xác nhận":
+            completedStatuses = new List<string> { "Chờ xác nhận" };
+            break;
+        case "Chờ lấy hàng":
+            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng" };
+            break;
+        case "Đã lấy hàng":
+            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng" };
+            break;
+        case "Chờ giao hàng":
+            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng" };
+            break;
+        case "Đang giao hàng":
+            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng" };
+            break;
+        case "Đã giao":
+            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng" };
+            break;
+        case "Giao hàng thành công":
+            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng", "Chờ hoàn thành" };
+            break;
+        default:
+            completedStatuses = new List<string> { "Chờ xác nhận" };
+            break;
+    }
+    
+    // Xác định trạng thái hiện tại và button tiếp theo
+    var currentStatus = Model.TrangThai;
+    string nextAction = "";
+    string nextActionText = "";
+    
+    switch (currentStatus)
+    {
+        case "Chờ xác nhận":
+            nextAction = "XacNhanDonHang";
+            nextActionText = "Xác nhận";
+            break;
+        case "Đã xác nhận":
+            nextAction = "XacNhanLayHang";
+            nextActionText = "Xác nhận lấy hàng";
+            break;
+        case "Chờ lấy hàng":
+            nextAction = "XacNhanLayHang";
+            nextActionText = "Xác nhận lấy hàng";
+            break;
+        case "Đã lấy hàng":
+            nextAction = "XacNhanGiaoHang";
+            nextActionText = "Xác nhận giao hàng";
+            break;
+        case "Chờ giao hàng":
+            nextAction = "XacNhanGiaoHang";
+            nextActionText = "Xác nhận giao hàng";
+            break;
+        case "Đang giao hàng":
+            nextAction = "XacNhanDaGiaoHang";
+            nextActionText = "Xác nhận đã giao hàng";
+            break;
+        case "Đã giao":
+            nextAction = "XacNhanDaGiaoHang";
+            nextActionText = "Xác nhận đã giao hàng";
+            break;
+        case "Giao hàng thành công":
+            nextAction = "";
+            nextActionText = "";
+            break;
+        default:
+            nextAction = "XacNhanDonHang";
+            nextActionText = "Xác nhận";
+            break;
+    }
+    
+    var orderCompleted = currentStatus == "Giao hàng thành công";
 }
 
 <style>
@@ -57,6 +136,10 @@
     
     .timeline-icon.completed {
         background: #28a745;
+    }
+    
+    .timeline-icon.pending {
+        background: #6c757d;
     }
     
     .timeline-content {
@@ -175,44 +258,70 @@
         </div>
     }
 
-    <!-- Timeline -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Tiến trình đơn hàng</h6>
-        </div>
-        <div class="card-body">
-            <div class="timeline">
-                @for (int i = 0; i < statuses.Count; i++)
-                {
-                    var status = statuses[i];
-                    var isCompleted = i <= currentStatusIndex;
-                    var isCurrent = i == currentStatusIndex;
-                    <div class="timeline-item">
-                        <div class="timeline-icon @(isCompleted ? "completed" : "")">
-                            <i class="@status.Icon"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <div class="timeline-title">@status.Name</div>
-                            <div class="timeline-time">
-                                @if (isCompleted && status.Time != null)
-                                {
-                                    @(((DateTime?)status.Time).Value.ToString("HH:mm:ss dd/MM/yyyy"))
-                                }
-                                else if (isCurrent)
-                                {
-                                    <span class="text-primary">Đang xử lý...</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Chưa thực hiện</span>
-                                }
+    <!-- Timeline - Chỉ hiển thị cho đơn hàng online có địa chỉ giao hàng -->
+    @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
+    {
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Tiến trình đơn hàng</h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    @for (int i = 0; i < statuses.Count; i++)
+                    {
+                        var status = statuses[i];
+                        var isCompleted = completedStatuses.Contains(status.Name);
+                        var isCurrent = status.Name == orderCurrentStatus || 
+                                       (status.Name == "Chờ xác nhận" && orderCurrentStatus == "Đã xác nhận") ||
+                                       (status.Name == "Chờ lấy hàng" && orderCurrentStatus == "Đã lấy hàng") ||
+                                       (status.Name == "Chờ giao hàng" && (orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao")) ||
+                                       (status.Name == "Chờ hoàn thành" && orderCurrentStatus == "Giao hàng thành công");
+                        
+                        // Xác định tên hiển thị dựa trên trạng thái thực tế
+                        string displayName = status.Name;
+                        if (isCompleted)
+                        {
+                            displayName = status.Name switch
+                            {
+                                "Chờ xác nhận" when orderCurrentStatus != "Chờ xác nhận" => "Đã xác nhận",
+                                "Chờ lấy hàng" when orderCurrentStatus != "Chờ lấy hàng" && orderCurrentStatus != "Chờ xác nhận" => "Đã lấy hàng",
+                                "Chờ giao hàng" when orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao" || orderCurrentStatus == "Giao hàng thành công" => "Đang giao hàng",
+                                "Chờ hoàn thành" when orderCurrentStatus == "Giao hàng thành công" => "Giao hàng thành công",
+                                _ => status.Name
+                            };
+                        }
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-icon @(isCompleted ? "completed" : "")">
+                                <i class="@status.Icon"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">@displayName</div>
+                                <div class="timeline-time">
+                                    @if (isCompleted && status.Name == "Chờ xác nhận")
+                                    {
+                                        @(((DateTime?)status.Time).Value.ToString("HH:mm:ss dd/MM/yyyy"))
+                                    }
+                                    else if (isCompleted && status.Name != "Chờ xác nhận")
+                                    {
+                                        <span class="text-success">@Model.LanCapNhatCuoi?.ToString("HH:mm:ss dd/MM/yyyy")</span>
+                                    }
+                                    else if (isCurrent)
+                                    {
+                                        <span class="text-primary">Đang xử lý...</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa thực hiện</span>
+                                    }
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
-    </div>
+    }
 
     <!-- Order Information -->
     <div class="row">
@@ -301,12 +410,11 @@
                     <h6 class="m-0 font-weight-bold text-primary">Cập nhật trạng thái</h6>
                 </div>
                 <div class="card-body">
-                    @if (!isLastStatus)
+                    @if (!orderCompleted)
                     {
-                        <form method="post" action="@Url.Action("CapNhatTrangThai", new { id = Model.IDHoaDon })">
-                            <input type="hidden" name="trangThaiMoi" value="@nextStatus" />
+                        <form method="post" action="@Url.Action(nextAction, new { id = Model.IDHoaDon })">
                             <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fas fa-arrow-right"></i> Chuyển sang trạng thái: <b>@nextStatus</b>
+                                <i class="fas fa-arrow-right"></i> @nextActionText
                             </button>
                         </form>
                     }

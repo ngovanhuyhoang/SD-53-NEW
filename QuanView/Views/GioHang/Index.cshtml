@@ -45,7 +45,7 @@
                     {
                         var spct = item.SanPhamChiTiet;
                         var sp = spct?.SanPham;
-                        var img = sp?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
+                        var img = spct?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
                         <tr style="border-bottom: 1px solid #f2f2f2;">
                             <td>
                                 <img src="@img" class="cart-img" alt="@sp?.TenSanPham">

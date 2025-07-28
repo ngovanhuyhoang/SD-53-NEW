@@ -37,6 +37,7 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
+                    .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
 
                     .ToListAsync();
 
@@ -77,7 +78,7 @@ namespace QuanApi.Controllers
                         : ct.GiaBan
                     ),
                     TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
-                    AnhDaiDien = ct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
+                    AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : "",
                 }).ToList();
 
                 return Ok(result);
@@ -99,6 +100,7 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
+                    .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
 
                     .FirstOrDefaultAsync(ct => ct.IDSanPhamChiTiet == id);
 
@@ -142,7 +144,7 @@ namespace QuanApi.Controllers
                         : ct.GiaBan
                     ),
                     TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
-                    AnhDaiDien = ct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
+                    AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : "",
                 };
 
                 return Ok(result);
@@ -168,6 +170,7 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
+                    .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
 
                     .ToListAsync();
 
@@ -211,7 +214,7 @@ namespace QuanApi.Controllers
                         : ct.GiaBan
                     ),
                     TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
-                    AnhDaiDien = ct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
+                    AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : "",
                 }).ToList();
 
                 return Ok(result);

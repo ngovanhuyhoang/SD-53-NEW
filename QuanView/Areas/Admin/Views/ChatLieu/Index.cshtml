@@ -4,6 +4,8 @@
 
 @{
     ViewData["Title"] = "Danh Sách chất liệu";
+    var currentKeyword = ViewBag.Keyword as string ?? "";
+    var currentStatus = ViewBag.Status as string ?? "";
 }
 <h2>@ViewData["Title"]</h2>
 <partial name="_Notification" />
@@ -84,15 +86,29 @@
         <a class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal" asp-area="Admin" asp-controller="ChatLieu" asp-action="Create">+ Thêm chất liệu mới</a>
     </div>
     <div class="card-body">
-        <!-- Form tìm kiếm -->
-        <form id="searchForm" class="mb-3 d-flex">
-            <div class="input-group me-2">
-                <span class="input-group-text bg-white border-end-0">
-                    <i class="fas fa-search"></i>
-                </span>
-                <input type="text" id="searchString" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control border-start-0" placeholder="Tìm kiếm chất liệu..." />
+        <!-- Form tìm kiếm và bộ lọc -->
+        <form method="get" class="mb-3 row g-2 align-items-end">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="keyword" name="keyword" value="@currentKeyword" class="form-control border-start-0" placeholder="Tìm kiếm chất liệu..." />
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Tìm</button>
+            <div class="col-md-3">
+                <select class="form-control" id="trangThai" name="trangThai">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="active">Kích hoạt</option>
+                    <option value="inactive">Ẩn</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Lọc</button>
+            </div>
+            <div class="col-md-2">
+                <a href="@Url.Action("Index")" class="btn btn-secondary w-100">Xóa lọc</a>
+            </div>
         </form>
         <div class="table-responsive">
             <table class="table table-hover chatlieu-table">
@@ -152,7 +168,7 @@
                     @for (int i = 1; i <= totalPages; i++)
                     {
                         <li class="page-item @(i == currentPage ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = pageSize, keyword = ViewBag.Keyword })">@i</a>
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = pageSize, keyword = ViewBag.Keyword, trangThai = currentStatus })">@i</a>
                         </li>
                     }
                 </ul>
@@ -242,16 +258,6 @@
 
     <script>
         $(document).ready(function () {
-            $('#searchForm').on('submit', function (e) {
-                e.preventDefault();
-                var keyword = $('#searchString').val();
-                $.get('@Url.Action("Index", "ChatLieu", new { area = "Admin" })?keyword=' + encodeURIComponent(keyword), function (data) {
-                    $('#indexContent').html($(data).find('#indexContent').html());
-                }).fail(function (xhr) {
-                    alert("Lỗi khi tìm kiếm: " + (xhr.responseJSON?.message || xhr.statusText));
-                });
-            });
-
             $('#createModal').on('show.bs.modal', function () {
                 $('#createModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
                 $.get('@Url.Action("Create", "ChatLieu", new { area = "Admin" })', function (data) {
@@ -414,6 +420,11 @@
                     }
                 });
             });
+        });
+    </script>
+    <script>
+        $(function() {
+            $('#trangThai').val('@currentStatus');
         });
     </script>
 }

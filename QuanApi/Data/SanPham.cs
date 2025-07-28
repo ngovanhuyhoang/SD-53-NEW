@@ -66,7 +66,5 @@ namespace QuanApi.Data
         public virtual LungQuan? LungQuan { get; set; }
 
         public virtual ICollection<SanPhamChiTiet>? SanPhamChiTiets { get; set; }
-
-        public virtual ICollection<AnhSanPham>? AnhSanPhams { get; set; }
     }
 }

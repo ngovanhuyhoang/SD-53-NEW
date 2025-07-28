@@ -80,15 +80,31 @@ namespace QuanView.Controllers
                 return View("Error");
             }
 
-            var anhRes = await _http.GetAsync($"SanPhams/{bienThe.IdSanPham}");
+            // Lấy ảnh từ biến thể đầu tiên có ảnh
             string urlAnh = "";
-            if (anhRes.IsSuccessStatusCode)
+            var firstBienTheWithImage = allBienThes.FirstOrDefault(b => !string.IsNullOrEmpty(b.AnhDaiDien));
+            if (firstBienTheWithImage != null)
             {
-                var sp = await anhRes.Content.ReadFromJsonAsync<SanPhamDto>();
-                if (sp != null && sp.DanhSachAnh != null && sp.DanhSachAnh.Any())
+                urlAnh = firstBienTheWithImage.AnhDaiDien;
+            }
+            else
+            {
+                // Fallback: lấy ảnh từ API sản phẩm
+                var anhRes = await _http.GetAsync($"SanPhams/{bienThe.IdSanPham}");
+                if (anhRes.IsSuccessStatusCode)
                 {
-                    urlAnh = sp.DanhSachAnh.First().UrlAnh;
+                    var sp = await anhRes.Content.ReadFromJsonAsync<SanPhamDto>();
+                    if (sp != null && sp.DanhSachAnh != null && sp.DanhSachAnh.Any())
+                    {
+                        urlAnh = sp.DanhSachAnh.First().UrlAnh;
+                    }
                 }
+            }
+            
+            // Fallback cuối cùng
+            if (string.IsNullOrEmpty(urlAnh))
+            {
+                urlAnh = "/img/default-product.jpg";
             }
 
             var firstBienThe = allBienThes.FirstOrDefault() ?? bienThe;

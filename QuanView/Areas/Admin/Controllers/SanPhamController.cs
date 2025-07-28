@@ -4,6 +4,10 @@ using System.Text.Json;
 using QuanView.Areas.Admin.Models;
 using System.Net.Http;
 using System.Text;
+using QuanView.Models;
+using System.Diagnostics;
+using QuanApi.Dtos;
+using System.Linq;
 
 [Area("Admin")]
 public class SanPhamController : Controller
@@ -18,10 +22,10 @@ public class SanPhamController : Controller
     public async Task<IActionResult> Index()
     {
         var response = await _http.GetAsync("sanphams");
-        if (!response.IsSuccessStatusCode) return View("Error");
+        if (!response.IsSuccessStatusCode) return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 
         var json = await response.Content.ReadAsStringAsync();
-        var products = JsonSerializer.Deserialize<List<SanPhamDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var products = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         foreach (var sp in products)
         {
@@ -31,7 +35,39 @@ public class SanPhamController : Controller
             if (res.IsSuccessStatusCode)
             {
                 var ctJson = await res.Content.ReadAsStringAsync();
-                sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                // ✅ Cập nhật ảnh chính từ SanPhamChiTiet đầu tiên có ảnh
+                if (sp.ChiTietSanPhams != null && sp.ChiTietSanPhams.Any())
+                {
+                    var firstWithImage = sp.ChiTietSanPhams.FirstOrDefault(ct => !string.IsNullOrEmpty(ct.AnhDaiDien));
+                    if (firstWithImage != null)
+                    {
+                        sp.AnhChinh = firstWithImage.AnhDaiDien;
+                    }
+                }
+
+                // ✅ Load danh sách ảnh cho từng sản phẩm chi tiết
+                if (sp.ChiTietSanPhams != null)
+                {
+                    foreach (var ct in sp.ChiTietSanPhams)
+                    {
+                        var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
+                        if (imagesRes.IsSuccessStatusCode)
+                        {
+                            var imagesJson = await imagesRes.Content.ReadAsStringAsync();
+                            var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages);
+                            
+                            // ✅ Cập nhật ảnh đại diện từ danh sách ảnh
+                            var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
+                            if (mainImage != null)
+                            {
+                                ct.AnhDaiDien = mainImage.UrlAnh;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -46,7 +82,7 @@ public class SanPhamController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(SanPhamDto dto)
+    public async Task<IActionResult> Create(QuanView.Areas.Admin.Models.SanPhamDto dto)
     {
         if (!ModelState.IsValid)
         {
@@ -94,7 +130,7 @@ public class SanPhamController : Controller
     {
         var response = await _http.GetAsync($"sanphams/{id}");
         if (!response.IsSuccessStatusCode) return NotFound();
-        var dto = await response.Content.ReadFromJsonAsync<SanPhamDto>();
+        var dto = await response.Content.ReadFromJsonAsync<QuanView.Areas.Admin.Models.SanPhamDto>();
 
         // 🔍 Debug: Kiểm tra thông tin sản phẩm chính
         System.Diagnostics.Debug.WriteLine($"🏷️ SanPham ID: {dto.IDSanPham}, Ten: {dto.TenSanPham}");
@@ -107,7 +143,7 @@ public class SanPhamController : Controller
             // 💥 Kiểm tra JSON trước khi parse
             Console.WriteLine($"👉 JSON: {ctJson}");
 
-            var ctList = JsonSerializer.Deserialize<List<SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions
+            var ctList = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
@@ -128,14 +164,46 @@ public class SanPhamController : Controller
 
             dto.ChiTietSanPhams = ctList;
 
+            // ✅ Cập nhật ảnh chính từ SanPhamChiTiet đầu tiên có ảnh
+            if (ctList != null && ctList.Any())
+            {
+                var firstWithImage = ctList.FirstOrDefault(ct => !string.IsNullOrEmpty(ct.AnhDaiDien));
+                if (firstWithImage != null)
+                {
+                    dto.AnhChinh = firstWithImage.AnhDaiDien;
+                }
+            }
+
+            // ✅ Load danh sách ảnh cho từng sản phẩm chi tiết
+            if (ctList != null)
+            {
+                foreach (var ct in ctList)
+                {
+                    var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
+                    if (imagesRes.IsSuccessStatusCode)
+                    {
+                        var imagesJson = await imagesRes.Content.ReadAsStringAsync();
+                        var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages);
+                        
+                        // ✅ Cập nhật ảnh đại diện từ danh sách ảnh
+                        var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
+                        if (mainImage != null)
+                        {
+                            ct.AnhDaiDien = mainImage.UrlAnh;
+                        }
+                    }
+                }
+            }
+
             // 🔍 Debug: Kiểm tra tổng quan
-            System.Diagnostics.Debug.WriteLine($"📊 Tổng số chi tiết: {ctList.Count}");
+            System.Diagnostics.Debug.WriteLine($"📊 Tổng số chi tiết: {ctList?.Count ?? 0}");
         }
         else
         {
             // 🔍 Debug: Nếu không load được chi tiết
             System.Diagnostics.Debug.WriteLine($"❌ Không load được chi tiết sản phẩm: {res.StatusCode}");
-            dto.ChiTietSanPhams = new List<SanPhamChiTietDto>();
+            dto.ChiTietSanPhams = new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
         }
 
         await LoadDropdownData();
@@ -145,7 +213,7 @@ public class SanPhamController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(SanPhamDto dto)
+    public async Task<IActionResult> Edit(QuanView.Areas.Admin.Models.SanPhamDto dto)
     {
         // 🔍 Debug: Kiểm tra dữ liệu nhận được
         System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
@@ -219,13 +287,38 @@ public class SanPhamController : Controller
         var response = await _http.GetAsync($"sanphams/{id}");
         if (!response.IsSuccessStatusCode) return NotFound();
 
-        var dto = await response.Content.ReadFromJsonAsync<SanPhamDto>();
+        var dto = await response.Content.ReadFromJsonAsync<QuanView.Areas.Admin.Models.SanPhamDto>();
 
         var ctRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={id}");
         if (ctRes.IsSuccessStatusCode)
         {
             var ctJson = await ctRes.Content.ReadAsStringAsync();
-            dto.ChiTietSanPhams = JsonSerializer.Deserialize<List<SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            dto.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            
+            // ✅ Cập nhật ảnh chính từ SanPhamChiTiet đầu tiên có ảnh
+            if (dto.ChiTietSanPhams != null && dto.ChiTietSanPhams.Any())
+            {
+                var firstWithImage = dto.ChiTietSanPhams.FirstOrDefault(ct => !string.IsNullOrEmpty(ct.AnhDaiDien));
+                if (firstWithImage != null)
+                {
+                    dto.AnhChinh = firstWithImage.AnhDaiDien;
+                }
+            }
+
+            // ✅ Load danh sách ảnh cho từng sản phẩm chi tiết
+            if (dto.ChiTietSanPhams != null)
+            {
+                foreach (var ct in dto.ChiTietSanPhams)
+                {
+                    var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
+                    if (imagesRes.IsSuccessStatusCode)
+                    {
+                        var imagesJson = await imagesRes.Content.ReadAsStringAsync();
+                        var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages);
+                    }
+                }
+            }
         }
 
         return View(dto);
@@ -248,16 +341,18 @@ public class SanPhamController : Controller
             return RedirectToAction("Index");
         }
 
-        var allVariants = new List<SanPhamChiTietDto>();
+        var allVariants = new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
 
         foreach (var id in selectedIds)
         {
-            var response = await _http.GetAsync($"https://localhost:7130/api/SanPhamChiTiets");
+            var response = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={id}");
             if (response.IsSuccessStatusCode)
             {
-                var data = await response.Content.ReadFromJsonAsync<List<SanPhamChiTietDto>>();
-                var filtered = data.Where(ct => ct.IdSanPham == id).ToList();
-                allVariants.AddRange(filtered);
+                var data = await response.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>();
+                if (data != null)
+                {
+                    allVariants.AddRange(data);
+                }
             }
         }
 
@@ -335,5 +430,29 @@ public class SanPhamController : Controller
                 Value = e.GetProperty(idField).ToString(),
                 Text = e.GetProperty(nameField).GetString()
             }).ToList();
+    }
+
+    // Test action cho quản lý ảnh
+    public IActionResult TestImageManagement()
+    {
+        return View();
+    }
+
+    // Helper method để map từ API DTO sang Admin DTO
+    private List<QuanView.Areas.Admin.Models.AnhSanPhamDto> MapApiImagesToAdminImages(List<QuanApi.Dtos.AnhSanPhamDto> apiImages)
+    {
+        return apiImages?.Select(img => new QuanView.Areas.Admin.Models.AnhSanPhamDto
+        {
+            IDAnhSanPham = img.IDAnhSanPham,
+            MaAnh = img.MaAnh,
+            IDSanPhamChiTiet = img.IDSanPhamChiTiet,
+            UrlAnh = img.UrlAnh,
+            LaAnhChinh = img.LaAnhChinh,
+            NgayTao = img.NgayTao,
+            NguoiTao = img.NguoiTao,
+            LanCapNhatCuoi = img.LanCapNhatCuoi,
+            NguoiCapNhat = img.NguoiCapNhat,
+            TrangThai = img.TrangThai
+        }).ToList() ?? new List<QuanView.Areas.Admin.Models.AnhSanPhamDto>();
     }
 }

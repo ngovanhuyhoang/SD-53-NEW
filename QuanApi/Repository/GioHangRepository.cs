@@ -22,7 +22,7 @@ namespace QuanApi.Repository
                 .Include(spct => spct.KichCo)
                 .Include(spct => spct.MauSac)
                 .Include(spct => spct.DotGiamGia)
-                .Include(spct => spct.SanPham.AnhSanPhams)
+                .Include(spct => spct.AnhSanPhams)
                 .Where(spct => spct.TrangThai)
                 .ToList();
 
@@ -35,7 +35,9 @@ namespace QuanApi.Repository
                 {
                     TenSanPham = g.First().SanPham.TenSanPham,
                     DanhMuc = g.First().SanPham.DanhMuc.TenDanhMuc,
-                    UrlAnh = g.First().SanPham.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault(),
+                    UrlAnh = g.First().AnhSanPhams.Where(a => a.TrangThai && a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() 
+                             ?? g.First().AnhSanPhams.Where(a => a.TrangThai).OrderBy(a => a.NgayTao).Select(a => a.UrlAnh).FirstOrDefault()
+                             ?? "/img/default-product.jpg",
                     BienThes = g.Select(spct => new BienTheSanPhamViewModel
                     {
                         IDSanPhamChiTiet = spct.IDSanPhamChiTiet,
@@ -61,7 +63,7 @@ namespace QuanApi.Repository
                     .ThenInclude(sp => sp.DanhMuc)
                 .Include(ct => ct.KichCo)
                 .Include(ct => ct.MauSac)
-                .Include(ct => ct.SanPham.AnhSanPhams)
+                .Include(ct => ct.AnhSanPhams)
                 .Include(ct => ct.DotGiamGia)
                 .FirstOrDefault(ct => ct.IDSanPhamChiTiet == id);
 
@@ -74,7 +76,7 @@ namespace QuanApi.Repository
                 IdSanPham = spct.IDSanPham,
                 TenSanPham = spct.SanPham?.TenSanPham ?? "",
                 TenDanhMuc = spct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
-                AnhDaiDien = spct.SanPham?.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
+                AnhDaiDien = spct.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
                 TenKichCo = spct.KichCo?.TenKichCo ?? "",
                 TenMauSac = spct.MauSac?.TenMauSac ?? "",
                 GiaBan = spct.GiaBan,
@@ -126,7 +128,14 @@ namespace QuanApi.Repository
         }
         public GioHang GetByUserId(Guid userId)
         {
-            return _db.GioHangs.FirstOrDefault(gt => gt.IDKhachHang == userId);
+            return _db.GioHangs
+                .Include(g => g.ChiTietGioHangs)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(sp => sp.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(g => g.ChiTietGioHangs)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(sp => sp.SanPham)
+                .FirstOrDefault(gt => gt.IDKhachHang == userId);
         }
 
         public void XoaChiTietGioHang(Guid idgiohang)

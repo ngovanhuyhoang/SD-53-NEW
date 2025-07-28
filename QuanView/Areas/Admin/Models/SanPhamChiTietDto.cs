@@ -17,6 +17,8 @@
         public string? TenSanPham { get; set; } // Thêm trường này
         public string? AnhDaiDien { get; set; } // Thêm trường này
         public bool TrangThai { get; set; } // Thêm trường này
-        public string? MaSPChiTiet { get; set; } // Thêm trường này nếu cần
+        
+        // Thêm danh sách ảnh
+        public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
     }
 }

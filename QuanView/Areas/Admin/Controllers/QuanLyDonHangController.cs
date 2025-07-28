@@ -17,7 +17,7 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang)
         {
             try
             {
@@ -25,7 +25,55 @@ namespace QuanView.Areas.Admin.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     var hoaDons = await response.Content.ReadFromJsonAsync<List<HoaDon>>();
-                    return View(hoaDons ?? new List<HoaDon>());
+                    var filteredHoaDons = hoaDons ?? new List<HoaDon>();
+
+                    // Lọc theo trạng thái
+                    if (!string.IsNullOrEmpty(trangThai))
+                    {
+                        filteredHoaDons = filteredHoaDons.Where(h => h.TrangThai == trangThai).ToList();
+                    }
+
+                    // Lọc theo khoảng thời gian
+                    if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
+                    {
+                        filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date >= tuNgayDate.Date).ToList();
+                    }
+
+                    if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
+                    {
+                        filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date <= denNgayDate.Date).ToList();
+                    }
+
+                    // Lọc theo loại đơn hàng
+                    if (!string.IsNullOrEmpty(loaiDonHang))
+                    {
+                        if (loaiDonHang == "online")
+                        {
+                            filteredHoaDons = filteredHoaDons.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang)).ToList();
+                        }
+                        else if (loaiDonHang == "taiquay")
+                        {
+                            filteredHoaDons = filteredHoaDons.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang)).ToList();
+                        }
+                    }
+
+                    // Lọc theo khách hàng
+                    if (!string.IsNullOrEmpty(khachHang))
+                    {
+                        filteredHoaDons = filteredHoaDons.Where(h => 
+                            (h.KhachHang != null && h.KhachHang.TenKhachHang.Contains(khachHang, StringComparison.OrdinalIgnoreCase)) ||
+                            (h.TenNguoiNhan != null && h.TenNguoiNhan.Contains(khachHang, StringComparison.OrdinalIgnoreCase)) ||
+                            (h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHang))
+                        ).ToList();
+                    }
+
+                    // Lọc theo mã đơn hàng
+                    if (!string.IsNullOrEmpty(maDonHang))
+                    {
+                        filteredHoaDons = filteredHoaDons.Where(h => h.MaHoaDon.Contains(maDonHang, StringComparison.OrdinalIgnoreCase)).ToList();
+                    }
+
+                    return View(filteredHoaDons);
                 }
                 return View(new List<HoaDon>());
             }
@@ -97,35 +145,76 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> XacNhanDonHang(Guid id)
         {
-            return await CapNhatTrangThai(id, "Chờ giao hàng");
+            return await CapNhatTrangThai(id, "Đã xác nhận");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanLayHang/{id}
         [HttpPost]
         public async Task<IActionResult> XacNhanLayHang(Guid id)
         {
-            return await CapNhatTrangThai(id, "Đang vận chuyển");
+            // Lấy trạng thái hiện tại để xác định trạng thái tiếp theo
+            var response = await _httpClient.GetAsync($"HoaDons/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                if (hoaDon != null)
+                {
+                    string trangThaiMoi = hoaDon.TrangThai switch
+                    {
+                        "Đã xác nhận" => "Chờ lấy hàng",
+                        "Chờ lấy hàng" => "Đã lấy hàng",
+                        _ => "Đã lấy hàng"
+                    };
+                    return await CapNhatTrangThai(id, trangThaiMoi);
+                }
+            }
+            return await CapNhatTrangThai(id, "Đã lấy hàng");
         }
 
-        // POST: Admin/QuanLyDonHang/XacNhanDangVanChuyen/{id}
+        // POST: Admin/QuanLyDonHang/XacNhanGiaoHang/{id}
         [HttpPost]
-        public async Task<IActionResult> XacNhanDangVanChuyen(Guid id)
+        public async Task<IActionResult> XacNhanGiaoHang(Guid id)
         {
-            return await CapNhatTrangThai(id, "Đã giao hàng");
+            // Lấy trạng thái hiện tại để xác định trạng thái tiếp theo
+            var response = await _httpClient.GetAsync($"HoaDons/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                if (hoaDon != null)
+                {
+                    string trangThaiMoi = hoaDon.TrangThai switch
+                    {
+                        "Đã lấy hàng" => "Chờ giao hàng",
+                        "Chờ giao hàng" => "Đang giao hàng",
+                        _ => "Đang giao hàng"
+                    };
+                    return await CapNhatTrangThai(id, trangThaiMoi);
+                }
+            }
+            return await CapNhatTrangThai(id, "Đang giao hàng");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanDaGiaoHang/{id}
         [HttpPost]
         public async Task<IActionResult> XacNhanDaGiaoHang(Guid id)
         {
-            return await CapNhatTrangThai(id, "Thành công");
-        }
-
-        // POST: Admin/QuanLyDonHang/HoanThanh/{id}
-        [HttpPost]
-        public async Task<IActionResult> HoanThanh(Guid id)
-        {
-            return await CapNhatTrangThai(id, "Hoàn thành");
+            // Lấy trạng thái hiện tại để xác định trạng thái tiếp theo
+            var response = await _httpClient.GetAsync($"HoaDons/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                if (hoaDon != null)
+                {
+                    string trangThaiMoi = hoaDon.TrangThai switch
+                    {
+                        "Đang giao hàng" => "Đã giao",
+                        "Đã giao" => "Giao hàng thành công",
+                        _ => "Giao hàng thành công"
+                    };
+                    return await CapNhatTrangThai(id, trangThaiMoi);
+                }
+            }
+            return await CapNhatTrangThai(id, "Giao hàng thành công");
         }
     }
 } 

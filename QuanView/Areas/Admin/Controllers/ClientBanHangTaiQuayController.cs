@@ -120,5 +120,69 @@ namespace QuanView.Areas.Admin.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
+
+        // Lấy địa chỉ của khách hàng
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/dia-chi-khach-hang")]
+        public async Task<IActionResult> GetCustomerAddress(Guid customerId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"BanHangTaiQuay/dia-chi-khach-hang?customerId={customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var address = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(address);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy địa chỉ khách hàng");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        // Tạo địa chỉ mới cho khách hàng
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/tao-dia-chi")]
+        public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-dia-chi", dto);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(result);
+                }
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return StatusCode((int)response.StatusCode, errorContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        // Lấy danh sách địa chỉ của khách hàng
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang")]
+        public async Task<IActionResult> GetCustomerAddresses(Guid customerId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"BanHangTaiQuay/danh-sach-dia-chi-khach-hang?customerId={customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var addresses = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(addresses);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách địa chỉ khách hàng");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
     }
 }

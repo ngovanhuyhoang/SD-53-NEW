@@ -21,18 +21,34 @@ namespace QuanApi.Controllers
             int pageNumber = 1, int pageSize = 10,
             string search = null, int? priceFrom = null, int? priceTo = null)
         {
-            var query = _gioHangRepo.ListSPCT(pageNumber, pageSize);
+            try
+            {
+                var query = _gioHangRepo.ListSPCT(pageNumber, pageSize);
 
-            if (!string.IsNullOrEmpty(search))
-                query = query.Where(x => x.TenSanPham.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(x => x.TenSanPham.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
 
-            if (priceFrom.HasValue)
-                query = query.Where(x => x.BienThes.Any(b => b.GiaSauGiam >= priceFrom.Value)).ToList();
+                if (priceFrom.HasValue)
+                    query = query.Where(x => x.BienThes.Any(b => b.GiaSauGiam >= priceFrom.Value)).ToList();
 
-            if (priceTo.HasValue)
-                query = query.Where(x => x.BienThes.Any(b => b.GiaSauGiam <= priceTo.Value)).ToList();
+                if (priceTo.HasValue)
+                    query = query.Where(x => x.BienThes.Any(b => b.GiaSauGiam <= priceTo.Value)).ToList();
 
-            return Ok(query);
+                // Đảm bảo mỗi sản phẩm có ảnh
+                foreach (var sp in query)
+                {
+                    if (string.IsNullOrEmpty(sp.UrlAnh))
+                    {
+                        sp.UrlAnh = "/img/default-product.jpg";
+                    }
+                }
+
+                return Ok(query);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+            }
         }
 
         [HttpGet("{id}")]

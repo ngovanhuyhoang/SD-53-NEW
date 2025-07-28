@@ -17,12 +17,14 @@ namespace QuanView.Areas.Admin.Controllers
             _httpClient = factory.CreateClient("MyApi");
         }
 
-        public async Task<IActionResult> Index(string? keyword, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string? keyword, string? trangThai, int page = 1, int pageSize = 10)
         {
-            // Gọi API GetPaged kèm keyword nếu có
+            // Gọi API GetPaged kèm keyword và trạng thái nếu có
             var url = $"KieuDang/paged?page={page}&pageSize={pageSize}";
             if (!string.IsNullOrEmpty(keyword))
                 url += $"&keyword={Uri.EscapeDataString(keyword)}";
+            if (!string.IsNullOrEmpty(trangThai))
+                url += $"&trangThai={Uri.EscapeDataString(trangThai)}";
 
             var response = await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode)
@@ -36,11 +38,12 @@ namespace QuanView.Areas.Admin.Controllers
 
             var result = JsonSerializer.Deserialize<PagedResult<KieuDang>>(json, options);
 
-            // Gửi các biến ra view để làm phân trang
+            // Gửi các biến ra view để làm phân trang và giữ lại giá trị lọc
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
             ViewBag.TotalItems = result.Total;
             ViewBag.Keyword = keyword ?? "";
+            ViewBag.Status = trangThai ?? "";
 
             return View(result.Data);
         }
