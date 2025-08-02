@@ -300,11 +300,11 @@
                                 <div class="timeline-time">
                                     @if (isCompleted && status.Name == "Chờ xác nhận")
                                     {
-                                        @(((DateTime?)status.Time).Value.ToString("HH:mm:ss dd/MM/yyyy"))
+                                        @(((DateTime?)status.Time).Value.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy"))
                                     }
                                     else if (isCompleted && status.Name != "Chờ xác nhận")
                                     {
-                                        <span class="text-success">@Model.LanCapNhatCuoi?.ToString("HH:mm:ss dd/MM/yyyy")</span>
+                                        <span class="text-success">@Model.LanCapNhatCuoi?.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy")</span>
                                     }
                                     else if (isCurrent)
                                     {
@@ -328,7 +328,7 @@
         <div class="col-lg-8">
             <div class="order-info">
                 <div class="order-header">
-                    <h5 class="mb-0">Thông tin đơn hàng - Đơn hàng Online</h5>
+                    <h5 class="mb-0">Thông tin đơn hàng</h5>
                 </div>
                 <div class="order-body">
                     <div class="row">
@@ -404,28 +404,31 @@
         </div>
 
         <div class="col-lg-4">
-            <!-- Action Buttons -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Cập nhật trạng thái</h6>
+            <!-- Action Buttons - Chỉ hiển thị cho đơn hàng có địa chỉ giao hàng -->
+            @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Cập nhật trạng thái</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (!orderCompleted)
+                        {
+                            <form method="post" action="@Url.Action(nextAction, new { id = Model.IDHoaDon })">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-arrow-right"></i> @nextActionText
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="alert alert-success text-center">
+                                <i class="fas fa-check-circle"></i> Đơn hàng đã hoàn thành!
+                            </div>
+                        }
+                    </div>
                 </div>
-                <div class="card-body">
-                    @if (!orderCompleted)
-                    {
-                        <form method="post" action="@Url.Action(nextAction, new { id = Model.IDHoaDon })">
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fas fa-arrow-right"></i> @nextActionText
-                            </button>
-                        </form>
-                    }
-                    else
-                    {
-                        <div class="alert alert-success text-center">
-                            <i class="fas fa-check-circle"></i> Đơn hàng đã hoàn thành!
-                        </div>
-                    }
-                </div>
-            </div>
+            }
 
             <!-- Order Summary -->
             <div class="card shadow">

@@ -26,39 +26,138 @@ namespace QuanApi.Controllers
 
         // GET: api/HoaDons
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDons()
+        public async Task<ActionResult<IEnumerable<object>>> GetHoaDons()
         {
-            return await _context.HoaDons
+            try
+            {
+                var hoaDons = await _context.HoaDons
                 .Include(h => h.KhachHang)
                 .Include(h => h.NhanVien)
-                .Include(h => h.PhieuGiamGia)
                 .Include(h => h.PhuongThucThanhToan)
                 .Include(h => h.ChiTietHoaDons)
-                    .ThenInclude(ct => ct.SanPhamChiTiet)
-                        .ThenInclude(spct => spct.SanPham)
+                    .Select(h => new
+                    {
+                        IDHoaDon = h.IDHoaDon,
+                        MaHoaDon = h.MaHoaDon,
+                        TongTien = h.TongTien,
+                        TienGiam = h.TienGiam,
+                        TrangThai = h.TrangThai,
+                        NgayTao = h.NgayTao,
+                        TenNguoiNhan = h.TenNguoiNhan,
+                        SoDienThoaiNguoiNhan = h.SoDienThoaiNguoiNhan,
+                        DiaChiGiaoHang = h.DiaChiGiaoHang,
+                        KhachHang = h.KhachHang != null ? new
+                        {
+                            IDKhachHang = h.KhachHang.IDKhachHang,
+                            TenKhachHang = h.KhachHang.TenKhachHang,
+                            SoDienThoai = h.KhachHang.SoDienThoai
+                        } : null,
+                        NhanVien = h.NhanVien != null ? new
+                        {
+                            IDNhanVien = h.NhanVien.IDNhanVien,
+                            TenNhanVien = h.NhanVien.TenNhanVien
+                        } : null,
+                        PhuongThucThanhToan = h.PhuongThucThanhToan != null ? new
+                        {
+                            IDPhuongThucThanhToan = h.PhuongThucThanhToan.IDPhuongThucThanhToan,
+                            TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
+                        } : null,
+                        SoLuongSanPham = h.ChiTietHoaDons.Count
+                    })
                 .ToListAsync();
+
+                return Ok(hoaDons);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách hóa đơn");
+                return StatusCode(500, "Lỗi khi tải danh sách đơn hàng");
+            }
         }
 
         // GET: api/HoaDons/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<HoaDon>> GetHoaDon(Guid id)
+        public async Task<ActionResult<object>> GetHoaDon(Guid id)
         {
-            var hoaDon = await _context.HoaDons
-                .Include(h => h.KhachHang)
-                .Include(h => h.NhanVien)
-                .Include(h => h.PhieuGiamGia)
-                .Include(h => h.PhuongThucThanhToan)
-                .Include(h => h.ChiTietHoaDons)
-                    .ThenInclude(ct => ct.SanPhamChiTiet)
-                        .ThenInclude(spct => spct.SanPham)
-                .FirstOrDefaultAsync(h => h.IDHoaDon == id);
-
-            if (hoaDon == null)
+            try
             {
-                return NotFound();
-            }
+                var hoaDon = await _context.HoaDons
+                    .Include(h => h.KhachHang)
+                    .Include(h => h.NhanVien)
+                    .Include(h => h.PhieuGiamGia)
+                    .Include(h => h.PhuongThucThanhToan)
+                    .Include(h => h.ChiTietHoaDons)
+                    .Where(h => h.IDHoaDon == id)
+                    .Select(h => new
+                    {
+                        IDHoaDon = h.IDHoaDon,
+                        MaHoaDon = h.MaHoaDon,
+                        TongTien = h.TongTien,
+                        TienGiam = h.TienGiam,
+                        TrangThai = h.TrangThai,
+                        NgayTao = h.NgayTao,
+                        TenNguoiNhan = h.TenNguoiNhan,
+                        SoDienThoaiNguoiNhan = h.SoDienThoaiNguoiNhan,
+                        DiaChiGiaoHang = h.DiaChiGiaoHang,
+                        KhachHang = h.KhachHang != null ? new
+                        {
+                            IDKhachHang = h.KhachHang.IDKhachHang,
+                            TenKhachHang = h.KhachHang.TenKhachHang,
+                            SoDienThoai = h.KhachHang.SoDienThoai,
+                            Email = h.KhachHang.Email
+                        } : null,
+                        NhanVien = h.NhanVien != null ? new
+                        {
+                            IDNhanVien = h.NhanVien.IDNhanVien,
+                            TenNhanVien = h.NhanVien.TenNhanVien,
+                            SoDienThoai = h.NhanVien.SoDienThoai
+                        } : null,
+                        PhieuGiamGia = h.PhieuGiamGia != null ? new
+                        {
+                            IDPhieuGiamGia = h.PhieuGiamGia.IDPhieuGiamGia,
+                            MaPhieu = h.PhieuGiamGia.MaCode,
+                            TenPhieu = h.PhieuGiamGia.TenPhieu
+                        } : null,
+                        PhuongThucThanhToan = h.PhuongThucThanhToan != null ? new
+                        {
+                            IDPhuongThucThanhToan = h.PhuongThucThanhToan.IDPhuongThucThanhToan,
+                            TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
+                        } : null,
+                        ChiTietHoaDons = h.ChiTietHoaDons.Select(ct => new
+                        {
+                            IDChiTietHoaDon = ct.IDChiTietHoaDon,
+                            MaChiTietHoaDon = ct.MaChiTietHoaDon,
+                            SoLuong = ct.SoLuong,
+                            DonGia = ct.DonGia,
+                            ThanhTien = ct.ThanhTien,
+                            SanPhamChiTiet = new
+                            {
+                                IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
+                                MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
+                                GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                SanPham = new
+                                {
+                                    IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
+                                    TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
+                                    MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
+                                }
+                            }
+                        }).ToList()
+                    })
+                    .FirstOrDefaultAsync();
 
-            return hoaDon;
+                if (hoaDon == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(hoaDon);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy chi tiết hóa đơn: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi tải chi tiết đơn hàng");
+            }
         }
 
         // POST: api/HoaDons
@@ -223,6 +322,43 @@ namespace QuanApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật trạng thái hóa đơn: {Message}", ex.Message);
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
+
+        // GET: api/HoaDons/don-hang-can-xac-nhan
+        [HttpGet("don-hang-can-xac-nhan")]
+        public async Task<ActionResult<object>> GetDonHangCanXacNhan()
+        {
+            try
+            {
+                var donHangCanXacNhan = await _context.HoaDons
+                    .Where(h => h.TrangThai == "Chờ xác nhận" && !string.IsNullOrEmpty(h.DiaChiGiaoHang))
+                    .Include(h => h.KhachHang)
+                    .OrderByDescending(h => h.NgayTao)
+                    .Take(5)
+                    .Select(h => new
+                    {
+                        id = h.IDHoaDon,
+                        maHoaDon = h.MaHoaDon,
+                        tenKhachHang = h.KhachHang != null ? h.KhachHang.TenKhachHang : h.TenNguoiNhan,
+                        ngayTao = h.NgayTao,
+                        tongTien = h.TongTien
+                    })
+                    .ToListAsync();
+
+                var tongSo = await _context.HoaDons
+                    .CountAsync(h => h.TrangThai == "Chờ xác nhận" && !string.IsNullOrEmpty(h.DiaChiGiaoHang));
+
+                return Ok(new
+                {
+                    tongSo = tongSo,
+                    danhSach = donHangCanXacNhan
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy đơn hàng cần xác nhận: {Message}", ex.Message);
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }

@@ -32,60 +32,43 @@ namespace QuanApi.Controllers
         {
             try
             {
-                var list = await _context.SanPhamChiTiets
+                var result = await _context.SanPhamChiTiets
                     .Include(ct => ct.KichCo)
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
                     .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
-
+                    .Select(ct => new SanPhamChiTietDto
+                    {
+                        IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                        IdSanPham = ct.IDSanPham,
+                        IdKichCo = ct.IDKichCo,
+                        IdMauSac = ct.IDMauSac,
+                        IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
+                        SoLuong = ct.SoLuong,
+                        GiaBan = ct.GiaBan,
+                        MaSPChiTiet = ct.MaSPChiTiet,
+                        TenKichCo = ct.KichCo.TenKichCo,
+                        TenMauSac = ct.MauSac.TenMauSac,
+                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "N/A",
+                        TenSanPham = ct.SanPham.TenSanPham,
+                        TrangThai = ct.SanPham.TrangThai,
+                        originalPrice = ct.GiaBan,
+                        price = ct.GiaBan, // Sẽ tính toán sau nếu cần
+                        TenDanhMuc = ct.SanPham.DanhMuc.TenDanhMuc,
+                        AnhDaiDien = ct.AnhSanPhams
+                            .Where(a => a.LaAnhChinh)
+                            .Select(a => a.UrlAnh)
+                            .FirstOrDefault() ?? ""
+                    })
                     .ToListAsync();
-
-                var result = list.Select(ct => new SanPhamChiTietDto
-                {
-                    IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
-                    IdSanPham = ct.IDSanPham,
-                    IdKichCo = ct.IDKichCo,
-                    IdMauSac = ct.IDMauSac,
-                    IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
-                    SoLuong = ct.SoLuong,
-                    GiaBan = ct.GiaBan,
-                    MaSPChiTiet = ct.MaSPChiTiet,
-                    TenKichCo = ct.KichCo?.TenKichCo ?? "N/A",
-                    TenMauSac = ct.MauSac?.TenMauSac ?? "N/A",
-                    TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
-                    TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
-                    TrangThai = ct.SanPham?.TrangThai ?? true,
-                    originalPrice = ct.GiaBan,
-                    price = (
-                        (from dgg in _context.DotGiamGias
-                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
-                         where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
-                            && dgg.TrangThai == true
-                            && dgg.NgayBatDau <= DateTime.Now
-                            && dgg.NgayKetThuc >= DateTime.Now
-                         select dgg.PhanTramGiam
-                        ).FirstOrDefault() > 0
-                        ? ct.GiaBan * (1 - (decimal)(
-                            (from dgg in _context.DotGiamGias
-                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
-                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
-                                && dgg.TrangThai == true
-                                && dgg.NgayBatDau <= DateTime.Now
-                                && dgg.NgayKetThuc >= DateTime.Now
-                             select dgg.PhanTramGiam
-                            ).FirstOrDefault() / 100.0m))
-                        : ct.GiaBan
-                    ),
-                    TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
-                    AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : "",
-                }).ToList();
 
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
+                _logger.LogError(ex, "Lỗi khi lấy danh sách sản phẩm chi tiết: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi tải danh sách sản phẩm chi tiết");
             }
         }
 
@@ -95,63 +78,47 @@ namespace QuanApi.Controllers
         {
             try
             {
-                var ct = await _context.SanPhamChiTiets
+                var result = await _context.SanPhamChiTiets
                     .Include(ct => ct.KichCo)
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
                     .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
+                    .Where(ct => ct.IDSanPhamChiTiet == id)
+                    .Select(ct => new SanPhamChiTietDto
+                    {
+                        IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                        IdSanPham = ct.IDSanPham,
+                        IdKichCo = ct.IDKichCo,
+                        IdMauSac = ct.IDMauSac,
+                        IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
+                        SoLuong = ct.SoLuong,
+                        GiaBan = ct.GiaBan,
+                        MaSPChiTiet = ct.MaSPChiTiet,
+                        TenKichCo = ct.KichCo.TenKichCo,
+                        TenMauSac = ct.MauSac.TenMauSac,
+                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "N/A",
+                        TenSanPham = ct.SanPham.TenSanPham,
+                        TrangThai = ct.SanPham.TrangThai,
+                        originalPrice = ct.GiaBan,
+                        price = ct.GiaBan, // Sẽ tính toán sau nếu cần
+                        TenDanhMuc = ct.SanPham.DanhMuc.TenDanhMuc,
+                        AnhDaiDien = ct.AnhSanPhams
+                            .Where(a => a.LaAnhChinh)
+                            .Select(a => a.UrlAnh)
+                            .FirstOrDefault() ?? ""
+                    })
+                    .FirstOrDefaultAsync();
 
-                    .FirstOrDefaultAsync(ct => ct.IDSanPhamChiTiet == id);
-
-                if (ct == null)
+                if (result == null)
                     return NotFound("Không tìm thấy sản phẩm chi tiết.");
-
-                var result = new SanPhamChiTietDto
-                {
-                    IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
-                    IdSanPham = ct.IDSanPham,
-                    IdKichCo = ct.IDKichCo,
-                    IdMauSac = ct.IDMauSac,
-                    IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
-                    SoLuong = ct.SoLuong,
-                    GiaBan = ct.GiaBan,
-                    MaSPChiTiet = ct.MaSPChiTiet,
-                    TenKichCo = ct.KichCo?.TenKichCo ?? "N/A",
-                    TenMauSac = ct.MauSac?.TenMauSac ?? "N/A",
-                    TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
-                    TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
-                    TrangThai = ct.SanPham?.TrangThai ?? true,
-                    originalPrice = ct.GiaBan,
-                    price = (
-                        (from dgg in _context.DotGiamGias
-                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
-                         where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
-                            && dgg.TrangThai == true
-                            && dgg.NgayBatDau <= DateTime.Now
-                            && dgg.NgayKetThuc >= DateTime.Now
-                         select dgg.PhanTramGiam
-                        ).FirstOrDefault() > 0
-                        ? ct.GiaBan * (1 - (decimal)(
-                            (from dgg in _context.DotGiamGias
-                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
-                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
-                                && dgg.TrangThai == true
-                                && dgg.NgayBatDau <= DateTime.Now
-                                && dgg.NgayKetThuc >= DateTime.Now
-                             select dgg.PhanTramGiam
-                            ).FirstOrDefault() / 100.0m))
-                        : ct.GiaBan
-                    ),
-                    TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
-                    AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : "",
-                };
 
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
+                _logger.LogError(ex, "Lỗi khi lấy chi tiết sản phẩm: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi tải chi tiết sản phẩm");
             }
         }
 

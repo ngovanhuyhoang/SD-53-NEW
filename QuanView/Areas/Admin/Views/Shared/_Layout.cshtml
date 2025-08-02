@@ -228,48 +228,18 @@
                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-bell fa-fw"></i>
                                 <!-- Counter - Alerts -->
-                                <span class="badge badge-danger badge-counter">3+</span>
+                                <span class="badge badge-danger badge-counter" id="notificationCount">0</span>
                             </a>
                             <!-- Dropdown - Alerts -->
                             <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                  aria-labelledby="alertsDropdown">
                                 <h6 class="dropdown-header">
-                                    Alerts Center
+                                    Thông báo đơn hàng
                                 </h6>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-primary">
-                                            <i class="fas fa-file-alt text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 12, 2019</div>
-                                        <span class="font-weight-bold">A new monthly report is ready to download!</span>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-success">
-                                            <i class="fas fa-donate text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 7, 2019</div>
-                                        $290.29 has been deposited into your account!
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-warning">
-                                            <i class="fas fa-exclamation-triangle text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 2, 2019</div>
-                                        Spending Alert: We've noticed unusually high spending for your account.
-                                    </div>
-                                </a>
-                                <a class="dropdown-item text-center small text-gray-500" href="#">Show All Alerts</a>
+                                <div id="notificationList">
+                                    <!-- Notifications will be loaded here -->
+                                </div>
+                                <a class="dropdown-item text-center small text-gray-500" href="@Url.Action("Index", "QuanLyDonHang", new { area = "Admin" })">Xem tất cả đơn hàng</a>
                             </div>
                         </li>
 
@@ -446,8 +416,64 @@
             <!-- Core plugin JavaScript-->
             <script src="~/admin/vendor/jquery-easing/jquery.easing.min.js"></script>
 
-            <!-- Custom scripts for all pages-->
-            <script src="~/admin/js/sb-admin-2.min.js"></script>
+                <!-- Custom scripts for all pages-->
+    <script src="~/admin/js/sb-admin-2.min.js"></script>
+    
+    <!-- Notification Script -->
+    <script>
+        function loadNotifications() {
+            fetch('/Admin/QuanLyDonHang/DonHangCanXacNhan')
+                .then(response => response.json())
+                .then(data => {
+                    const countElement = document.getElementById('notificationCount');
+                    const listElement = document.getElementById('notificationList');
+                    
+                    // Update count
+                    if (data.tongSo > 0) {
+                        countElement.textContent = data.tongSo > 99 ? '99+' : data.tongSo;
+                        countElement.style.display = 'inline';
+                    } else {
+                        countElement.style.display = 'none';
+                    }
+                    
+                    // Update notification list
+                    if (data.danhSach && data.danhSach.length > 0) {
+                        let html = '';
+                        data.danhSach.forEach(order => {
+                            const date = new Date(order.ngayTao).toLocaleString('vi-VN');
+                            html += `
+                                <a class="dropdown-item d-flex align-items-center" href="/Admin/QuanLyDonHang/Details/${order.id}">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-warning">
+                                            <i class="fas fa-exclamation-triangle text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">${date}</div>
+                                        <span class="font-weight-bold">Đơn hàng ${order.maHoaDon} cần xác nhận</span>
+                                        <div class="small text-gray-500">${order.tenKhachHang} - ${order.tongTien.toLocaleString('vi-VN')} VNĐ</div>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        listElement.innerHTML = html;
+                    } else {
+                        listElement.innerHTML = '<div class="dropdown-item text-center small text-gray-500">Không có đơn hàng cần xác nhận</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                });
+        }
+        
+        // Load notifications on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+            
+            // Refresh notifications every 30 seconds
+            setInterval(loadNotifications, 30000);
+        });
+    </script>
 
             <!-- Page level plugins -->
             <script src="~/admin/vendor/chart.js/Chart.min.js"></script>

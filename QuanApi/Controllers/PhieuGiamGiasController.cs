@@ -40,69 +40,33 @@ namespace QuanApi.Controllers
         [HttpPost]
         public async Task<ActionResult<PhieuGiamGiaDto>> Create(
                 [FromBody] CreatePhieuGiamGiaDto dto,
-                [FromQuery] Guid? idKhachHang,
                 [FromServices] IMapper mapper)
         {
             var model = mapper.Map<PhieuGiamGia>(dto);
             model.IDPhieuGiamGia = Guid.NewGuid();
             model.NgayTao = DateTime.UtcNow;
-
-            if (idKhachHang.HasValue)
-            {
-                var kh = await _context.KhachHang.FindAsync(idKhachHang.Value);
-                if (kh == null) return BadRequest("Khách hàng không tồn tại.");
-                model.TenPhieu += $" (Áp dụng KH {kh.MaKhachHang})";
-            }
+            model.LaCongKhai = true; // Mặc định là công khai
+            model.SoLuong = 1; // Mỗi khách hàng 1 phiếu
 
             _context.PhieuGiamGias.Add(model);
             await _context.SaveChangesAsync();
 
-            // Xử lý phân phối phiếu giảm giá cho khách hàng
-            if (model.LaCongKhai)
+            // Phân phối phiếu giảm giá cho tất cả khách hàng (mỗi người 1 phiếu)
+            var allCustomers = await _context.KhachHang
+                .Where(kh => kh.TrangThai)
+                .ToListAsync();
+
+            var khachHangPhieuGiamList = new List<KhachHangPhieuGiam>();
+
+            foreach (var customer in allCustomers)
             {
-                // Nếu là phiếu công khai, phân phối cho tất cả khách hàng (mỗi người 1 phiếu)
-                var allCustomers = await _context.KhachHang
-                    .Where(kh => kh.TrangThai)
-                    .ToListAsync();
-
-                var khachHangPhieuGiamList = new List<KhachHangPhieuGiam>();
-
-                foreach (var customer in allCustomers)
-                {
-                    var khachHangPhieuGiam = new KhachHangPhieuGiam
-                    {
-                        IDKhachHangPhieuGiam = Guid.NewGuid(),
-                        MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
-                        IDKhachHang = customer.IDKhachHang,
-                        IDPhieuGiamGia = model.IDPhieuGiamGia,
-                        SoLuong = 1, // Mỗi khách hàng chỉ được 1 phiếu khi công khai
-                        SoLuongDaSuDung = 0,
-                        NgayTao = DateTime.UtcNow,
-                        NguoiTao = User.Identity?.Name ?? "System",
-                        LanCapNhatCuoi = null,
-                        NguoiCapNhat = null,
-                        TrangThai = true
-                    };
-
-                    khachHangPhieuGiamList.Add(khachHangPhieuGiam);
-                }
-
-                if (khachHangPhieuGiamList.Any())
-                {
-                    _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
-                    await _context.SaveChangesAsync();
-                }
-            }
-            else if (idKhachHang.HasValue)
-            {
-                // Nếu không phải công khai và có khách hàng được chỉ định, tạo liên kết cho khách hàng đó
                 var khachHangPhieuGiam = new KhachHangPhieuGiam
                 {
                     IDKhachHangPhieuGiam = Guid.NewGuid(),
-                    MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{idKhachHang.Value.ToString().Substring(0, 8)}",
-                    IDKhachHang = idKhachHang.Value,
+                    MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
+                    IDKhachHang = customer.IDKhachHang,
                     IDPhieuGiamGia = model.IDPhieuGiamGia,
-                    SoLuong = model.SoLuong,
+                    SoLuong = 1, // Mỗi khách hàng chỉ được 1 phiếu
                     SoLuongDaSuDung = 0,
                     NgayTao = DateTime.UtcNow,
                     NguoiTao = User.Identity?.Name ?? "System",
@@ -111,7 +75,12 @@ namespace QuanApi.Controllers
                     TrangThai = true
                 };
 
-                _context.KhachHangPhieuGiams.Add(khachHangPhieuGiam);
+                khachHangPhieuGiamList.Add(khachHangPhieuGiam);
+            }
+
+            if (khachHangPhieuGiamList.Any())
+            {
+                _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
                 await _context.SaveChangesAsync();
             }
 
@@ -131,7 +100,6 @@ namespace QuanApi.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePayload payload)
         {
             var model = payload.Phieu;
-            var khachHangId = payload.KhachHangId;
 
             if (id != model.IDPhieuGiamGia)
                 return BadRequest("ID không khớp.");
@@ -139,25 +107,9 @@ namespace QuanApi.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
-            // Lấy phiếu giảm giá hiện tại để kiểm tra trạng thái LaCongKhai
-            var existingVoucher = await _context.PhieuGiamGias.FindAsync(id);
-            if (existingVoucher == null)
-                return NotFound("Không tìm thấy phiếu giảm giá.");
-
-            var wasPublic = existingVoucher.LaCongKhai;
-            var isNowPublic = model.LaCongKhai;
-
-            var idx = model.TenPhieu.IndexOf("(Áp dụng KH");
-            if (idx >= 0)
-                model.TenPhieu = model.TenPhieu.Substring(0, idx).Trim();
-
-            if (khachHangId.HasValue && !isNowPublic)
-            {
-                var kh = await _context.KhachHang.FindAsync(khachHangId.Value);
-                if (kh == null)
-                    return BadRequest("Khách hàng không tồn tại.");
-                model.TenPhieu += $" (Áp dụng KH {kh.MaKhachHang})";
-            }
+            // Luôn set là công khai và mỗi khách hàng 1 phiếu
+            model.LaCongKhai = true;
+            model.SoLuong = 1;
 
             _context.Entry(model).State = EntityState.Modified;
 
@@ -165,71 +117,34 @@ namespace QuanApi.Controllers
             {
                 await _context.SaveChangesAsync();
 
-                // Xử lý phân phối phiếu giảm giá cho khách hàng
-                if (isNowPublic && !wasPublic)
+                // Cập nhật phân phối phiếu giảm giá cho tất cả khách hàng
+                var allCustomers = await _context.KhachHang
+                    .Where(kh => kh.TrangThai)
+                    .ToListAsync();
+
+                // Xóa tất cả liên kết hiện tại
+                var existingLinks = await _context.KhachHangPhieuGiams
+                    .Where(x => x.IDPhieuGiamGia == id)
+                    .ToListAsync();
+
+                if (existingLinks.Any())
                 {
-                    // Chuyển từ không công khai sang công khai - phân phối cho tất cả khách hàng (mỗi người 1 phiếu)
-                    var allCustomers = await _context.KhachHang
-                        .Where(kh => kh.TrangThai)
-                        .ToListAsync();
-
-                    var khachHangPhieuGiamList = new List<KhachHangPhieuGiam>();
-
-                    foreach (var customer in allCustomers)
-                    {
-                        // Kiểm tra xem khách hàng đã có phiếu này chưa
-                        var existingLink = await _context.KhachHangPhieuGiams
-                            .FirstOrDefaultAsync(x => x.IDKhachHang == customer.IDKhachHang && x.IDPhieuGiamGia == id);
-
-                        if (existingLink == null)
-                        {
-                            var khachHangPhieuGiam = new KhachHangPhieuGiam
-                            {
-                                IDKhachHangPhieuGiam = Guid.NewGuid(),
-                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
-                                IDKhachHang = customer.IDKhachHang,
-                                IDPhieuGiamGia = id,
-                                SoLuong = 1, // Mỗi khách hàng chỉ được 1 phiếu khi công khai
-                                SoLuongDaSuDung = 0,
-                                NgayTao = DateTime.UtcNow,
-                                NguoiTao = User.Identity?.Name ?? "System",
-                                LanCapNhatCuoi = null,
-                                NguoiCapNhat = null,
-                                TrangThai = true
-                            };
-
-                            khachHangPhieuGiamList.Add(khachHangPhieuGiam);
-                        }
-                    }
-
-                    if (khachHangPhieuGiamList.Any())
-                    {
-                        _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
-                        await _context.SaveChangesAsync();
-                    }
+                    _context.KhachHangPhieuGiams.RemoveRange(existingLinks);
+                    await _context.SaveChangesAsync();
                 }
-                else if (!isNowPublic && khachHangId.HasValue)
+
+                // Tạo liên kết mới cho tất cả khách hàng
+                var khachHangPhieuGiamList = new List<KhachHangPhieuGiam>();
+
+                foreach (var customer in allCustomers)
                 {
-                    // Chuyển từ công khai sang không công khai và có khách hàng được chỉ định
-                    // Xóa tất cả liên kết hiện tại
-                    var existingLinks = await _context.KhachHangPhieuGiams
-                        .Where(x => x.IDPhieuGiamGia == id)
-                        .ToListAsync();
-
-                    if (existingLinks.Any())
-                    {
-                        _context.KhachHangPhieuGiams.RemoveRange(existingLinks);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    // Tạo liên kết mới cho khách hàng được chỉ định
                     var khachHangPhieuGiam = new KhachHangPhieuGiam
                     {
                         IDKhachHangPhieuGiam = Guid.NewGuid(),
-                        MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{khachHangId.Value.ToString().Substring(0, 8)}",
-                        IDKhachHang = khachHangId.Value,
+                        MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
+                        IDKhachHang = customer.IDKhachHang,
                         IDPhieuGiamGia = id,
-                        SoLuong = model.SoLuong,
+                        SoLuong = 1, // Mỗi khách hàng chỉ được 1 phiếu
                         SoLuongDaSuDung = 0,
                         NgayTao = DateTime.UtcNow,
                         NguoiTao = User.Identity?.Name ?? "System",
@@ -238,111 +153,13 @@ namespace QuanApi.Controllers
                         TrangThai = true
                     };
 
-                    _context.KhachHangPhieuGiams.Add(khachHangPhieuGiam);
+                    khachHangPhieuGiamList.Add(khachHangPhieuGiam);
+                }
+
+                if (khachHangPhieuGiamList.Any())
+                {
+                    _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
                     await _context.SaveChangesAsync();
-                }
-                else if (!isNowPublic && !khachHangId.HasValue)
-                {
-                    // Chuyển từ công khai sang không công khai và không có khách hàng được chỉ định
-                    // Xóa tất cả liên kết hiện tại
-                    var existingLinks = await _context.KhachHangPhieuGiams
-                        .Where(x => x.IDPhieuGiamGia == id)
-                        .ToListAsync();
-
-                    if (existingLinks.Any())
-                    {
-                        _context.KhachHangPhieuGiams.RemoveRange(existingLinks);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-                else if (isNowPublic && wasPublic)
-                {
-                    // Vẫn là công khai - cập nhật thông tin cho tất cả khách hàng hiện có (giữ số lượng = 1)
-                    var existingLinks = await _context.KhachHangPhieuGiams
-                        .Where(x => x.IDPhieuGiamGia == id)
-                        .ToListAsync();
-
-                    foreach (var link in existingLinks)
-                    {
-                        link.SoLuong = 1; // Luôn giữ số lượng = 1 cho phiếu công khai
-                        link.LanCapNhatCuoi = DateTime.UtcNow;
-                        link.NguoiCapNhat = User.Identity?.Name ?? "System";
-                    }
-
-                    _context.KhachHangPhieuGiams.UpdateRange(existingLinks);
-                    await _context.SaveChangesAsync();
-                }
-                else if (!isNowPublic && wasPublic && khachHangId.HasValue)
-                {
-                    // Chuyển từ công khai sang không công khai và có khách hàng được chỉ định
-                    // Xóa tất cả liên kết hiện tại
-                    var existingLinks = await _context.KhachHangPhieuGiams
-                        .Where(x => x.IDPhieuGiamGia == id)
-                        .ToListAsync();
-
-                    if (existingLinks.Any())
-                    {
-                        _context.KhachHangPhieuGiams.RemoveRange(existingLinks);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    // Tạo liên kết mới cho khách hàng được chỉ định
-                    var khachHangPhieuGiam = new KhachHangPhieuGiam
-                    {
-                        IDKhachHangPhieuGiam = Guid.NewGuid(),
-                        MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{khachHangId.Value.ToString().Substring(0, 8)}",
-                        IDKhachHang = khachHangId.Value,
-                        IDPhieuGiamGia = id,
-                        SoLuong = model.SoLuong,
-                        SoLuongDaSuDung = 0,
-                        NgayTao = DateTime.UtcNow,
-                        NguoiTao = User.Identity?.Name ?? "System",
-                        LanCapNhatCuoi = null,
-                        NguoiCapNhat = null,
-                        TrangThai = true
-                    };
-
-                    _context.KhachHangPhieuGiams.Add(khachHangPhieuGiam);
-                    await _context.SaveChangesAsync();
-                }
-                else if (!isNowPublic && !wasPublic && khachHangId.HasValue)
-                {
-                    // Vẫn không công khai và có khách hàng được chỉ định
-                    var existingLink = await _context.KhachHangPhieuGiams
-                        .FirstOrDefaultAsync(x => x.IDKhachHang == khachHangId.Value && x.IDPhieuGiamGia == id);
-
-                    if (existingLink == null)
-                    {
-                        // Tạo liên kết mới
-                        var khachHangPhieuGiam = new KhachHangPhieuGiam
-                        {
-                            IDKhachHangPhieuGiam = Guid.NewGuid(),
-                            MaKhachHangPhieuGiam = $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{khachHangId.Value.ToString().Substring(0, 8)}",
-                            IDKhachHang = khachHangId.Value,
-                            IDPhieuGiamGia = id,
-                            SoLuong = model.SoLuong,
-                            SoLuongDaSuDung = 0,
-                            NgayTao = DateTime.UtcNow,
-                            NguoiTao = User.Identity?.Name ?? "System",
-                            LanCapNhatCuoi = null,
-                            NguoiCapNhat = null,
-                            TrangThai = true
-                        };
-
-                        _context.KhachHangPhieuGiams.Add(khachHangPhieuGiam);
-                        await _context.SaveChangesAsync();
-                    }
-                    else
-                    {
-                        // Cập nhật liên kết hiện có
-                        existingLink.SoLuong = model.SoLuong;
-                        existingLink.LanCapNhatCuoi = DateTime.UtcNow;
-                        existingLink.NguoiCapNhat = User.Identity?.Name ?? "System";
-                        existingLink.TrangThai = true;
-                        
-                        _context.KhachHangPhieuGiams.Update(existingLink);
-                        await _context.SaveChangesAsync();
-                    }
                 }
             }
             catch (DbUpdateConcurrencyException)

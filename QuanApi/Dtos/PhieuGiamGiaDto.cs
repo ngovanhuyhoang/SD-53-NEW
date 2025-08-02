@@ -10,7 +10,7 @@ namespace QuanApi.Dtos
 
         public string TenPhieu { get; set; } = default!;
 
-        public decimal GiaTriGiam { get; set; }
+        public int GiaTriGiam { get; set; }
 
         public bool TheoPhanTram { get; set; }
 

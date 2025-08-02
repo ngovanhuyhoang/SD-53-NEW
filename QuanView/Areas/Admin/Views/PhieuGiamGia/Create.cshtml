@@ -1,180 +1,202 @@
-﻿@model QuanApi.Dtos.CreatePhieuGiamGiaDto
-@using QuanApi.Dtos
+﻿@model QuanApi.Data.PhieuGiamGia
 
 @{
     ViewData["Title"] = "Tạo phiếu giảm giá";
-    var khachHangs = ViewBag.KhachHangs as List<KhachHangDto>;
 }
 
-<h2>@ViewData["Title"]</h2>
+<style>
+    .form-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        padding: 0.75rem;
+        transition: border-color 0.3s;
+    }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    .btn-primary {
+        background: #007bff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    .btn-primary:hover {
+        background: #0056b3;
+    }
+    .btn-secondary {
+        background: #6c757d;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    .btn-secondary:hover {
+        background: #545b62;
+    }
+    .alert {
+        border-radius: 6px;
+        border: none;
+    }
+    .text-muted {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .form-check-input:checked {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+</style>
 
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                <li>@error.ErrorMessage</li>
-            }
-        </ul>
-    </div>
-}
-
-<form asp-action="Create" method="post">
-    @Html.AntiForgeryToken()
-
-    <div class="form-group">
-        <label asp-for="MaCode"></label>
-        <input asp-for="MaCode" class="form-control" />
-        <span asp-validation-for="MaCode" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="TenPhieu"></label>
-        <input asp-for="TenPhieu" class="form-control" />
-        <span asp-validation-for="TenPhieu" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="GiaTriGiam">Phần trăm giảm giá (%)</label>
-        <input asp-for="GiaTriGiam" class="form-control" type="number" min="0" max="100" />
-        <small class="form-text text-muted">Nhập phần trăm giảm giá từ 0 đến 100%</small>
-        <span asp-validation-for="GiaTriGiam" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="GiaTriGiamToiDa">Giá trị giảm tối đa (VNĐ)</label>
-        <input asp-for="GiaTriGiamToiDa" class="form-control" type="number" min="0" />
-        <small class="form-text text-muted">Giá trị tiền tối đa được giảm (để trống nếu không giới hạn)</small>
-        <span asp-validation-for="GiaTriGiamToiDa" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="DonToiThieu">Đơn hàng tối thiểu (VNĐ)</label>
-        <input asp-for="DonToiThieu" class="form-control" type="number" min="0" />
-        <small class="form-text text-muted">Giá trị đơn hàng tối thiểu để áp dụng phiếu giảm giá</small>
-        <span asp-validation-for="DonToiThieu" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="SoLuong"></label>
-        <input asp-for="SoLuong" class="form-control" />
-        <span asp-validation-for="SoLuong" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="NgayBatDau"></label>
-        <input asp-for="NgayBatDau" type="date" class="form-control" />
-        <span asp-validation-for="NgayBatDau" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="NgayKetThuc"></label>
-        <input asp-for="NgayKetThuc" type="date" class="form-control" />
-        <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label>
-            <input type="checkbox" id="LaCongKhai" name="LaCongKhai" value="true" onchange="toggleCustomerSelection()" />
-            Công khai (áp dụng cho tất cả khách hàng - mỗi người 1 phiếu)
-        </label>
-        <small class="form-text text-info">Khi chọn công khai, tất cả khách hàng sẽ được nhận 1 phiếu giảm giá mỗi người, bất kể số lượng cấu hình.</small>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Tạo phiếu giảm giá mới</h1>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
     </div>
 
-    <div id="customerSelectionSection" style="display:none;">
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="TaoRiengCheckbox" name="TaoRieng" value="true" onchange="toggleKhachHangTable()" />
-                Tạo riêng cho khách hàng cụ thể
-            </label>
+    <div class="form-container">
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <strong>Lưu ý:</strong> Phiếu giảm giá sẽ được phân phối công khai cho tất cả khách hàng (mỗi người 1 phiếu).
         </div>
-        
-        <input type="hidden" name="khachHangId" id="SelectedKhachHangId" value="" />
-        
-        <div id="chonKhachHang" style="display:none;">
-            <h5>Chọn khách hàng áp dụng:</h5>
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th>Tên khách hàng</th>
-                        <th>Email</th>
-                        <th>SĐT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var kh in khachHangs)
-                    {
-                        <tr class="khach-row" data-id="@kh.IDKhachHang" style="cursor:pointer">
-                            <td>@kh.TenKhachHang</td>
-                            <td>@kh.Email</td>
-                            <td>@kh.SoDienThoai</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+
+        <form asp-action="Create" method="post" id="createForm">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             
-            <div id="guiEmailDiv" style="display:none;" class="form-group mt-2">
-                <label>
-                    <input type="checkbox" id="GuiEmailCheckbox" name="GuiEmail" value="true" />
-                    Gửi email thông báo cho khách hàng này?
-                </label>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="MaCode" class="form-label">Mã Code <span class="text-danger">*</span></label>
+                        <input asp-for="MaCode" class="form-control" placeholder="Nhập mã code..." />
+                        <span asp-validation-for="MaCode" class="text-danger"></span>
+                        <small class="text-muted">Mã code duy nhất cho phiếu giảm giá</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="TenPhieu" class="form-label">Tên phiếu <span class="text-danger">*</span></label>
+                        <input asp-for="TenPhieu" class="form-control" placeholder="Nhập tên phiếu..." />
+                        <span asp-validation-for="TenPhieu" class="text-danger"></span>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="form-group mt-2">
-        <label asp-for="TrangThai">Kích hoạt</label>
-        <input asp-for="TrangThai" type="checkbox" />
-    </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="GiaTriGiam" class="form-label">Phần trăm giảm (%) <span class="text-danger">*</span></label>
+                        <input asp-for="GiaTriGiam" class="form-control" type="number" min="1" max="100" placeholder="1-100" />
+                        <span asp-validation-for="GiaTriGiam" class="text-danger"></span>
+                        <small class="text-muted">Phần trăm giảm từ 1% đến 100%</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="GiaTriGiamToiDa" class="form-label">Giảm tối đa (VNĐ)</label>
+                        <input asp-for="GiaTriGiamToiDa" class="form-control" type="number" min="0" placeholder="0" />
+                        <span asp-validation-for="GiaTriGiamToiDa" class="text-danger"></span>
+                        <small class="text-muted">Để trống nếu không giới hạn</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="DonToiThieu" class="form-label">Đơn tối thiểu (VNĐ) <span class="text-danger">*</span></label>
+                        <input asp-for="DonToiThieu" class="form-control" type="number" min="0" placeholder="0" />
+                        <span asp-validation-for="DonToiThieu" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
 
-    <div class="form-group">
-        <label asp-for="NguoiTao"></label>
-        <input asp-for="NguoiTao" class="form-control" readonly />
-        <span asp-validation-for="NguoiTao" class="text-danger"></span>
-    </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="NgayBatDau" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                        <input asp-for="NgayBatDau" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="NgayBatDau" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="NgayKetThuc" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                        <input asp-for="NgayKetThuc" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
 
-    <button type="submit" class="btn btn-primary">Tạo phiếu</button>
-    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
-</form>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input asp-for="TrangThai" class="form-check-input" />
+                    <label asp-for="TrangThai" class="form-check-label">Kích hoạt phiếu giảm giá</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Tạo phiếu
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
     <script>
-        function toggleCustomerSelection() {
-            const laCongKhai = document.getElementById("LaCongKhai").checked;
-            const customerSection = document.getElementById("customerSelectionSection");
+        $(document).ready(function() {
+            // Set default dates
+            var now = new Date();
+            var tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            var nextWeek = new Date(now);
+            nextWeek.setDate(nextWeek.getDate() + 7);
             
-            if (laCongKhai) {
-                customerSection.style.display = "none";
-                document.getElementById("SelectedKhachHangId").value = "";
-                document.getElementById("guiEmailDiv").style.display = "none";
-            } else {
-                customerSection.style.display = "block";
-            }
-        }
+            $('#NgayBatDau').val(tomorrow.toISOString().slice(0, 16));
+            $('#NgayKetThuc').val(nextWeek.toISOString().slice(0, 16));
 
-        function toggleKhachHangTable() {
-            const taoRieng = document.getElementById("TaoRiengCheckbox").checked;
-            document.getElementById("chonKhachHang").style.display = taoRieng ? "block" : "none";
-            if (!taoRieng) {
-                document.getElementById("SelectedKhachHangId").value = "";
-                document.getElementById("guiEmailDiv").style.display = "none";
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            toggleCustomerSelection();
-            toggleKhachHangTable();
-
-            document.querySelectorAll(".khach-row").forEach(row => {
-                row.addEventListener("click", function () {
-                    document.querySelectorAll(".khach-row").forEach(r => r.classList.remove("table-primary"));
-                    row.classList.add("table-primary");
-
-                    document.getElementById("SelectedKhachHangId").value = row.dataset.id;
-                    document.getElementById("guiEmailDiv").style.display = "block";
-                });
+            // Custom validation
+            $('#createForm').on('submit', function(e) {
+                var ngayBatDau = new Date($('#NgayBatDau').val());
+                var ngayKetThuc = new Date($('#NgayKetThuc').val());
+                var giaTriGiam = parseInt($('#GiaTriGiam').val());
+                
+                // Validate date range
+                if (ngayKetThuc <= ngayBatDau) {
+                    alert('Ngày kết thúc phải lớn hơn ngày bắt đầu!');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Validate percentage
+                if (giaTriGiam < 1 || giaTriGiam > 100) {
+                    alert('Phần trăm giảm phải từ 1% đến 100%!');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                return true;
             });
         });
     </script>

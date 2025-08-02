@@ -12,7 +12,7 @@ namespace QuanApi.Dtos
         public string TenPhieu { get; set; }
 
         [Required, Range(0, 100, ErrorMessage = "Phần trăm giảm giá phải từ 0 đến 100%.")]
-        public decimal GiaTriGiam { get; set; } // Phần trăm giảm giá (0-100%)
+        public int GiaTriGiam { get; set; } // Phần trăm giảm giá (0-100%)
 
         [Range(0, double.MaxValue, ErrorMessage = "Giá trị giảm tối đa phải lớn hơn hoặc bằng 0.")]
         public decimal? GiaTriGiamToiDa { get; set; } // Giá trị tiền tối đa được giảm (VNĐ)

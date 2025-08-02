@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using static QuanApi.Controllers.PhieuGiamGiasController;
+using System.Linq; // Added for .Where() and .ToList()
 
 namespace QuanView.Areas.Admin.Controllers
 {
@@ -26,13 +27,62 @@ namespace QuanView.Areas.Admin.Controllers
             _emailService = emailService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string keyword, string trangThai, int page = 1, int pageSize = 10)
         {
             try
             {
                 var list = await _http.GetFromJsonAsync<List<PhieuGiamGia>>("PhieuGiamGias")
                            ?? new List<PhieuGiamGia>();
-                return View(list);
+
+                // Lọc theo từ khóa
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    list = list.Where(p => 
+                        p.MaCode.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                        p.TenPhieu.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                    ).ToList();
+                }
+
+                // Lọc theo trạng thái
+                if (!string.IsNullOrEmpty(trangThai))
+                {
+                    var now = DateTime.Now;
+                    switch (trangThai)
+                    {
+                        case "sapdienra":
+                            list = list.Where(p => p.TrangThai && now < p.NgayBatDau).ToList();
+                            break;
+                        case "danghoatdong":
+                            list = list.Where(p => p.TrangThai && now >= p.NgayBatDau && now <= p.NgayKetThuc).ToList();
+                            break;
+                        case "hethang":
+                            list = list.Where(p => p.TrangThai && now > p.NgayKetThuc).ToList();
+                            break;
+                        case "ngungapdung":
+                            list = list.Where(p => !p.TrangThai).ToList();
+                            break;
+                    }
+                }
+
+                // Tính toán phân trang
+                var totalItems = list.Count;
+                var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+                page = Math.Max(1, Math.Min(page, totalPages));
+
+                var pagedList = list
+                    .OrderByDescending(p => p.NgayTao)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                // Truyền dữ liệu cho View
+                ViewBag.Keyword = keyword;
+                ViewBag.Status = trangThai;
+                ViewBag.Page = page;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalItems = totalItems;
+
+                return View(pagedList);
             }
             catch (Exception ex)
             {
@@ -50,8 +100,7 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Create()
         {
-            ViewBag.KhachHangs = await GetKhachHangsAsync();
-            return View(new CreatePhieuGiamGiaDto
+            return View(new PhieuGiamGia
             {
                 NgayBatDau = DateTime.Today,
                 NgayKetThuc = DateTime.Today.AddDays(7),
@@ -61,45 +110,38 @@ namespace QuanView.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreatePhieuGiamGiaDto model, bool LaCongKhai, Guid? khachHangId, bool GuiEmail = false)
+        public async Task<IActionResult> Create(PhieuGiamGia model, bool GuiEmail = false)
         {
-            // Cập nhật model.LaCongKhai từ parameter
-            model.LaCongKhai = LaCongKhai;
-            
-            // Nếu là công khai hoặc không có khách hàng được chọn, set khachHangId = null
-            if (LaCongKhai || khachHangId == Guid.Empty)
-                khachHangId = null;
-
             if (!ModelState.IsValid)
             {
-                ViewBag.KhachHangs = await GetKhachHangsAsync();
                 return View(model);
             }
 
-            var url = "PhieuGiamGias";
-            if (khachHangId.HasValue)
-                url += $"?idKhachHang={khachHangId.Value}";
+            // Tạo DTO để gửi lên API
+            var createDto = new CreatePhieuGiamGiaDto
+            {
+                MaCode = model.MaCode,
+                TenPhieu = model.TenPhieu,
+                GiaTriGiam = model.GiaTriGiam,
+                GiaTriGiamToiDa = model.GiaTriGiamToiDa,
+                DonToiThieu = model.DonToiThieu,
+                SoLuong = model.SoLuong,
+                LaCongKhai = model.LaCongKhai,
+                NgayBatDau = model.NgayBatDau,
+                NgayKetThuc = model.NgayKetThuc,
+                TrangThai = model.TrangThai,
+                NguoiTao = model.NguoiTao
+            };
 
-            var response = await _http.PostAsJsonAsync(url, model);
+            var response = await _http.PostAsJsonAsync("PhieuGiamGias", createDto);
             if (response.IsSuccessStatusCode)
             {
-                if (khachHangId.HasValue && GuiEmail)
-                {
-                    var kh = (await GetKhachHangsAsync()).FirstOrDefault(x => x.IDKhachHang == khachHangId.Value);
-                    if (kh != null && !string.IsNullOrEmpty(kh.Email))
-                    {
-                        await _emailService.SendVoucherEmailAsync(kh.Email, kh.TenKhachHang, model.TenPhieu);
-                    }
-                }
-
-                var message = LaCongKhai ? "Tạo phiếu giảm giá công khai thành công! Tất cả khách hàng đã được nhận 1 phiếu mỗi người." : "Tạo phiếu giảm giá thành công!";
-                TempData["SuccessMessage"] = message;
+                TempData["SuccessMessage"] = "Tạo phiếu giảm giá thành công! Tất cả khách hàng đã được nhận 1 phiếu mỗi người.";
                 return RedirectToAction(nameof(Index));
             }
 
             var error = await response.Content.ReadAsStringAsync();
             ModelState.AddModelError("", $"Tạo thất bại: {error}");
-            ViewBag.KhachHangs = await GetKhachHangsAsync();
             return View(model);
         }
 
@@ -110,48 +152,30 @@ namespace QuanView.Areas.Admin.Controllers
             var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGias/{id}");
             if (phieu == null) return NotFound();
 
-            var khachHangs = await GetKhachHangsAsync();
-            ViewBag.KhachHangs = khachHangs;
-            Guid? selectedKhachHangId = null;
-            var idx = phieu.TenPhieu.IndexOf("(Áp dụng KH");
-            if (idx >= 0)
-            {
-                var code = phieu.TenPhieu.Substring(idx).Trim();
-                var maKh = code.Replace("(Áp dụng KH", "").Replace(")", "").Trim();
-                var kh = khachHangs.FirstOrDefault(k => k.MaKhachHang == maKh);
-                if (kh != null)
-                    selectedKhachHangId = kh.IDKhachHang;
-            }
-
-            ViewBag.SelectedKhachHangId = selectedKhachHangId;
-
             return View(phieu);
         }
-
-
 
         // POST: Admin/PhieuGiamGia/Edit/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, PhieuGiamGia model, Guid? khachHangId, bool LaCongKhai)
+        public async Task<IActionResult> Edit(Guid id, PhieuGiamGia model)
         {
             if (id != model.IDPhieuGiamGia) return BadRequest();
 
             if (!ModelState.IsValid)
             {
-                ViewBag.KhachHangs = await GetKhachHangsAsync();
-                ViewBag.SelectedKhachHangId = khachHangId;
                 return View(model);
             }
 
-            model.LaCongKhai = LaCongKhai;
+            model.LaCongKhai = true; // Luôn là công khai
+            model.SoLuong = 1; // Mỗi khách hàng 1 phiếu
             model.NguoiCapNhat = User.Identity?.Name ?? "Admin";
             model.LanCapNhatCuoi = DateTime.UtcNow;
 
             var payload = new
             {
                 phieu = model,
-                khachHangId = LaCongKhai ? null : khachHangId
+                khachHangId = (Guid?)null // Không cần khách hàng cụ thể
             };
 
             var res = await _http.PutAsJsonAsync($"PhieuGiamGias/{id}", payload);
@@ -162,8 +186,6 @@ namespace QuanView.Areas.Admin.Controllers
             }
 
             ModelState.AddModelError("", $"Cập nhật thất bại: {await res.Content.ReadAsStringAsync()}");
-            ViewBag.KhachHangs = await GetKhachHangsAsync();
-            ViewBag.SelectedKhachHangId = khachHangId;
             return View(model);
         }
 
@@ -185,18 +207,6 @@ namespace QuanView.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task<List<KhachHangDto>> GetKhachHangsAsync()
-        {
-            try
-            {
-                return await _http.GetFromJsonAsync<List<KhachHangDto>>("KhachHang")
-                       ?? new List<KhachHangDto>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Không thể load khách hàng.");
-                return new List<KhachHangDto>();
-            }
-        }
+
     }
 }

@@ -231,6 +231,10 @@
                             <span id="giamGia">0 VNĐ</span>
                         </div>
                         <div class="order-item">
+                            <span>Phí vận chuyển:</span>
+                            <span id="phiVanChuyen">50,000 VNĐ</span>
+                        </div>
+                        <div class="order-item">
                             <strong>Tổng cộng:</strong>
                             <strong id="tongCong">@tongTien.ToString("N0") VNĐ</strong>
                         </div>
@@ -293,7 +297,18 @@ function hienThiDonHang() {
     
     orderItemsContainer.innerHTML = html;
     document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
-    document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+    // Lấy giảm giá hiện tại
+    let giamGia = 0;
+    const giamGiaEl = document.getElementById('giamGia');
+    if (giamGiaEl) {
+        giamGia = parseFloat(giamGiaEl.textContent.replace(/[^\d]/g, '')) || 0;
+    }
+    // Phí vận chuyển cố định
+    const phiVanChuyen = 50000;
+    document.getElementById('phiVanChuyen').textContent = phiVanChuyen.toLocaleString('vi-VN') + ' VNĐ';
+    // Tổng cộng = tạm tính - giảm giá + phí vận chuyển
+    const tongCong = tamTinh - giamGia + phiVanChuyen;
+    document.getElementById('tongCong').textContent = tongCong.toLocaleString('vi-VN') + ' VNĐ';
 }
 
 // Load phương thức thanh toán
@@ -359,7 +374,9 @@ async function apDungMaGiamGia() {
                 alert('Áp dụng mã giảm giá thành công!');
                 // Cập nhật giá trị giảm giá
                 document.getElementById('giamGia').textContent = result.tienGiam.toLocaleString('vi-VN') + ' VNĐ';
-                const tongCong = parseFloat(document.getElementById('tamTinh').textContent.replace(/[^\d]/g, '')) - result.tienGiam;
+                // Cập nhật lại tổng cộng với phí vận chuyển
+                let tamTinh = parseFloat(document.getElementById('tamTinh').textContent.replace(/[^\d]/g, '')) || 0;
+                let tongCong = tamTinh - result.tienGiam + 50000;
                 document.getElementById('tongCong').textContent = tongCong.toLocaleString('vi-VN') + ' VNĐ';
             } else {
                 alert(result.message || 'Mã giảm giá không hợp lệ');
@@ -401,7 +418,8 @@ async function datHang() {
         phuongThucThanhToanId: phuongThucThanhToan,
         ghiChu: document.getElementById('ghiChu').value,
         tongTien: parseFloat(document.getElementById('tongCong').textContent.replace(/[^\d]/g, '')),
-        tienGiam: parseFloat(document.getElementById('giamGia').textContent.replace(/[^\d]/g, '')) || 0
+        tienGiam: parseFloat(document.getElementById('giamGia').textContent.replace(/[^\d]/g, '')) || 0,
+        phiVanChuyen: 50000
     };
     
     try {
@@ -419,7 +437,7 @@ async function datHang() {
             alert('Đặt hàng thành công!');
             // Xóa giỏ hàng session
             await fetch('/Checkout/ClearCart', { method: 'POST' });
-            window.location.href = '/Home/Index';
+            window.location.href = '/SanPhamNguoiDung/Index';
         } else {
             alert(result.message || 'Có lỗi xảy ra khi đặt hàng');
         }
