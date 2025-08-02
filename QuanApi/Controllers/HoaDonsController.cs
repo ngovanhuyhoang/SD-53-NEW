@@ -24,19 +24,211 @@ namespace QuanApi.Controllers
                 _logger = logger;
             }
 
-        // GET: api/HoaDons
+        // GET: api/HoaDons - Cho admin (hiển thị tất cả đơn hàng)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDons()
+        public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDons(
+    [FromQuery] string? trangThai = null,
+    [FromQuery] string? search = null,
+    [FromQuery] string? tuNgay = null,
+    [FromQuery] string? denNgay = null,
+    [FromQuery] string? loaiDonHang = null,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
         {
-            return await _context.HoaDons
-                .Include(h => h.KhachHang)
-                .Include(h => h.NhanVien)
-                .Include(h => h.PhieuGiamGia)
-                .Include(h => h.PhuongThucThanhToan)
-                .Include(h => h.ChiTietHoaDons)
-                    .ThenInclude(ct => ct.SanPhamChiTiet)
-                        .ThenInclude(spct => spct.SanPham)
-                .ToListAsync();
+            try
+            {
+                var query = _context.HoaDons
+                    .Include(h => h.KhachHang)
+                    .Include(h => h.NhanVien)
+                    .Include(h => h.PhieuGiamGia)
+                    .Include(h => h.PhuongThucThanhToan)
+                    .AsQueryable();
+
+                // Filter theo trạng thái (nếu có)
+                if (!string.IsNullOrEmpty(trangThai))
+                {
+                    query = query.Where(h => h.TrangThai == trangThai);
+                }
+
+                // Filter theo search (mã hóa đơn hoặc tên khách hàng)
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = query.Where(h => 
+                        h.MaHoaDon.Contains(search) || 
+                        (h.KhachHang != null && h.KhachHang.TenKhachHang.Contains(search)));
+                }
+
+                // Filter theo khoảng thời gian
+                if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
+                {
+                    query = query.Where(h => h.NgayTao.Date >= tuNgayDate.Date);
+                }
+
+                if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
+                {
+                    query = query.Where(h => h.NgayTao.Date <= denNgayDate.Date);
+                }
+
+                // Filter theo loại đơn hàng
+                if (!string.IsNullOrEmpty(loaiDonHang))
+                {
+                    if (loaiDonHang == "online")
+                    {
+                        query = query.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
+                    }
+                    else if (loaiDonHang == "taiquay")
+                    {
+                        query = query.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
+                    }
+                }
+
+                // Tính toán phân trang
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                
+                // Áp dụng phân trang
+                var hoaDons = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+                
+                // Thêm thông tin phân trang vào header
+                Response.Headers.Add("X-Total-Count", totalCount.ToString());
+                Response.Headers.Add("X-Total-Pages", totalPages.ToString());
+                Response.Headers.Add("X-Current-Page", page.ToString());
+                Response.Headers.Add("X-Page-Size", pageSize.ToString());
+                
+                _logger.LogInformation($"API GetHoaDons (Admin): trangThai={trangThai}, search={search}, page={page}, pageSize={pageSize}, returned {hoaDons.Count}/{totalCount} orders");
+                
+                return hoaDons;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetHoaDons (Admin): {ex.Message}");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        // GET: api/HoaDons/customer/{khachHangId} - Cho khách hàng (chỉ hiển thị đơn hàng của khách hàng này)
+        [HttpGet("customer/{khachHangId}")]
+        public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDonsByCustomer(
+            Guid khachHangId,
+            [FromQuery] string? trangThai = null,
+            [FromQuery] string? search = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var query = _context.HoaDons
+                    .Include(h => h.KhachHang)
+                    .Include(h => h.NhanVien)
+                    .Include(h => h.PhieuGiamGia)
+                    .Include(h => h.PhuongThucThanhToan)
+                    .Where(h => h.IDKhachHang == khachHangId)
+                    .AsQueryable();
+
+                // Filter theo trạng thái (nếu có)
+                if (!string.IsNullOrEmpty(trangThai))
+                {
+                    query = query.Where(h => h.TrangThai == trangThai);
+                }
+
+                // Filter theo search (mã hóa đơn)
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = query.Where(h => h.MaHoaDon.Contains(search));
+                }
+
+                // Tính toán phân trang
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                
+                // Áp dụng phân trang
+                var hoaDons = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+                
+                // Thêm thông tin phân trang vào header
+                Response.Headers.Add("X-Total-Count", totalCount.ToString());
+                Response.Headers.Add("X-Total-Pages", totalPages.ToString());
+                Response.Headers.Add("X-Current-Page", page.ToString());
+                Response.Headers.Add("X-Page-Size", pageSize.ToString());
+                
+                _logger.LogInformation($"API GetHoaDonsByCustomer: khachHangId={khachHangId}, trangThai={trangThai}, search={search}, page={page}, pageSize={pageSize}, returned {hoaDons.Count}/{totalCount} orders");
+                
+                return hoaDons;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetHoaDonsByCustomer: {ex.Message}");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        // GET: api/HoaDons/guest - Cho khách lẻ (chỉ hiển thị đơn hàng của khách lẻ)
+        [HttpGet("guest")]
+        public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDonsGuest(
+            [FromQuery] string? trangThai = null,
+            [FromQuery] string? search = null,
+            [FromQuery] string? phoneNumber = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var query = _context.HoaDons
+                    .Include(h => h.KhachHang)
+                    .Include(h => h.NhanVien)
+                    .Include(h => h.PhieuGiamGia)
+                    .Include(h => h.PhuongThucThanhToan)
+                    .Where(h => h.IDKhachHang == null)
+                    .AsQueryable();
+
+                // Filter theo trạng thái (nếu có)
+                if (!string.IsNullOrEmpty(trangThai))
+                {
+                    query = query.Where(h => h.TrangThai == trangThai);
+                }
+
+                // Filter theo search (mã hóa đơn)
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = query.Where(h => h.MaHoaDon.Contains(search));
+                }
+
+                // Filter theo số điện thoại
+                if (!string.IsNullOrEmpty(phoneNumber))
+                {
+                    query = query.Where(h => h.SoDienThoaiNguoiNhan.Contains(phoneNumber));
+                }
+
+                // Tính toán phân trang
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                
+                // Áp dụng phân trang
+                var hoaDons = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+                
+                // Thêm thông tin phân trang vào header
+                Response.Headers.Add("X-Total-Count", totalCount.ToString());
+                Response.Headers.Add("X-Total-Pages", totalPages.ToString());
+                Response.Headers.Add("X-Current-Page", page.ToString());
+                Response.Headers.Add("X-Page-Size", pageSize.ToString());
+                
+                _logger.LogInformation($"API GetHoaDonsGuest: trangThai={trangThai}, search={search}, phoneNumber={phoneNumber}, page={page}, pageSize={pageSize}, returned {hoaDons.Count}/{totalCount} orders");
+                
+                return hoaDons;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetHoaDonsGuest: {ex.Message}");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         // GET: api/HoaDons/5
@@ -212,18 +404,21 @@ namespace QuanApi.Controllers
                     return NotFound("Không tìm thấy hóa đơn");
                 }
 
+                // Cập nhật trạng thái
                 hoaDon.TrangThai = dto.TrangThai;
                 hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
                 hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
 
                 await _context.SaveChangesAsync();
-
-                return Ok(new { message = $"Đã cập nhật trạng thái đơn hàng thành '{dto.TrangThai}'" });
+                
+                _logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
+                
+                return Ok(new { success = true, message = "Cập nhật trạng thái thành công" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật trạng thái hóa đơn: {Message}", ex.Message);
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
+                _logger.LogError($"Error updating order status: {ex.Message}");
+                return StatusCode(500, "Internal server error");
             }
         }
     }

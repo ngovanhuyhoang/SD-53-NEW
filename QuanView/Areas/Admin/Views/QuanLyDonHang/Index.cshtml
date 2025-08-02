@@ -1,4 +1,4 @@
-@model List<QuanApi.Data.HoaDon>
+@model dynamic
 @using QuanApi.Data
 @{
     ViewData["Title"] = "Quản lý đơn hàng";
@@ -164,7 +164,12 @@
             <h6 class="m-0 font-weight-bold text-primary">Danh sách đơn hàng</h6>
         </div>
         <div class="card-body">
-            @if (!Model.Any())
+            @{
+                var hoaDons = Model?.HoaDons as List<QuanApi.Data.HoaDon> ?? new List<QuanApi.Data.HoaDon>();
+                var pagination = Model?.Pagination;
+            }
+            
+            @if (!hoaDons.Any())
             {
                 <div class="text-center py-4">
                     <p class="text-muted">Chưa có đơn hàng nào</p>
@@ -185,7 +190,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var hoaDon in Model.OrderByDescending(h => h.NgayTao))
+                            @foreach (var hoaDon in hoaDons.OrderByDescending(h => h.NgayTao))
                             {
                                 <tr>
                                     <td>
@@ -237,6 +242,76 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Phân trang -->
+                @if (pagination != null)
+                {
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            Hiển thị @(((pagination.CurrentPage - 1) * pagination.PageSize) + 1) - 
+                            @Math.Min(pagination.CurrentPage * pagination.PageSize, pagination.TotalCount) 
+                            trong tổng số @pagination.TotalCount đơn hàng
+                        </div>
+                        
+                        <nav aria-label="Phân trang">
+                            <ul class="pagination pagination-sm mb-0">
+                                @if (pagination.HasPreviousPage)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { 
+                                            page = pagination.CurrentPage - 1,
+                                            trangThai = Context.Request.Query["trangThai"],
+                                            tuNgay = Context.Request.Query["tuNgay"],
+                                            denNgay = Context.Request.Query["denNgay"],
+                                            loaiDonHang = Context.Request.Query["loaiDonHang"],
+                                            khachHang = Context.Request.Query["khachHang"],
+                                            maDonHang = Context.Request.Query["maDonHang"]
+                                        })">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                }
+                                
+                                @{
+                                    var startPage = Math.Max(1, pagination.CurrentPage - 2);
+                                    var endPage = Math.Min(pagination.TotalPages, pagination.CurrentPage + 2);
+                                }
+                                
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == pagination.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { 
+                                            page = i,
+                                            trangThai = Context.Request.Query["trangThai"],
+                                            tuNgay = Context.Request.Query["tuNgay"],
+                                            denNgay = Context.Request.Query["denNgay"],
+                                            loaiDonHang = Context.Request.Query["loaiDonHang"],
+                                            khachHang = Context.Request.Query["khachHang"],
+                                            maDonHang = Context.Request.Query["maDonHang"]
+                                        })">@i</a>
+                                    </li>
+                                }
+                                
+                                @if (pagination.HasNextPage)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { 
+                                            page = pagination.CurrentPage + 1,
+                                            trangThai = Context.Request.Query["trangThai"],
+                                            tuNgay = Context.Request.Query["tuNgay"],
+                                            denNgay = Context.Request.Query["denNgay"],
+                                            loaiDonHang = Context.Request.Query["loaiDonHang"],
+                                            khachHang = Context.Request.Query["khachHang"],
+                                            maDonHang = Context.Request.Query["maDonHang"]
+                                        })">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -251,7 +326,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Tổng đơn hàng
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(pagination?.TotalCount ?? 0)</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -269,7 +344,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Đơn hàng Online
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@hoaDons.Count(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
@@ -287,7 +362,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Đơn hàng tại quầy
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@hoaDons.Count(h => string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-store fa-2x text-gray-300"></i>
@@ -305,7 +380,7 @@
                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                             Chờ xử lý
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => h.TrangThai == "Chờ xác nhận")</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@hoaDons.Count(h => h.TrangThai == "Chờ xác nhận")</div>
                     </div>
                     <div class="col-auto">
                         <i class="fas fa-clock fa-2x text-gray-300"></i>

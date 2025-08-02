@@ -110,18 +110,12 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-app.UseRouting();
-app.UseSession();
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-});
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("AllowFrontend");
+app.UseRouting();
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 

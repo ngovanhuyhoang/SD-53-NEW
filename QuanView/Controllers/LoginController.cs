@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using QuanView.Models; // Thêm namespace chứa ViewModel
+using QuanView.Models; 
 using System.ComponentModel.DataAnnotations;
 
 namespace QuanView.Controllers
@@ -58,11 +58,9 @@ namespace QuanView.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Chuẩn hóa email
             email = email.Trim().ToLower();
             Console.WriteLine($"Email Google: {email}");
 
-            // Tìm nhân viên trong cơ sở dữ liệu
             var nhanVien = await _context.NhanViens
                 .Include(nv => nv.VaiTro)
                 .FirstOrDefaultAsync(nv => nv.Email != null && nv.Email.Trim().ToLower() == email && nv.TrangThai);
@@ -128,6 +126,9 @@ namespace QuanView.Controllers
             var khachIdentity = new ClaimsIdentity(khachClaims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(khachIdentity));
 
+            // Lưu thông tin khách hàng vào session
+            HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+
             return LocalRedirect(returnUrl ?? "/");
         }
 
@@ -136,10 +137,9 @@ namespace QuanView.Controllers
         public IActionResult FormLogin()
         {
             ViewBag.Error = TempData["Error"];
-            return View("Index"); // Dùng chung view Index.cshtml
+            return View("Index"); 
         }
 
-        // Đăng nhập bằng form (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FormLogin(LoginViewModel model)
@@ -169,7 +169,6 @@ namespace QuanView.Controllers
                 return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
             }
 
-            // Check khách hàng
             var khachHang = await _context.KhachHang
                 .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);
 
@@ -184,6 +183,10 @@ namespace QuanView.Controllers
                 };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+                
+                // Lưu thông tin khách hàng vào session
+                HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+                
                 return RedirectToAction("Index", "Home");
             }
 
@@ -191,7 +194,6 @@ namespace QuanView.Controllers
             return View("Index", model);
         }
 
-        // Đăng ký bằng form (GET)
         [HttpGet]
         public IActionResult Register()
         {
@@ -199,7 +201,6 @@ namespace QuanView.Controllers
             return View();
         }
 
-        // Đăng ký bằng form (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
@@ -209,14 +210,12 @@ namespace QuanView.Controllers
                 return View(model);
             }
 
-            // Kiểm tra email đã tồn tại
             if (await _context.KhachHang.AnyAsync(kh => kh.Email == model.Email))
             {
                 ModelState.AddModelError("Email", "Email đã được sử dụng.");
                 return View(model);
             }
 
-            // Tạo khách hàng mới
             var khachHang = new KhachHang
             {
                 IDKhachHang = Guid.NewGuid(),
@@ -231,7 +230,6 @@ namespace QuanView.Controllers
             _context.KhachHang.Add(khachHang);
             await _context.SaveChangesAsync();
 
-            // Đăng nhập luôn sau khi đăng ký
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
@@ -241,12 +239,20 @@ namespace QuanView.Controllers
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+            
+            // Lưu thông tin khách hàng vào session
+            HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+            
             return RedirectToAction("Index", "Home");
         }
 
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            
+            // Xóa thông tin khách hàng khỏi session
+            HttpContext.Session.Remove("CustomerId");
+            
             return RedirectToAction("Index", "Home");
         }
 
@@ -256,3 +262,4 @@ namespace QuanView.Controllers
         }
     }
 }
+
