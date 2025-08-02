@@ -486,10 +486,16 @@ namespace QuanApi.Controllers
                         }
                     }
 
-                    hoaDon.TienGiam = discount.GiaTriGiam;
+                    // Tính số tiền giảm theo phần trăm
+                    var tienGiam = hoaDon.TongTien * (discount.GiaTriGiam / 100m);
+                    // Nếu có giá trị giảm tối đa, lấy min
+                    if (discount.GiaTriGiamToiDa.HasValue)
+                        tienGiam = Math.Min(tienGiam, discount.GiaTriGiamToiDa.Value);
+
+                    hoaDon.TienGiam = tienGiam;
                     hoaDon.IDPhieuGiamGia = discount.IDPhieuGiamGia;
-                    hoaDon.TongTien -= discount.GiaTriGiam;
-                    Console.WriteLine($"[PayInvoice] Apply Discount: {discount.MaCode}, Value: {discount.GiaTriGiam}");
+                    hoaDon.TongTien -= tienGiam;
+                    Console.WriteLine($"[PayInvoice] Apply Discount: {discount.MaCode}, Value: {tienGiam}");
                 }
                 else
                 {
