@@ -5,9 +5,27 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using QuanView.Controllers;
+using Microsoft.AspNetCore.Http;
+using QuanApi.Dtos;
+using System.Text.Json;
 
 namespace QuanView.Controllers
 {
+    // SessionExtensions để xử lý session
+    public static class SessionExtensions
+    {
+        public static void SetObjectAsJson(this ISession session, string key, object value)
+        {
+            session.SetString(key, JsonSerializer.Serialize(value));
+        }
+
+        public static T GetObjectFromJson<T>(this ISession session, string key)
+        {
+            var value = session.GetString(key);
+            return value == null ? default(T) : JsonSerializer.Deserialize<T>(value);
+        }
+    }
+
     public class CheckoutController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -21,7 +39,7 @@ namespace QuanView.Controllers
         {
             // Lấy thông tin giỏ hàng từ session
             var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-            
+
             if (!cart.Any())
             {
                 return RedirectToAction("Index", "GioHang");
@@ -57,7 +75,11 @@ namespace QuanView.Controllers
                 }
             }
 
+            // Tính tổng tiền
+            var tongTien = cart.Sum(item => item.GiaBan * item.SoLuong);
+            
             ViewBag.CartItems = cart;
+            ViewBag.TongTien = tongTien;
             return View();
         }
 
@@ -68,7 +90,7 @@ namespace QuanView.Controllers
             {
                 // Lấy giỏ hàng từ session
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-                
+
                 if (!cart.Any())
                 {
                     return Json(new { success = false, message = "Giỏ hàng trống" });
@@ -106,18 +128,53 @@ namespace QuanView.Controllers
                 }).ToList();
 
                 // Log để debug
-                Console.WriteLine($"Số lượng chi tiết hóa đơn: {chiTietHoaDons.Count}");
+                Console.WriteLine($"Số lượng chi tiết hóa đơn: {chiTietHoaDons.Count()}");
                 foreach (var ct in chiTietHoaDons)
                 {
                     Console.WriteLine($"SPCT ID: {ct.idSanPhamChiTiet}, SL: {ct.soLuong}, Đơn giá: {ct.donGia}, Thành tiền: {ct.thanhTien}");
                 }
 
+                // Lấy KhachHangId từ claims nếu user đã đăng nhập
+                Guid? khachHangId = null;
+                var customerIdClaim = User.FindFirst("custom:id_khachhang");
+                if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
+                {
+                    khachHangId = parsedCustomerId;
+                }
+                
+                // Xử lý phiếu giảm giá nếu có
+                Guid? phieuGiamGiaId = null;
+                if (!string.IsNullOrEmpty(checkoutData.MaGiamGia))
+                {
+                    try
+                    {
+                        // Tìm phiếu giảm giá theo mã
+                        var responsePhieu = await _httpClient.GetAsync($"PhieuGiamGias/kiem-tra?code={Uri.EscapeDataString(checkoutData.MaGiamGia)}");
+                        if (responsePhieu.IsSuccessStatusCode)
+                        {
+                            var phieuResult = await responsePhieu.Content.ReadFromJsonAsync<PhieuGiamGiaResponse>();
+                            if (phieuResult != null && phieuResult.Success && phieuResult.IdPhieuGiamGia.HasValue)
+                            {
+                                phieuGiamGiaId = phieuResult.IdPhieuGiamGia.Value;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Lỗi khi xử lý phiếu giảm giá: {ex.Message}");
+                    }
+                }
+                
+                Console.WriteLine($"KhachHangId from claims: {khachHangId}");
+                Console.WriteLine($"PhieuGiamGiaId: {phieuGiamGiaId}");
+                Console.WriteLine($"MaGiamGia: {checkoutData.MaGiamGia}");
+                
                 // Tạo dữ liệu hóa đơn
                 var hoaDonData = new
                 {
-                    khachHangId = checkoutData.KhachHangId,
+                    khachHangId = khachHangId, // Sử dụng từ claims thay vì checkoutData
                     nhanVienId = (Guid?)null,
-                    phieuGiamGiaId = checkoutData.PhieuGiamGiaId,
+                    phieuGiamGiaId = phieuGiamGiaId, // Sử dụng từ API thay vì checkoutData
                     phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
@@ -130,10 +187,10 @@ namespace QuanView.Controllers
 
                 // Xử lý đặt hàng
                 var response = await _httpClient.PostAsJsonAsync("HoaDons", hoaDonData);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
-                    HttpContext.Session.Remove("Cart"); // Xóa giỏ hàng ngay tại server
+                    HttpContext.Session.Remove("Cart"); 
                     return Json(new { success = true, message = "Đặt hàng thành công!" });
                 }
                 else
@@ -192,6 +249,256 @@ namespace QuanView.Controllers
             HttpContext.Session.Remove("Cart");
             return Json(new { success = true });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCurrentCustomer()
+        {
+            try
+            {
+                var customerId = HttpContext.Session.GetString("CustomerId");
+                if (string.IsNullOrEmpty(customerId))
+                {
+                    return Json(new { success = false, message = "Không tìm thấy thông tin khách hàng" });
+                }
+
+                var response = await _httpClient.GetAsync($"KhachHang/{customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var customer = await response.Content.ReadFromJsonAsync<object>();
+                    return Json(new { success = true, customer = customer });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Không thể lấy thông tin khách hàng" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerAddresses()
+        {
+            try
+            {
+                var customerId = HttpContext.Session.GetString("CustomerId");
+                if (string.IsNullOrEmpty(customerId))
+                {
+                    return Json(new { success = false, message = "Không tìm thấy thông tin khách hàng" });
+                }
+
+                var response = await _httpClient.GetAsync($"KhachHang/{customerId}/addresses");
+                if (response.IsSuccessStatusCode)
+                {
+                    var addresses = await response.Content.ReadFromJsonAsync<List<AddressDto>>();
+                    return Json(new { success = true, addresses = addresses ?? new List<AddressDto>() });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Không thể lấy danh sách địa chỉ" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        // Thêm action để lấy địa chỉ mặc định của khách hàng
+        [HttpGet]
+        public async Task<IActionResult> GetDefaultAddress()
+        {
+            try
+            {
+                var customerId = HttpContext.Session.GetString("CustomerId");
+                if (string.IsNullOrEmpty(customerId))
+                {
+                    return Json(new { success = false, message = "Không tìm thấy thông tin khách hàng" });
+                }
+
+                // Sử dụng API endpoint mới để lấy địa chỉ mặc định
+                var response = await _httpClient.GetAsync($"KhachHang/{customerId}/default-address");
+                if (response.IsSuccessStatusCode)
+                {
+                    var address = await response.Content.ReadFromJsonAsync<AddressDto>();
+                    return Json(new { success = true, address = address });
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy địa chỉ mặc định" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Không thể lấy địa chỉ mặc định" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        // Thêm action để lấy dữ liệu giỏ hàng cho checkout
+        [HttpGet]
+        public async Task<IActionResult> GetCheckoutCart()
+        {
+            try
+            {
+                var customerIdClaim = User.FindFirst("custom:id_khachhang");
+                if (customerIdClaim == null || !Guid.TryParse(customerIdClaim.Value, out var customerId))
+                {
+                    // Khách hàng - trả về giỏ hàng session với thông tin sản phẩm đầy đủ
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    
+                    // Cập nhật thông tin sản phẩm cho từng item (giống như trong GioHangController)
+                    foreach (var item in cart)
+                    {
+                        var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                        if (responseSpct.IsSuccessStatusCode)
+                        {
+                            var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                            if (spct != null)
+                            {
+                                item.GiaBan = spct.price;
+                                item.SanPhamChiTiet = new SanPhamChiTiet
+                                {
+                                    SanPham = new SanPham
+                                    {
+                                        TenSanPham = spct.TenSanPham
+                                    },
+                                    GiaBan = spct.price,
+                                    AnhSanPhams = new List<AnhSanPham>
+                                    {
+                                        new AnhSanPham
+                                        {
+                                            UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                            LaAnhChinh = true
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    
+                    return Json(new { success = true, chiTietGioHangs = cart });
+                }
+
+                // Người dùng đã đăng nhập - trả về giỏ hàng từ database
+                var response = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
+                    var chiTietGioHangs = gioHang?.ChiTietGioHangs ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    
+                    // Cập nhật thông tin sản phẩm cho từng item
+                    foreach (var item in chiTietGioHangs)
+                    {
+                        var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                        if (responseSpct.IsSuccessStatusCode)
+                        {
+                            var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                            if (spct != null)
+                            {
+                                item.GiaBan = spct.price;
+                                item.SanPhamChiTiet = new SanPhamChiTiet
+                                {
+                                    SanPham = new SanPham
+                                    {
+                                        TenSanPham = spct.TenSanPham
+                                    },
+                                    GiaBan = spct.price,
+                                    AnhSanPhams = new List<AnhSanPham>
+                                    {
+                                        new AnhSanPham
+                                        {
+                                            UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                            LaAnhChinh = true
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    
+                    return Json(new { success = true, chiTietGioHangs = chiTietGioHangs });
+                }
+
+                return Json(new { success = true, chiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>() });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        // Test endpoint để kiểm tra session cart
+        [HttpGet]
+        public IActionResult TestSessionCart()
+        {
+            try
+            {
+                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart");
+                return Json(new { 
+                    success = true, 
+                    cartCount = cart?.Count ?? 0,
+                    cart = cart,
+                    sessionKeys = HttpContext.Session.Keys.ToList()
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerVouchers()
+        {
+            try
+            {
+                // Lấy phiếu giảm giá công khai từ KhachHangPhieuGiamsController
+                var response = await _httpClient.GetAsync("KhachHangPhieuGiam/phieu-giam-gia-cong-khai");
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(vouchers);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá công khai");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerPersonalVouchers()
+        {
+            try
+            {
+                // Lấy ID khách hàng từ claims
+                var customerIdClaim = User.FindFirst("custom:id_khachhang")?.Value;
+                if (string.IsNullOrEmpty(customerIdClaim) || !Guid.TryParse(customerIdClaim, out Guid customerId))
+                {
+                    return Ok(new List<object>()); // Trả về danh sách rỗng nếu chưa đăng nhập
+                }
+
+                // Lấy phiếu giảm giá riêng của khách hàng
+                var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cua-khach-hang/{customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(vouchers);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá của khách hàng");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
     }
 
     public class CheckoutDto
@@ -205,5 +512,34 @@ namespace QuanView.Controllers
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
         public string GhiChu { get; set; }
+        public string MaGiamGia { get; set; } // Thêm property này để nhận mã giảm giá
     }
-} 
+
+    // DTO cho response phiếu giảm giá
+    public class PhieuGiamGiaResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public Guid? IdPhieuGiamGia { get; set; }
+        public decimal? GiaTriGiam { get; set; }
+        public decimal? GiaTriGiamToiDa { get; set; }
+        public decimal? DonToiThieu { get; set; }
+    }
+
+    // DTO cho địa chỉ
+    public class AddressDto
+    {
+        public Guid IDDiaChi { get; set; }
+        public string MaDiaChi { get; set; }
+        public string DiaChiChiTiet { get; set; }
+        public Guid IDKhachHang { get; set; }
+        public bool LaMacDinh { get; set; }
+        public string TenNguoiNhan { get; set; }
+        public string SdtNguoiNhan { get; set; }
+        public DateTime NgayTao { get; set; }
+        public string NguoiTao { get; set; }
+        public DateTime? LanCapNhatCuoi { get; set; }
+        public string NguoiCapNhat { get; set; }
+        public bool TrangThai { get; set; }
+    }
+}

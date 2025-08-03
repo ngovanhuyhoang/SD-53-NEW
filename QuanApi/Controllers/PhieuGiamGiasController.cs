@@ -323,6 +323,8 @@ namespace QuanApi.Controllers
             }
         }
 
+
+
         // Sử dụng phiếu giảm giá (tăng số lượng đã sử dụng)
         [HttpPost("use-voucher/{id:guid}")]
         public async Task<IActionResult> UseVoucher(Guid id, [FromQuery] Guid customerId)
@@ -393,6 +395,8 @@ namespace QuanApi.Controllers
         }
 
         // Kiểm tra mã giảm giá
+
+
         [HttpGet("kiem-tra")]
         public async Task<IActionResult> KiemTraMaGiamGia([FromQuery] string code)
         {
