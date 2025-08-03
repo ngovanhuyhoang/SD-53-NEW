@@ -452,6 +452,53 @@ namespace QuanView.Controllers
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerVouchers()
+        {
+            try
+            {
+                // Lấy phiếu giảm giá công khai từ KhachHangPhieuGiamsController
+                var response = await _httpClient.GetAsync("KhachHangPhieuGiam/phieu-giam-gia-cong-khai");
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(vouchers);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá công khai");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerPersonalVouchers()
+        {
+            try
+            {
+                // Lấy ID khách hàng từ claims
+                var customerIdClaim = User.FindFirst("custom:id_khachhang")?.Value;
+                if (string.IsNullOrEmpty(customerIdClaim) || !Guid.TryParse(customerIdClaim, out Guid customerId))
+                {
+                    return Ok(new List<object>()); // Trả về danh sách rỗng nếu chưa đăng nhập
+                }
+
+                // Lấy phiếu giảm giá riêng của khách hàng
+                var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cua-khach-hang/{customerId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(vouchers);
+                }
+                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá của khách hàng");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
     }
 
     public class CheckoutDto

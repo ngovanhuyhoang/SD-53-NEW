@@ -9,14 +9,14 @@
         padding: 60px 0;
         background: #f8f9fa;
     }
-    
+
     .checkout-form {
         background: white;
         padding: 30px;
         border-radius: 10px;
         box-shadow: 0 0 20px rgba(0,0,0,0.1);
     }
-    
+
     .checkout-title {
         font-size: 24px;
         font-weight: 600;
@@ -25,17 +25,17 @@
         border-bottom: 2px solid #eee;
         padding-bottom: 15px;
     }
-    
+
     .form-group {
         margin-bottom: 20px;
     }
-    
+
     .form-label {
         font-weight: 500;
         color: #555;
         margin-bottom: 8px;
     }
-    
+
     .form-control {
         border: 1px solid #ddd;
         border-radius: 6px;
@@ -43,30 +43,30 @@
         font-size: 14px;
         transition: border-color 0.3s;
     }
-    
-    .form-control:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-    }
-    
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+
     .required {
         color: #dc3545;
     }
-    
+
     .order-summary {
         background: #f8f9fa;
         padding: 25px;
         border-radius: 8px;
         border: 1px solid #e9ecef;
     }
-    
+
     .order-title {
         font-size: 20px;
         font-weight: 600;
         margin-bottom: 20px;
         color: #333;
     }
-    
+
     .order-item {
         display: flex;
         justify-content: space-between;
@@ -74,11 +74,11 @@
         padding: 10px 0;
         border-bottom: 1px solid #eee;
     }
-    
-    .order-item:last-child {
-        border-bottom: none;
-    }
-    
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
     .order-total {
         font-size: 18px;
         font-weight: 600;
@@ -87,7 +87,7 @@
         padding-top: 15px;
         border-top: 2px solid #eee;
     }
-    
+
     .payment-method {
         margin: 15px 0;
         padding: 15px;
@@ -96,17 +96,17 @@
         cursor: pointer;
         transition: all 0.3s;
     }
-    
-    .payment-method:hover {
-        border-color: #007bff;
-        background: #f8f9fa;
-    }
-    
-    .payment-method.selected {
-        border-color: #007bff;
-        background: #e3f2fd;
-    }
-    
+
+        .payment-method:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .payment-method.selected {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+
     .btn-checkout {
         background: #28a745;
         color: white;
@@ -119,11 +119,11 @@
         margin-top: 20px;
         transition: background 0.3s;
     }
-    
-    .btn-checkout:hover {
-        background: #218838;
-    }
-    
+
+        .btn-checkout:hover {
+            background: #218838;
+        }
+
     .coupon-section {
         background: #fff3cd;
         border: 1px solid #ffeaa7;
@@ -131,24 +131,24 @@
         padding: 15px;
         margin-bottom: 20px;
     }
-    
+
     .coupon-input {
         display: flex;
         gap: 10px;
     }
-    
-    .coupon-input input {
-        flex: 1;
-    }
-    
-    .coupon-input button {
-        background: #007bff;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        font-weight: 500;
-    }
+
+        .coupon-input input {
+            flex: 1;
+        }
+
+        .coupon-input button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
     
     .btn-outline-primary {
         color: #007bff;
@@ -334,7 +334,7 @@
             <div class="col-lg-8">
                 <div class="checkout-form">
                     <h4 class="checkout-title">Thông tin giao hàng</h4>
-                    
+
                     <form id="checkoutForm">
                         <div class="row">
                             <div class="col-md-6">
@@ -350,7 +350,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Địa chỉ giao hàng <span class="required">*</span></label>
                             <div class="d-flex gap-2 mb-2">
@@ -363,17 +363,17 @@
                             </div>
                             <textarea class="form-control" id="diaChiGiaoHang" name="diaChiGiaoHang" rows="3" required placeholder="Nhập địa chỉ chi tiết"></textarea>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Ghi chú</label>
                             <textarea class="form-control" id="ghiChu" name="ghiChu" rows="2" placeholder="Ghi chú về đơn hàng (tùy chọn)"></textarea>
                         </div>
-                        
-                        <div class="coupon-section">
-                            <h6><i class="fa fa-tag"></i> Mã giảm giá</h6>
+
+                        <div class="coupon-section" id="couponSection" style="display: none;">
+                            <h6><i class="fa fa-tag"></i> Mã giảm giá công khai</h6>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="maGiamGia" placeholder="Chọn phiếu giảm giá" readonly>
-                                <button class="btn btn-outline-primary" type="button" id="openVoucherModalBtn" title="Chọn phiếu giảm giá">
+                                <input type="text" class="form-control" id="maGiamGia" placeholder="Chọn phiếu giảm giá công khai" readonly>
+                                <button class="btn btn-outline-primary" type="button" id="openVoucherModalBtn" title="Chọn phiếu giảm giá công khai">
                                     <i class="bi bi-ticket-perforated"></i>
                                 </button>
                                 <button class="btn btn-outline-danger" type="button" id="clearDiscountBtn" title="Xóa phiếu giảm giá">
@@ -382,6 +382,20 @@
                             </div>
                         </div>
                         
+                        <div class="coupon-section" id="loginRequiredSection" style="display: none;">
+                            <h6><i class="fa fa-info-circle"></i> Thông báo</h6>
+                            <div class="alert alert-info">
+                                <i class="fa fa-user-lock"></i>
+                                <strong>Vui lòng đăng nhập để sử dụng phiếu giảm giá!</strong>
+                                <br>
+                                <small>Khách hàng vãng lai vẫn có thể mua hàng bình thường.</small>
+                                <br>
+                                <a href="/Login/Index" class="btn btn-primary btn-sm mt-2">
+                                    <i class="fa fa-sign-in"></i> Đăng nhập ngay
+                                </a>
+                            </div>
+                        </div>
+
                         <h5 class="checkout-title">Phương thức thanh toán</h5>
                         <div id="paymentMethods">
                             <!-- Phương thức thanh toán sẽ được load từ API -->
@@ -389,7 +403,7 @@
                     </form>
                 </div>
             </div>
-            
+
             <div class="col-lg-4">
                 <div class="order-summary">
                     <h5 class="order-title">Đơn hàng của bạn</h5>
@@ -403,7 +417,7 @@
                             
                             <!-- Debug info -->
                             <!-- Item: @item.IDSanPhamChiTiet, GiaBan: @item.GiaBan, SoLuong: @item.SoLuong, ThanhTien: @thanhTien -->
-                            
+
                             <div class="order-item">
                                 <div>
                                     <div style="font-weight: 500;">@sp?.TenSanPham</div>
@@ -413,7 +427,7 @@
                             </div>
                         }
                     </div>
-                    
+
                     <div class="order-total">
                         <div class="order-item">
                             <span>Tạm tính:</span>
@@ -428,7 +442,7 @@
                             <strong style="color:#d32f2f;" id="tongCong">@ViewBag.TongTien.ToString("N0") VND</strong>
                         </div>
                     </div>
-                    
+
                     <button type="button" class="btn-checkout" onclick="datHang()">
                         ĐẶT HÀNG NGAY
                     </button>
@@ -467,7 +481,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Chọn phiếu giảm giá</h5>
+                <h5 class="modal-title">Chọn phiếu giảm giá công khai</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -477,6 +491,7 @@
                 <div id="noVoucherMessage" style="display:none;" class="text-center py-4">
                     <i class="bi bi-ticket-perforated" style="font-size: 3rem; color: #ccc;"></i>
                     <p class="mt-2 text-muted">Hiện tại không có phiếu giảm giá công khai nào</p>
+                    <p class="text-muted small">Các phiếu giảm giá công khai sẽ được hiển thị ở đây</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -489,12 +504,12 @@
 
 
 <script>
-let gioHangData = null;
-let phuongThucThanhToan = null;
+    let gioHangData = null;
+    let phuongThucThanhToan = null;
     let discountValue = 0;
 
-// Load dữ liệu khi trang được tải
-document.addEventListener('DOMContentLoaded', function() {
+    // Load dữ liệu khi trang được tải
+    document.addEventListener('DOMContentLoaded', function() {
     // Sử dụng dữ liệu từ server-side thay vì load lại từ API
     const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
     const tongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
@@ -525,8 +540,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Chỉ cập nhật thông tin thanh toán nếu cần
     updatePaymentInfo(tongTien);
     
+    // Kiểm tra trạng thái đăng nhập và hiển thị section phiếu giảm giá phù hợp
+    checkLoginStatusAndShowCouponSection();
+    
     // Load các thông tin khác
-    loadPhuongThucThanhToan();
+        loadPhuongThucThanhToan();
     loadCustomerInfo();
     loadDiscountFromSession();
     
@@ -535,14 +553,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Test session cart để debug
     testSessionCart();
-});
+    });
 
-// Load thông tin giỏ hàng
-async function loadGioHang() {
-    try {
+    // Load thông tin giỏ hàng
+    async function loadGioHang() {
+        try {
         console.log('Loading cart data from API...');
         const response = await fetch('/Checkout/GetCheckoutCart');
-        if (response.ok) {
+            if (response.ok) {
             const result = await response.json();
             console.log('Raw cart data from API:', result);
             
@@ -579,27 +597,27 @@ async function loadGioHang() {
             console.error('Failed to load cart data');
             gioHangData = { chiTietGioHangs: [] };
             return Promise.resolve();
-        }
-    } catch (error) {
-        console.error('Lỗi khi tải giỏ hàng:', error);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải giỏ hàng:', error);
         gioHangData = { chiTietGioHangs: [] };
         return Promise.resolve();
+        }
     }
-}
 
-// Hiển thị thông tin đơn hàng
-function hienThiDonHang() {
+    // Hiển thị thông tin đơn hàng
+    function hienThiDonHang() {
         if (!gioHangData || !gioHangData.chiTietGioHangs) {
             console.log('No cart data available');
             return;
         }
 
         console.log('Displaying order with cart data:', gioHangData.chiTietGioHangs);
-    
-    const orderItemsContainer = document.getElementById('orderItems');
-    let html = '';
-    let tamTinh = 0;
-    
+
+        const orderItemsContainer = document.getElementById('orderItems');
+        let html = '';
+        let tamTinh = 0;
+
         gioHangData.chiTietGioHangs.forEach((item, index) => {
             console.log(`Item ${index}:`, item);
             console.log(`GiaBan: ${item.GiaBan} (type: ${typeof item.GiaBan})`);
@@ -611,7 +629,7 @@ function hienThiDonHang() {
             const soLuong = parseInt(item.SoLuong) || 0;
             
             const thanhTien = giaBan * soLuong;
-        tamTinh += thanhTien;
+            tamTinh += thanhTien;
         
             console.log(`Calculated: giaBan=${giaBan}, soLuong=${soLuong}, thanhTien=${thanhTien}, tamTinh=${tamTinh}`);
 
@@ -620,97 +638,97 @@ function hienThiDonHang() {
                               item.sanPhamChiTiet?.sanPham?.tenSanPham || 
                               'Sản phẩm';
 
-        html += `
-            <div class="order-item">
-                <div>
+            html += `
+                <div class="order-item">
+                    <div>
                         <div style="font-weight: 500;">${tenSanPham}</div>
                         <small style="color: #666;">Số lượng: ${soLuong}</small>
-                </div>
+                    </div>
                 <span>${thanhTien.toLocaleString()} VND</span>
-            </div>
-        `;
-    });
-    
-    orderItemsContainer.innerHTML = html;
+                </div>
+            `;
+        });
+
+        orderItemsContainer.innerHTML = html;
         
         console.log('Final tamTinh:', tamTinh);
         
         // Cập nhật thông tin thanh toán với giá trị tamTinh đã tính
         updatePaymentInfo(tamTinh);
-}
+    }
 
-// Load phương thức thanh toán
-async function loadPhuongThucThanhToan() {
-    try {
-        const response = await fetch('/Checkout/GetPaymentMethods');
-        if (response.ok) {
-            const methods = await response.json();
-            hienThiPhuongThucThanhToan(methods);
+    // Load phương thức thanh toán
+    async function loadPhuongThucThanhToan() {
+        try {
+            const response = await fetch('/Checkout/GetPaymentMethods');
+            if (response.ok) {
+                const methods = await response.json();
+                hienThiPhuongThucThanhToan(methods);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải phương thức thanh toán:', error);
         }
-    } catch (error) {
-        console.error('Lỗi khi tải phương thức thanh toán:', error);
     }
-}
 
-// Hiển thị phương thức thanh toán
-function hienThiPhuongThucThanhToan(methods) {
-    const container = document.getElementById('paymentMethods');
-    let html = '';
-    
-    methods.forEach(method => {
-        html += `
-            <div class="payment-method" onclick="chonPhuongThucThanhToan('${method.idPhuongThucThanhToan}', this)">
-                <input type="radio" name="paymentMethod" value="${method.idPhuongThucThanhToan}" style="margin-right: 10px;">
-                <strong>${method.tenPhuongThuc}</strong>
-                <div style="color: #666; font-size: 14px; margin-top: 5px;">${method.moTa || ''}</div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
+    // Hiển thị phương thức thanh toán
+    function hienThiPhuongThucThanhToan(methods) {
+        const container = document.getElementById('paymentMethods');
+        let html = '';
 
-// Chọn phương thức thanh toán
-function chonPhuongThucThanhToan(methodId, element) {
-    // Bỏ chọn tất cả
-    document.querySelectorAll('.payment-method').forEach(el => {
-        el.classList.remove('selected');
-    });
-    
-    // Chọn phương thức được click
-    element.classList.add('selected');
-    phuongThucThanhToan = methodId;
-    
-    // Check radio button
-    const radio = element.querySelector('input[type="radio"]');
-    radio.checked = true;
-}
+        methods.forEach(method => {
+            html += `
+                <div class="payment-method" onclick="chonPhuongThucThanhToan('${method.idPhuongThucThanhToan}', this)">
+                    <input type="radio" name="paymentMethod" value="${method.idPhuongThucThanhToan}" style="margin-right: 10px;">
+                    <strong>${method.tenPhuongThuc}</strong>
+                    <div style="color: #666; font-size: 14px; margin-top: 5px;">${method.moTa || ''}</div>
+                </div>
+            `;
+        });
 
-// Đặt hàng
-async function datHang() {
-    // Kiểm tra form
-    const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
-    const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
-    const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
-    
-    if (!tenNguoiNhan || !soDienThoaiNguoiNhan || !diaChiGiaoHang) {
-        alert('Vui lòng điền đầy đủ thông tin bắt buộc');
-        return;
+        container.innerHTML = html;
     }
-    
-    if (!phuongThucThanhToan) {
-        alert('Vui lòng chọn phương thức thanh toán');
-        return;
+
+    // Chọn phương thức thanh toán
+    function chonPhuongThucThanhToan(methodId, element) {
+        // Bỏ chọn tất cả
+        document.querySelectorAll('.payment-method').forEach(el => {
+            el.classList.remove('selected');
+        });
+
+        // Chọn phương thức được click
+        element.classList.add('selected');
+        phuongThucThanhToan = methodId;
+
+        // Check radio button
+        const radio = element.querySelector('input[type="radio"]');
+        radio.checked = true;
     }
-    
+
+    // Đặt hàng
+    async function datHang() {
+        // Kiểm tra form
+        const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
+        const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
+        const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
+
+        if (!tenNguoiNhan || !soDienThoaiNguoiNhan || !diaChiGiaoHang) {
+            alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+            return;
+        }
+
+        if (!phuongThucThanhToan) {
+            alert('Vui lòng chọn phương thức thanh toán');
+            return;
+        }
+
     // Lấy dữ liệu từ server-side thay vì gioHangData
     const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
     const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
     
     if (!cartItems || cartItems.length === 0) {
-        alert('Giỏ hàng trống');
-        return;
-    }
+            alert('Giỏ hàng trống');
+            return;
+        }
 
     // Tính tổng tiền từ server-side data
     let tongTien = 0;
@@ -731,40 +749,50 @@ async function datHang() {
         serverTongTien: serverTongTien,
         discountValue: discountValue
     });
-    
-    // Tạo dữ liệu đặt hàng
-    const checkoutData = {
+
+        // Kiểm tra xem user có đăng nhập không
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        const isLoggedIn = customerIdClaim && customerIdClaim !== '';
+        
+        // Nếu chưa đăng nhập, không cho phép sử dụng phiếu giảm giá
+        if (!isLoggedIn && discountValue > 0) {
+            showNotification('Khách hàng vãng lai không thể sử dụng phiếu giảm giá!', 'warning');
+            return;
+        }
+        
+        // Tạo dữ liệu đặt hàng
+        const checkoutData = {
         // Không cần gửi KhachHangId vì server sẽ lấy từ claims
-        tenNguoiNhan: tenNguoiNhan,
-        soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
-        diaChiGiaoHang: diaChiGiaoHang,
-        phuongThucThanhToanId: phuongThucThanhToan,
-        ghiChu: document.getElementById('ghiChu').value,
+            tenNguoiNhan: tenNguoiNhan,
+            soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+            diaChiGiaoHang: diaChiGiaoHang,
+            phuongThucThanhToanId: phuongThucThanhToan,
+            ghiChu: document.getElementById('ghiChu').value,
         tongTien: tongTien - discountValue,
         tienGiam: discountValue || 0,
-        maGiamGia: document.getElementById('maGiamGia').value || null
-    };
+        maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
+        };
     
     console.log('checkoutData being sent:', checkoutData);
-    
-    try {
-        const response = await fetch('/Checkout/ProcessOrder', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(checkoutData)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
+
+        try {
+            const response = await fetch('/Checkout/ProcessOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(checkoutData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
                 showNotification('Đặt hàng thành công!', 'success');
                 // Xóa giỏ hàng session và thông tin giảm giá
-            await fetch('/Checkout/ClearCart', { method: 'POST' });
+                await fetch('/Checkout/ClearCart', { method: 'POST' });
                 sessionStorage.removeItem('appliedDiscount');
                 setTimeout(() => {
-            window.location.href = '/Home/Index';
+                window.location.href = '/Home/Index';
                 }, 2000);
             } else {
                 showNotification(result.message || 'Có lỗi xảy ra khi đặt hàng', 'danger');
@@ -969,6 +997,16 @@ async function datHang() {
 
     // Load thông tin giảm giá từ sessionStorage
     function loadDiscountFromSession() {
+        // Kiểm tra xem user có đăng nhập không
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        const isLoggedIn = customerIdClaim && customerIdClaim !== '';
+        
+        if (!isLoggedIn) {
+            console.log('User not logged in, skipping discount loading');
+            discountValue = 0;
+            return;
+        }
+        
         const discountInfo = sessionStorage.getItem('appliedDiscount');
         if (discountInfo) {
             try {
@@ -991,6 +1029,15 @@ async function datHang() {
 
     // Mở modal chọn phiếu giảm giá
     function openVoucherModal() {
+        // Kiểm tra xem user có đăng nhập không
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        const isLoggedIn = customerIdClaim && customerIdClaim !== '';
+        
+        if (!isLoggedIn) {
+            showNotification('Vui lòng đăng nhập để sử dụng phiếu giảm giá!', 'warning');
+            return;
+        }
+        
         console.log('Opening voucher modal...');
         
         // Hiển thị loading state
@@ -1004,12 +1051,12 @@ async function datHang() {
         }, 100);
     }
 
-    // Load danh sách phiếu giảm giá của khách hàng
+    // Load danh sách phiếu giảm giá công khai
     function loadCustomerDiscountVouchers() {
-        console.log('Loading customer vouchers...');
+        console.log('Loading public vouchers...');
         
-        $.get('/GioHang/GetCustomerVouchers', function(data) {
-            console.log('Vouchers response:', data);
+        $.get('/Checkout/GetCustomerVouchers', function(data) {
+            console.log('Public vouchers response:', data);
             
             if (data && data.length > 0) {
                 renderVoucherList(data);
@@ -1020,8 +1067,8 @@ async function datHang() {
                 $('#noVoucherMessage').show();
             }
         }).fail(function(xhr, status, error) {
-            console.error('Error loading vouchers:', error);
-            showNotification('Lỗi khi tải danh sách phiếu giảm giá!', 'danger');
+            console.error('Error loading public vouchers:', error);
+            showNotification('Lỗi khi tải danh sách phiếu giảm giá công khai!', 'danger');
             $('#discountVoucherModal').modal('hide');
         });
     }
@@ -1033,13 +1080,17 @@ async function datHang() {
             let isExpired = new Date(voucher.ngayKetThuc) < new Date();
             let isActive = !isExpired && new Date(voucher.ngayBatDau) <= new Date();
             
+            // Kiểm tra số lượng còn lại (nếu có)
+            let soLuongConLai = voucher.soLuongConLai !== undefined ? voucher.soLuongConLai : voucher.soLuong;
+            let isAvailable = soLuongConLai > 0;
+            
             html += `
                 <div class="col-md-6 mb-3">
-                    <div class="card voucher-card ${isExpired ? 'border-danger' : isActive ? 'border-success' : 'border-warning'} h-100">
+                    <div class="card voucher-card ${isExpired ? 'border-danger' : isActive && isAvailable ? 'border-success' : 'border-warning'} h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">${voucher.tenPhieu}</h6>
-                            <span class="badge ${isExpired ? 'bg-danger' : isActive ? 'bg-success' : 'bg-warning'}">
-                                ${isExpired ? 'Hết hạn' : isActive ? 'Có hiệu lực' : 'Chưa có hiệu lực'}
+                            <span class="badge ${isExpired ? 'bg-danger' : isActive && isAvailable ? 'bg-success' : 'bg-warning'}">
+                                ${isExpired ? 'Hết hạn' : isActive && isAvailable ? 'Có hiệu lực' : 'Chưa có hiệu lực'}
                             </span>
                         </div>
                         <div class="card-body">
@@ -1055,13 +1106,23 @@ async function datHang() {
                             <div class="mb-2">
                                 <strong>Hiệu lực:</strong> ${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
                             </div>
-                            <div class="mb-2"><strong>Loại:</strong> <span class="badge bg-info">Công khai</span></div>
+                            <div class="mb-2">
+                                <strong>Loại:</strong> 
+                                <span class="badge ${voucher.loaiPhieu === 'Công khai' ? 'bg-info' : 'bg-warning'}">
+                                    ${voucher.loaiPhieu || 'Công khai'}
+                                </span>
+                            </div>
+                            ${voucher.soLuongConLai !== undefined ? `
+                            <div class="mb-2">
+                                <strong>Số lượng còn lại:</strong> ${soLuongConLai}
+                            </div>
+                            ` : ''}
                         </div>
                         <div class="card-footer">
                             <button class="btn btn-primary btn-sm w-100" 
                                     onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
-                                    ${!isActive ? 'disabled' : ''}>
-                                ${isActive ? 'Chọn phiếu này' : 'Không có hiệu lực'}
+                                    ${!isActive || !isAvailable ? 'disabled' : ''}>
+                                ${isActive && isAvailable ? 'Chọn phiếu này' : 'Không có hiệu lực'}
                             </button>
                         </div>
                     </div>
@@ -1074,6 +1135,16 @@ async function datHang() {
 
     // Chọn phiếu giảm giá
     function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
+        // Kiểm tra xem user có đăng nhập không
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        const isLoggedIn = customerIdClaim && customerIdClaim !== '';
+        
+        if (!isLoggedIn) {
+            showNotification('Vui lòng đăng nhập để sử dụng phiếu giảm giá!', 'warning');
+            $('#discountVoucherModal').modal('hide');
+            return;
+        }
+        
         // Tính tổng tiền từ giỏ hàng
         let total = 0;
         
@@ -1162,7 +1233,7 @@ async function datHang() {
             tongCong: tongCong
         });
         
-        showNotification(`Đã áp dụng phiếu giảm giá ${code}! Giảm ${discountAmount.toLocaleString()} VND`, 'success');
+        showNotification(`Đã áp dụng phiếu giảm giá công khai ${code}! Giảm ${discountAmount.toLocaleString()} VND`, 'success');
     }
 
     // Xóa phiếu giảm giá
@@ -1194,7 +1265,7 @@ async function datHang() {
             discountValue: discountValue
         });
         
-        showNotification('Đã xóa phiếu giảm giá', 'info');
+        showNotification('Đã xóa phiếu giảm giá công khai', 'info');
     }
 
 
@@ -1253,7 +1324,7 @@ async function datHang() {
                     $('#maGiamGia').val('');
                     discountValue = 0;
                     sessionStorage.removeItem('appliedDiscount');
-                    showNotification(`Phiếu giảm giá ${discount.maCode} đã bị xóa vì đơn hàng không đủ điều kiện tối thiểu ${donToiThieu.toLocaleString()} VND!`, 'warning');
+                    showNotification(`Phiếu giảm giá công khai ${discount.maCode} đã bị xóa vì đơn hàng không đủ điều kiện tối thiểu ${donToiThieu.toLocaleString()} VND!`, 'warning');
                     
                     // Cập nhật UI với discount = 0
                     const tongCong = tamTinh;
@@ -1310,6 +1381,15 @@ async function datHang() {
     function bindVoucherButtons() {
         console.log('Binding voucher buttons...');
         
+        // Kiểm tra xem user có đăng nhập không
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        const isLoggedIn = customerIdClaim && customerIdClaim !== '';
+        
+        if (!isLoggedIn) {
+            console.log('User not logged in, skipping voucher button binding');
+            return;
+        }
+        
         // Kiểm tra Bootstrap modal
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             console.log('Bootstrap modal is available');
@@ -1334,6 +1414,38 @@ async function datHang() {
         
         // Test modal
         console.log('Modal element exists:', $('#discountVoucherModal').length > 0);
+    }
+
+    // Kiểm tra trạng thái đăng nhập và hiển thị section phiếu giảm giá phù hợp
+    function checkLoginStatusAndShowCouponSection() {
+        // Kiểm tra xem user có đăng nhập không bằng cách kiểm tra claims
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        const isLoggedIn = customerIdClaim && customerIdClaim !== '';
+        
+        console.log('Login status check:', {
+            customerIdClaim: customerIdClaim,
+            isLoggedIn: isLoggedIn
+        });
+        
+        if (isLoggedIn) {
+            // User đã đăng nhập - hiển thị section phiếu giảm giá
+            $('#couponSection').show();
+            $('#loginRequiredSection').hide();
+            console.log('User is logged in, showing coupon section');
+        } else {
+            // User chưa đăng nhập - hiển thị thông báo yêu cầu đăng nhập
+            $('#couponSection').hide();
+            $('#loginRequiredSection').show();
+            console.log('User is not logged in, showing login required message');
+            
+            // Xóa phiếu giảm giá nếu có trong sessionStorage
+            sessionStorage.removeItem('appliedDiscount');
+            discountValue = 0;
+            
+            // Cập nhật UI để xóa phiếu giảm giá
+            $('#maGiamGia').val('');
+            updatePaymentInfo();
+        }
     }
 
     // Test session cart để debug

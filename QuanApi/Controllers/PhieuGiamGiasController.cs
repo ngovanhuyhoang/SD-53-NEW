@@ -506,40 +506,7 @@ namespace QuanApi.Controllers
             }
         }
 
-        // Lấy danh sách phiếu giảm giá công khai cho tất cả người dùng
-        [HttpGet("public-vouchers")]
-        public async Task<IActionResult> GetPublicVouchers()
-        {
-            try
-            {
-                // Lấy tất cả phiếu giảm giá công khai còn hiệu lực
-                var publicVouchers = await _context.PhieuGiamGias
-                    .Where(x => x.LaCongKhai && x.TrangThai && 
-                               x.NgayBatDau <= DateTime.UtcNow && 
-                               x.NgayKetThuc >= DateTime.UtcNow)
-                    .Select(x => new
-                    {
-                        idPhieuGiamGia = x.IDPhieuGiamGia,
-                        maCode = x.MaCode,
-                        tenPhieu = x.TenPhieu,
-                        giaTriGiam = x.GiaTriGiam,
-                        giaTriGiamToiDa = x.GiaTriGiamToiDa ?? 0,
-                        donToiThieu = x.DonToiThieu,
-                        ngayBatDau = x.NgayBatDau,
-                        ngayKetThuc = x.NgayKetThuc,
-                        soLuong = x.SoLuong,
-                        laCongKhai = x.LaCongKhai,
-                        trangThai = x.TrangThai
-                    })
-                    .ToListAsync();
 
-                return Ok(publicVouchers);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
-            }
-        }
 
         // Sử dụng phiếu giảm giá (tăng số lượng đã sử dụng)
         [HttpPost("use-voucher/{id:guid}")]
@@ -611,6 +578,8 @@ namespace QuanApi.Controllers
         }
 
         // Kiểm tra mã giảm giá
+
+
         [HttpGet("kiem-tra")]
         public async Task<IActionResult> KiemTraMaGiamGia([FromQuery] string code)
         {

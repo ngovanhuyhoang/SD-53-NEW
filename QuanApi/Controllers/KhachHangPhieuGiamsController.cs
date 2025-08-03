@@ -54,6 +54,80 @@ namespace QuanApi.Controllers
             return item?.IDKhachHang;
         }
 
+        // GET: api/KhachHangPhieuGiam/phieu-giam-gia-cong-khai
+        [HttpGet("phieu-giam-gia-cong-khai")]
+        public async Task<ActionResult<IEnumerable<object>>> GetPublicDiscountVouchers()
+        {
+            try
+            {
+                // Lấy tất cả phiếu giảm giá công khai đang hoạt động
+                var publicVouchers = await _context.PhieuGiamGias
+                    .Where(p => p.LaCongKhai == true && 
+                               p.TrangThai && 
+                               p.NgayBatDau <= DateTime.UtcNow && 
+                               p.NgayKetThuc >= DateTime.UtcNow)
+                    .Select(p => new
+                    {
+                        id = p.IDPhieuGiamGia,
+                        maCode = p.MaCode,
+                        tenPhieu = p.TenPhieu,
+                        giaTriGiam = p.GiaTriGiam,
+                        giaTriGiamToiDa = p.GiaTriGiamToiDa,
+                        donToiThieu = p.DonToiThieu,
+                        ngayBatDau = p.NgayBatDau,
+                        ngayKetThuc = p.NgayKetThuc,
+                        soLuong = p.SoLuong,
+                        loaiPhieu = p.LaCongKhai ? "Công khai" : "Riêng tư",
+                        trangThai = p.TrangThai
+                    })
+                    .ToListAsync();
+
+                return Ok(publicVouchers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi lấy danh sách phiếu giảm giá công khai: {ex.Message}");
+            }
+        }
+
+        // GET: api/KhachHangPhieuGiam/phieu-giam-gia-cua-khach-hang/{customerId}
+        [HttpGet("phieu-giam-gia-cua-khach-hang/{customerId:guid}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetCustomerDiscountVouchers(Guid customerId)
+        {
+            try
+            {
+                var vouchers = await _context.KhachHangPhieuGiams
+                    .Include(k => k.PhieuGiamGia)
+                    .Where(x => x.IDKhachHang == customerId && 
+                               x.TrangThai && 
+                               x.PhieuGiamGia.TrangThai &&
+                               x.SoLuongDaSuDung < x.SoLuong && // Chỉ lấy phiếu còn số lượng
+                               x.PhieuGiamGia.NgayBatDau <= DateTime.UtcNow && // Kiểm tra thời gian hiệu lực
+                               x.PhieuGiamGia.NgayKetThuc >= DateTime.UtcNow)
+                    .Select(x => new {
+                        id = x.IDPhieuGiamGia,
+                        maCode = x.PhieuGiamGia.MaCode,
+                        tenPhieu = x.PhieuGiamGia.TenPhieu,
+                        giaTriGiam = x.PhieuGiamGia.GiaTriGiam,
+                        giaTriGiamToiDa = x.PhieuGiamGia.GiaTriGiamToiDa,
+                        donToiThieu = x.PhieuGiamGia.DonToiThieu,
+                        ngayBatDau = x.PhieuGiamGia.NgayBatDau,
+                        ngayKetThuc = x.PhieuGiamGia.NgayKetThuc,
+                        soLuong = x.SoLuong,
+                        soLuongDaSuDung = x.SoLuongDaSuDung,
+                        soLuongConLai = x.SoLuong - x.SoLuongDaSuDung,
+                        loaiPhieu = x.PhieuGiamGia.LaCongKhai ? "Công khai" : "Riêng tư"
+                    })
+                    .ToListAsync();
+
+                return Ok(vouchers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi lấy danh sách phiếu giảm giá của khách hàng: {ex.Message}");
+            }
+        }
+
         // POST: api/KhachHangPhieuGiam
         [HttpPost]
         public async Task<IActionResult> Create(KhachHangPhieuGiam model)
