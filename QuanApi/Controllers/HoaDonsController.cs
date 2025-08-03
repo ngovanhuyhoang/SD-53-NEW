@@ -24,55 +24,19 @@ namespace QuanApi.Controllers
                 _logger = logger;
             }
 
-        // GET: api/HoaDons
+        // GET: api/HoaDons - Cho admin (hiển thị tất cả đơn hàng)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetHoaDons()
+        public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDons()
         {
-            try
-            {
-                var hoaDons = await _context.HoaDons
+            return await _context.HoaDons
                 .Include(h => h.KhachHang)
                 .Include(h => h.NhanVien)
+                .Include(h => h.PhieuGiamGia)
                 .Include(h => h.PhuongThucThanhToan)
                 .Include(h => h.ChiTietHoaDons)
-                    .Select(h => new
-                    {
-                        IDHoaDon = h.IDHoaDon,
-                        MaHoaDon = h.MaHoaDon,
-                        TongTien = h.TongTien,
-                        TienGiam = h.TienGiam,
-                        TrangThai = h.TrangThai,
-                        NgayTao = h.NgayTao,
-                        TenNguoiNhan = h.TenNguoiNhan,
-                        SoDienThoaiNguoiNhan = h.SoDienThoaiNguoiNhan,
-                        DiaChiGiaoHang = h.DiaChiGiaoHang,
-                        KhachHang = h.KhachHang != null ? new
-                        {
-                            IDKhachHang = h.KhachHang.IDKhachHang,
-                            TenKhachHang = h.KhachHang.TenKhachHang,
-                            SoDienThoai = h.KhachHang.SoDienThoai
-                        } : null,
-                        NhanVien = h.NhanVien != null ? new
-                        {
-                            IDNhanVien = h.NhanVien.IDNhanVien,
-                            TenNhanVien = h.NhanVien.TenNhanVien
-                        } : null,
-                        PhuongThucThanhToan = h.PhuongThucThanhToan != null ? new
-                        {
-                            IDPhuongThucThanhToan = h.PhuongThucThanhToan.IDPhuongThucThanhToan,
-                            TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
-                        } : null,
-                        SoLuongSanPham = h.ChiTietHoaDons.Count
-                    })
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(spct => spct.SanPham)
                 .ToListAsync();
-
-                return Ok(hoaDons);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi lấy danh sách hóa đơn");
-                return StatusCode(500, "Lỗi khi tải danh sách đơn hàng");
-            }
         }
 
         // GET: api/HoaDons/5
@@ -311,18 +275,21 @@ namespace QuanApi.Controllers
                     return NotFound("Không tìm thấy hóa đơn");
                 }
 
+                // Cập nhật trạng thái
                 hoaDon.TrangThai = dto.TrangThai;
                 hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
                 hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
 
                 await _context.SaveChangesAsync();
-
-                return Ok(new { message = $"Đã cập nhật trạng thái đơn hàng thành '{dto.TrangThai}'" });
+                
+                _logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
+                
+                return Ok(new { success = true, message = "Cập nhật trạng thái thành công" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật trạng thái hóa đơn: {Message}", ex.Message);
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
+                _logger.LogError($"Error updating order status: {ex.Message}");
+                return StatusCode(500, "Internal server error");
             }
         }
 

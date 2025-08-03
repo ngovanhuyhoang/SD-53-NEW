@@ -120,11 +120,25 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang)
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang, int page = 1)
         {
             try
             {
-                var response = await _httpClient.GetAsync("HoaDons");
+                // Xây dựng URL với các tham số
+                var queryParams = new List<string>();
+                if (!string.IsNullOrEmpty(trangThai)) queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+                if (!string.IsNullOrEmpty(tuNgay)) queryParams.Add($"tuNgay={Uri.EscapeDataString(tuNgay)}");
+                if (!string.IsNullOrEmpty(denNgay)) queryParams.Add($"denNgay={Uri.EscapeDataString(denNgay)}");
+                if (!string.IsNullOrEmpty(loaiDonHang)) queryParams.Add($"loaiDonHang={Uri.EscapeDataString(loaiDonHang)}");
+                if (!string.IsNullOrEmpty(khachHang)) queryParams.Add($"search={Uri.EscapeDataString(khachHang)}");
+                if (!string.IsNullOrEmpty(maDonHang)) queryParams.Add($"search={Uri.EscapeDataString(maDonHang)}");
+                
+                queryParams.Add($"page={page}");
+                queryParams.Add("pageSize=10");
+                
+                var apiUrl = $"HoaDons?{string.Join("&", queryParams)}";
+                var response = await _httpClient.GetAsync(apiUrl);
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var hoaDonsData = await response.Content.ReadFromJsonAsync<List<HoaDonDto>>();
@@ -219,14 +233,57 @@ namespace QuanView.Areas.Admin.Controllers
                         filteredHoaDons = filteredHoaDons.Where(h => h.MaHoaDon.Contains(maDonHang, StringComparison.OrdinalIgnoreCase)).ToList();
                     }
 
-                    return View(filteredHoaDons);
+                    // Tạo ViewModel với thông tin phân trang
+                    var viewModel = new
+                    {
+                        HoaDons = filteredHoaDons,
+                        Pagination = new
+                        {
+                            CurrentPage = currentPage,
+                            TotalPages = totalPages,
+                            TotalCount = totalCount,
+                            PageSize = pageSize,
+                            HasPreviousPage = currentPage > 1,
+                            HasNextPage = currentPage < totalPages
+                        }
+                    };
+
+                    return View(viewModel);
                 }
-                return View(new List<HoaDon>());
+                // Trả về ViewModel với danh sách rỗng
+                var emptyViewModel = new
+                {
+                    HoaDons = new List<HoaDon>(),
+                    Pagination = new
+                    {
+                        CurrentPage = 1,
+                        TotalPages = 0,
+                        TotalCount = 0,
+                        PageSize = 10,
+                        HasPreviousPage = false,
+                        HasNextPage = false
+                    }
+                };
+                return View(emptyViewModel);
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Lỗi khi tải danh sách đơn hàng: {ex.Message}";
-                return View(new List<HoaDon>());
+                // Trả về ViewModel với danh sách rỗng
+                var emptyViewModel = new
+                {
+                    HoaDons = new List<HoaDon>(),
+                    Pagination = new
+                    {
+                        CurrentPage = 1,
+                        TotalPages = 0,
+                        TotalCount = 0,
+                        PageSize = 10,
+                        HasPreviousPage = false,
+                        HasNextPage = false
+                    }
+                };
+                return View(emptyViewModel);
             }
         }
 

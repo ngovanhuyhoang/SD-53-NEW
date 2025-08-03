@@ -438,6 +438,10 @@
                             <span style="color:#28a745;" id="giamGia">0 VND</span>
                         </div>
                         <div class="order-item">
+                            <span>Phí vận chuyển:</span>
+                            <span id="phiVanChuyen">50,000 VNĐ</span>
+                        </div>
+                        <div class="order-item">
                             <strong>Tổng cộng:</strong>
                             <strong style="color:#d32f2f;" id="tongCong">@ViewBag.TongTien.ToString("N0") VND</strong>
                         </div>
@@ -631,31 +635,21 @@
             const thanhTien = giaBan * soLuong;
             tamTinh += thanhTien;
         
-            console.log(`Calculated: giaBan=${giaBan}, soLuong=${soLuong}, thanhTien=${thanhTien}, tamTinh=${tamTinh}`);
-
-            // Lấy tên sản phẩm từ cấu trúc dữ liệu
-            const tenSanPham = item.SanPhamChiTiet?.SanPham?.TenSanPham || 
-                              item.sanPhamChiTiet?.sanPham?.tenSanPham || 
-                              'Sản phẩm';
-
-            html += `
-                <div class="order-item">
-                    <div>
-                        <div style="font-weight: 500;">${tenSanPham}</div>
-                        <small style="color: #666;">Số lượng: ${soLuong}</small>
-                    </div>
-                <span>${thanhTien.toLocaleString()} VND</span>
+        html += `
+            <div class="order-item">
+                <div>
+                    <div style="font-weight: 500;">${item.sanPhamChiTiet?.sanPham?.tenSanPham || 'Sản phẩm'}</div>
+                    <small style="color: #666;">Số lượng: ${item.soLuong}</small>
                 </div>
-            `;
-        });
-
-        orderItemsContainer.innerHTML = html;
-        
-        console.log('Final tamTinh:', tamTinh);
-        
-        // Cập nhật thông tin thanh toán với giá trị tamTinh đã tính
-        updatePaymentInfo(tamTinh);
-    }
+                <span>${thanhTien.toLocaleString('vi-VN')} VNĐ</span>
+            </div>
+        `;
+    });
+    
+    orderItemsContainer.innerHTML = html;
+    document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+    document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+}
 
     // Load phương thức thanh toán
     async function loadPhuongThucThanhToan() {
