@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("thongke")));
 
 // 2️⃣ CẤU HÌNH HttpClient GỌI API
 builder.Services.AddHttpClient("MyApi", client =>

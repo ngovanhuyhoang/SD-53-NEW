@@ -1,0 +1,141 @@
+﻿@{
+    ViewData["Title"] = "Thống kê";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">Thống kê tổng quan</h1>
+
+    <!-- Thống kê nhanh -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Doanh số hôm nay</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhSoHomNay">0 đ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Doanh số tháng này</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhSoThang">0 đ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Số lượng sản phẩm đã bán</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="soLuongDaBan">0 sản phẩm</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <!-- Area Chart -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Biểu đồ doanh thu theo tháng (VNĐ)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="myAreaChart" height="300"></canvas>
+                    </div>
+                    @* <hr>
+                    Styling cho biểu đồ nằm trong <code>chart-area-demo.js</code> *@
+                </div>
+            </div>
+
+            <!-- Bar Chart -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Biểu đồ số lượng bán theo sản phẩm</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-bar">
+                        <canvas id="myBarChart" height="300"></canvas>
+                    </div>
+                    @* <hr>
+                    Styling cho biểu đồ nằm trong <code>chart-bar-demo.js</code> *@
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <!-- Pie Chart: Doanh thu theo danh mục -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Tỷ lệ doanh thu theo danh mục</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4">
+                        <canvas id="myPieChart" height="300"></canvas>
+                    </div>
+                   @*  <hr>
+                    Styling trong <code>chart-pie-demo.js</code> *@
+                </div>
+            </div>
+
+            <!-- Pie Chart: Trạng thái đơn hàng trong tháng -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Trạng thái đơn hàng trong tháng</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4">
+                        <canvas id="donHangChart" height="300"></canvas>
+                    </div>
+                    @* <hr>
+                    Styling trong <code>donhangtrongthang.js</code> *@
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chart-area, .chart-bar, .chart-pie {
+        min-height: 300px;
+        position: relative;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+</style>
+
+@section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Chỉ load script một lần và có delay
+            setTimeout(function () {
+                $.getScript('/admin/js/demo/chart-area-demo.js');
+                $.getScript('/admin/js/demo/chart-bar-demo.js');
+                $.getScript('/admin/js/demo/chart-pie-demo.js');
+                $.getScript('/admin/js/demo/donhangtrongthang.js');
+            }, 100);
+
+            // Thống kê nhanh
+            $.get('/api/ChartsApi/today-sales', function (data) {
+                $('#doanhSoHomNay').text(data.toLocaleString('vi-VN') + ' đ');
+            });
+
+            $.get('/api/ChartsApi/month-sales', function (data) {
+                $('#doanhSoThang').text(data.toLocaleString('vi-VN') + ' đ');
+            });
+
+            $.get('/api/ChartsApi/month-product-quantity', function (data) {
+                $('#soLuongDaBan').text(data + ' sản phẩm');
+            });
+        });
+    </script>
+}
