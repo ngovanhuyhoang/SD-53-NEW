@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -11,6 +12,7 @@ using System;
 namespace BanQuanAu1.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class KhachHangController : Controller
     {
         private readonly HttpClient _httpClient;

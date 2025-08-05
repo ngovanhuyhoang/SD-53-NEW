@@ -21,31 +21,135 @@ namespace QuanView.Controllers
         }
 
         // GET: DonHang/Index
-        public async Task<IActionResult> Index(string trangThai = "TatCa", string tuNgay = "", string denNgay = "", string search = "", string phoneNumber = "", int page = 1)
+        public async Task<IActionResult> Index(string search = "", string phoneNumber = "", string fromDate = "", string toDate = "", int page = 1)
         {
             try
             {
-                var customerIdClaim = User.FindFirst("custom:id_khachhang");
-                string customerId = customerIdClaim?.Value;
-                
                 var baseUrl = _configuration["ApiSettings:KhachHangApiBaseUrl"];
+                var isAuthenticated = User.Identity.IsAuthenticated;
+                var customerId = User.FindFirst("custom:id_khachhang")?.Value;
                 
-                string apiUrl;
-                if (!string.IsNullOrEmpty(customerId))
+                // Nếu người dùng đã đăng nhập, lấy đơn hàng của họ
+                if (isAuthenticated && !string.IsNullOrEmpty(customerId))
                 {
-                    apiUrl = $"{baseUrl}/HoaDons/customer/{customerId}";
-                }
-                else
-                {
-                    apiUrl = $"{baseUrl}/HoaDons/guest";
+                    var customerApiUrl = $"{baseUrl}/HoaDons/customer/{customerId}";
+                    var customerParameters = new List<string>();
+                    
+                    if (!string.IsNullOrEmpty(search))
+                    {
+                        customerParameters.Add($"search={Uri.EscapeDataString(search)}");
+                    }
+                    
+                    if (!string.IsNullOrEmpty(fromDate))
+                    {
+                        customerParameters.Add($"fromDate={Uri.EscapeDataString(fromDate)}");
+                    }
+                    
+                    if (!string.IsNullOrEmpty(toDate))
+                    {
+                        customerParameters.Add($"toDate={Uri.EscapeDataString(toDate)}");
+                    }
+                    
+                    customerParameters.Add($"page={page}");
+                    customerParameters.Add("pageSize=10");
+
+                    if (customerParameters.Count > 0)
+                    {
+                        customerApiUrl += "?" + string.Join("&", customerParameters);
+                    }
+
+                    var customerResponse = await _httpClient.GetAsync(customerApiUrl);
+                    
+                    if (customerResponse.IsSuccessStatusCode)
+                    {
+                        var hoaDons = await customerResponse.Content.ReadFromJsonAsync<List<HoaDon>>();
+                        var filteredHoaDons = hoaDons ?? new List<HoaDon>();
+                        
+                        var totalCount = 0;
+                        var totalPages = 0;
+                        var currentPage = page;
+                        var pageSize = 10;
+                        
+                        if (customerResponse.Headers.Contains("X-Total-Count"))
+                            int.TryParse(customerResponse.Headers.GetValues("X-Total-Count").FirstOrDefault(), out totalCount);
+                        if (customerResponse.Headers.Contains("X-Total-Pages"))
+                            int.TryParse(customerResponse.Headers.GetValues("X-Total-Pages").FirstOrDefault(), out totalPages);
+                        
+                        var viewModel = new
+                        {
+                            HoaDons = filteredHoaDons,
+                            Pagination = new
+                            {
+                                CurrentPage = currentPage,
+                                TotalPages = totalPages,
+                                TotalCount = totalCount,
+                                PageSize = pageSize,
+                                HasPreviousPage = currentPage > 1,
+                                HasNextPage = currentPage < totalPages
+                            }
+                        };
+                        
+                        ViewBag.Search = search;
+                        ViewBag.PhoneNumber = phoneNumber;
+                        ViewBag.FromDate = fromDate;
+                        ViewBag.ToDate = toDate;
+                        ViewBag.IsAuthenticated = true;
+                        return View(viewModel);
+                    }
                 }
                 
+                // Nếu khách vãng lai hoặc không tìm thấy đơn hàng của user đã đăng nhập
+                if (string.IsNullOrEmpty(phoneNumber))
+                {
+                    ViewBag.Search = search;
+                    ViewBag.PhoneNumber = phoneNumber;
+                    ViewBag.FromDate = fromDate;
+                    ViewBag.ToDate = toDate;
+                    ViewBag.IsAuthenticated = isAuthenticated;
+                    
+                    var emptyViewModel = new
+                    {
+                        HoaDons = new List<HoaDon>(),
+                        Pagination = new
+                        {
+                            CurrentPage = page,
+                            TotalPages = 0,
+                            TotalCount = 0,
+                            PageSize = 10,
+                            HasPreviousPage = false,
+                            HasNextPage = false
+                        }
+                    };
+                    return View(emptyViewModel);
+                }
+                
+                if (phoneNumber.Length < 10 || phoneNumber.Length > 11)
+                {
+                    ModelState.AddModelError("PhoneNumber", "Số điện thoại phải có 10-11 số");
+                    ViewBag.Search = search;
+                    ViewBag.PhoneNumber = phoneNumber;
+                    ViewBag.FromDate = fromDate;
+                    ViewBag.ToDate = toDate;
+                    ViewBag.IsAuthenticated = isAuthenticated;
+                    
+                    var emptyViewModel = new
+                    {
+                        HoaDons = new List<HoaDon>(),
+                        Pagination = new
+                        {
+                            CurrentPage = page,
+                            TotalPages = 0,
+                            TotalCount = 0,
+                            PageSize = 10,
+                            HasPreviousPage = false,
+                            HasNextPage = false
+                        }
+                    };
+                    return View(emptyViewModel);
+                }
+                
+                var apiUrl = $"{baseUrl}/HoaDons/guest";
                 var parameters = new List<string>();
-                
-                if (trangThai != "TatCa")
-                {
-                    parameters.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
-                }
                 
                 if (!string.IsNullOrEmpty(search))
                 {
@@ -57,7 +161,6 @@ namespace QuanView.Controllers
                     parameters.Add($"phoneNumber={Uri.EscapeDataString(phoneNumber)}");
                 }
                 
-                // Thêm tham số phân trang
                 parameters.Add($"page={page}");
                 parameters.Add("pageSize=10");
 
@@ -72,19 +175,7 @@ namespace QuanView.Controllers
                 {
                     var hoaDons = await response.Content.ReadFromJsonAsync<List<HoaDon>>();
                     var filteredHoaDons = hoaDons ?? new List<HoaDon>();
-
-                    // Lọc theo ngày (nếu có)
-                    if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
-                    {
-                        filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date >= tuNgayDate.Date).ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
-                    {
-                        filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date <= denNgayDate.Date).ToList();
-                    }
                     
-                    // Lấy thông tin phân trang từ header
                     var totalCount = 0;
                     var totalPages = 0;
                     var currentPage = page;
@@ -95,7 +186,6 @@ namespace QuanView.Controllers
                     if (response.Headers.Contains("X-Total-Pages"))
                         int.TryParse(response.Headers.GetValues("X-Total-Pages").FirstOrDefault(), out totalPages);
                     
-                    // Tạo ViewModel với thông tin phân trang
                     var viewModel = new
                     {
                         HoaDons = filteredHoaDons,
@@ -110,20 +200,29 @@ namespace QuanView.Controllers
                         }
                     };
                     
-                    ViewBag.TrangThai = trangThai;
-                    ViewBag.TuNgay = tuNgay;
-                    ViewBag.DenNgay = denNgay;
                     ViewBag.Search = search;
                     ViewBag.PhoneNumber = phoneNumber;
+                    ViewBag.FromDate = fromDate;
+                    ViewBag.ToDate = toDate;
+                    ViewBag.IsAuthenticated = isAuthenticated;
                     return View(viewModel);
                 }
                 else
                 {
-                    ViewBag.TrangThai = trangThai;
-                    ViewBag.TuNgay = tuNgay;
-                    ViewBag.DenNgay = denNgay;
+                    // Xử lý lỗi từ API
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("API trả về lỗi: {StatusCode} - {ErrorMessage}", response.StatusCode, errorMessage);
+                    
+                    if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        ModelState.AddModelError("PhoneNumber", errorMessage);
+                    }
+                    
                     ViewBag.Search = search;
                     ViewBag.PhoneNumber = phoneNumber;
+                    ViewBag.FromDate = fromDate;
+                    ViewBag.ToDate = toDate;
+                    ViewBag.IsAuthenticated = isAuthenticated;
                     
                     // Trả về ViewModel rỗng với phân trang
                     var emptyViewModel = new
@@ -146,13 +245,12 @@ namespace QuanView.Controllers
             {
                 _logger.LogError($"Exception in Index: {ex.Message}");
                 
-                ViewBag.TrangThai = trangThai;
-                ViewBag.TuNgay = tuNgay;
-                ViewBag.DenNgay = denNgay;
                 ViewBag.Search = search;
                 ViewBag.PhoneNumber = phoneNumber;
+                ViewBag.FromDate = fromDate;
+                ViewBag.ToDate = toDate;
+                ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
                 
-                // Trả về ViewModel rỗng với phân trang
                 var emptyViewModel = new
                 {
                     HoaDons = new List<HoaDon>(),
