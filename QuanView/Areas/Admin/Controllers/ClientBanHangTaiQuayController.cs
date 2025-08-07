@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using QuanApi.Dtos;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class ClientBanHangTaiQuayController : Controller
     {
         private readonly HttpClient _httpClient;

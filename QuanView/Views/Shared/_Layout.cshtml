@@ -35,12 +35,13 @@
                             <div class="header__top__links">
                                 @if (User.Identity.IsAuthenticated)
                                 {
-                                    <span>@User.Identity.Name</span>
-                                    <a asp-controller="Login" asp-action="Logout">Đăng xuất</a>
+                                    <span style="color: #e7ab3c; font-weight: bold;">Xin chào, @User.Identity.Name!</span>
+                                    <a asp-controller="Login" asp-action="Logout" style="color: #e7ab3c;">Đăng xuất</a>
                                 }
                                 else
                                 {
-                                    <a asp-controller="Login" asp-action="Index">Sign in</a>
+                                    <a asp-controller="Login" asp-action="Index">Đăng nhập</a>
+                                    <a asp-controller="Login" asp-action="Register">Đăng ký</a>
                                 }
                                 <a href="#">FAQs</a>
                             </div>

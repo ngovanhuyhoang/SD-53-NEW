@@ -1,11 +1,11 @@
 @model dynamic
 @{
     ViewData["Title"] = "ĐƠN MUA CỦA TÔI";
-    var trangThai = ViewBag.TrangThai as string ?? "TatCa";
-    var tuNgay = ViewBag.TuNgay as string ?? "";
-    var denNgay = ViewBag.DenNgay as string ?? "";
-    var loaiDonHang = ViewBag.LoaiDonHang as string ?? "";
     var search = ViewBag.Search as string ?? "";
+    var phoneNumber = ViewBag.PhoneNumber as string ?? "";
+    var fromDate = ViewBag.FromDate as string ?? "";
+    var toDate = ViewBag.ToDate as string ?? "";
+    var isAuthenticated = ViewBag.IsAuthenticated as bool? ?? false;
 }
 
 <style>
@@ -98,7 +98,7 @@
     
     .btn-view:hover {
         background: #0056b3;
-        transform: translateY(-1px);
+        color: white;
     }
     
     .btn-cancel {
@@ -108,107 +108,138 @@
     
     .btn-cancel:hover {
         background: #c82333;
-        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .pagination-info {
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .page-link {
+        color: #007bff;
+        border: 1px solid #dee2e6;
+    }
+    
+    .page-link:hover {
+        color: #0056b3;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
     }
 </style>
 
-<div class="container py-4">
+<div class="container mt-4">
     <h2 class="mb-4">ĐƠN MUA CỦA TÔI</h2>
-    
-    <!-- Tabs trạng thái -->
-    <div class="order-tabs">
-        <button class="order-tab @(trangThai == "TatCa" ? "active" : "")" onclick="filterOrders('TatCa')">
-            Tất cả
-        </button>
-        <button class="order-tab @(trangThai == "Chờ xác nhận" ? "active" : "")" onclick="filterOrders('Chờ xác nhận')">
-            Chờ xác nhận
-        </button>
-        <button class="order-tab @(trangThai == "Đã xác nhận" ? "active" : "")" onclick="filterOrders('Đã xác nhận')">
-            Đã xác nhận
-        </button>
-        <button class="order-tab @(trangThai == "Chờ lấy hàng" ? "active" : "")" onclick="filterOrders('Chờ lấy hàng')">
-            Chờ lấy hàng
-        </button>
-        <button class="order-tab @(trangThai == "Đã lấy hàng" ? "active" : "")" onclick="filterOrders('Đã lấy hàng')">
-            Đã lấy hàng
-        </button>
-        <button class="order-tab @(trangThai == "Chờ giao hàng" ? "active" : "")" onclick="filterOrders('Chờ giao hàng')">
-            Chờ giao hàng
-        </button>
-        <button class="order-tab @(trangThai == "Đang giao hàng" ? "active" : "")" onclick="filterOrders('Đang giao hàng')">
-            Đang giao hàng
-        </button>
-        <button class="order-tab @(trangThai == "Đã giao" ? "active" : "")" onclick="filterOrders('Đã giao')">
-            Đã giao
-        </button>
-        <button class="order-tab @(trangThai == "Giao hàng thành công" ? "active" : "")" onclick="filterOrders('Giao hàng thành công')">
-            Hoàn thành
-        </button>
-        <button class="order-tab @(trangThai == "Đã hủy" ? "active" : "")" onclick="filterOrders('Đã hủy')">
-            Đã hủy
-        </button>
-    </div>
     
     <!-- Bộ lọc nâng cao -->
     <div class="filter-section">
-        @{
-            var customerIdClaim = User.FindFirst("custom:id_khachhang");
-            bool isLoggedIn = !string.IsNullOrEmpty(customerIdClaim?.Value);
+        @if (isAuthenticated)
+        {
+            <!-- Form tìm kiếm cho người dùng đã đăng nhập -->
+            <div class="alert alert-success mb-3">
+                <i class="bi bi-person-check"></i>
+                <strong>Xin chào, @User.Identity.Name!</strong> Dưới đây là đơn hàng của bạn
+            </div>
+            
+            <form method="get" action="@Url.Action("Index")" id="filterForm">
+                <div class="row">
+                    <!-- Tìm kiếm theo mã đơn hàng -->
+                    <div class="col-md-3">
+                        <label class="form-label">Mã đơn hàng:</label>
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Nhập mã đơn hàng (tùy chọn)" 
+                               value="@search">
+                    </div>
+                    
+                    <!-- Lọc theo ngày từ -->
+                    <div class="col-md-3">
+                        <label class="form-label">Từ ngày:</label>
+                        <input type="date" class="form-control" name="fromDate" 
+                               value="@fromDate">
+                    </div>
+                    
+                    <!-- Lọc theo ngày đến -->
+                    <div class="col-md-3">
+                        <label class="form-label">Đến ngày:</label>
+                        <input type="date" class="form-control" name="toDate" 
+                               value="@toDate">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Tìm đơn hàng
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Xóa bộ lọc
+                        </a>
+                    </div>
+                </div>
+            </form>
         }
-        
-        @if (!isLoggedIn)
+        else
         {
             <!-- Form tìm kiếm cho khách vãng lai -->
             <div class="alert alert-info mb-3">
                 <i class="bi bi-info-circle"></i>
                 <strong>Khách vãng lai:</strong> Vui lòng nhập số điện thoại để tìm đơn hàng của bạn
             </div>
-        }
-        
-        <form method="get" action="@Url.Action("Index")" id="filterForm">
-            <div class="row">
-                @if (!isLoggedIn)
-                {
+            
+            <!-- Hiển thị thông báo lỗi validation -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Lỗi:</strong>
+                    <ul class="mb-0">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+            
+            <form method="get" action="@Url.Action("Index")" id="filterForm">
+                <div class="row">
                     <!-- Tìm kiếm bằng số điện thoại cho khách vãng lai -->
                     <div class="col-md-4">
                         <label class="form-label">Số điện thoại:</label>
                         <input type="tel" class="form-control" name="phoneNumber" 
                                placeholder="Nhập số điện thoại đặt hàng" 
-                               value="@ViewBag.PhoneNumber" 
+                               value="@phoneNumber" 
                                pattern="[0-9]{10,11}" 
                                title="Vui lòng nhập số điện thoại hợp lệ (10-11 số)"
                                required>
                         <div class="form-text">Nhập số điện thoại bạn đã dùng khi đặt hàng</div>
                     </div>
-                }
-                else
-                {
-                    <!-- Các filter cho khách hàng đã đăng nhập -->
-                    <div class="col-md-3">
-                        <label class="form-label">Từ ngày:</label>
-                        <input type="date" class="form-control" name="tuNgay" value="@tuNgay">
+                    
+                    <!-- Tìm kiếm theo mã đơn hàng -->
+                    <div class="col-md-4">
+                        <label class="form-label">Mã đơn hàng:</label>
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Nhập mã đơn hàng (tùy chọn)" 
+                               value="@search">
+                        <div class="form-text">Tìm kiếm theo mã đơn hàng cụ thể</div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Đến ngày:</label>
-                        <input type="date" class="form-control" name="denNgay" value="@denNgay">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Tìm kiếm:</label>
-                        <input type="text" class="form-control" name="search" placeholder="Nhập mã đơn hàng" value="@search">
-                    </div>
-                }
-            </div>
-            <div class="row mt-3">
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search"></i> @(isLoggedIn ? "Lọc" : "Tìm đơn hàng")
-                    </button>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Xóa bộ lọc
-                    </a>
                 </div>
-            </div>
-        </form>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Tìm đơn hàng
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Xóa bộ lọc
+                        </a>
+                    </div>
+                </div>
+            </form>
+        }
     </div>
     
     <!-- Bảng đơn hàng -->
@@ -284,18 +315,19 @@
                         <td colspan="8" class="text-center py-4">
                             <div class="text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                @if (!isLoggedIn && !string.IsNullOrEmpty(ViewBag.PhoneNumber))
+                                @if (isAuthenticated)
                                 {
-                                    <p class="mt-2">Không tìm thấy đơn hàng nào cho số điện thoại <strong>@ViewBag.PhoneNumber</strong></p>
-                                    <p class="text-sm">Vui lòng kiểm tra lại số điện thoại hoặc liên hệ hỗ trợ</p>
+                                    <p class="mt-2">Bạn chưa có đơn hàng nào</p>
+                                    <p class="text-sm">Hãy mua sắm để có đơn hàng đầu tiên!</p>
                                 }
-                                else if (!isLoggedIn)
+                                else if (!string.IsNullOrEmpty(phoneNumber))
                                 {
-                                    <p class="mt-2">Vui lòng nhập số điện thoại để tìm đơn hàng</p>
+                                    <p class="mt-2">Không tìm thấy đơn hàng nào cho số điện thoại <strong>@phoneNumber</strong></p>
+                                    <p class="text-sm">Vui lòng kiểm tra lại số điện thoại hoặc liên hệ hỗ trợ</p>
                                 }
                                 else
                                 {
-                                    <p class="mt-2">Không có đơn hàng nào</p>
+                                    <p class="mt-2">Vui lòng nhập số điện thoại để tìm đơn hàng</p>
                                 }
                             </div>
                         </td>
@@ -322,10 +354,10 @@
                         <li class="page-item">
                             <a class="page-link" href="@Url.Action("Index", new { 
                                 page = pagination.CurrentPage - 1,
-                                trangThai = ViewBag.TrangThai,
-                                tuNgay = ViewBag.TuNgay,
-                                denNgay = ViewBag.DenNgay,
-                                search = ViewBag.Search
+                                search = search,
+                                phoneNumber = phoneNumber,
+                                fromDate = fromDate,
+                                toDate = toDate
                             })">
                                 <i class="fas fa-chevron-left"></i>
                             </a>
@@ -342,10 +374,10 @@
                         <li class="page-item @(i == pagination.CurrentPage ? "active" : "")">
                             <a class="page-link" href="@Url.Action("Index", new { 
                                 page = i,
-                                trangThai = ViewBag.TrangThai,
-                                tuNgay = ViewBag.TuNgay,
-                                denNgay = ViewBag.DenNgay,
-                                search = ViewBag.Search
+                                search = search,
+                                phoneNumber = phoneNumber,
+                                fromDate = fromDate,
+                                toDate = toDate
                             })">@i</a>
                         </li>
                     }
@@ -355,10 +387,10 @@
                         <li class="page-item">
                             <a class="page-link" href="@Url.Action("Index", new { 
                                 page = pagination.CurrentPage + 1,
-                                trangThai = ViewBag.TrangThai,
-                                tuNgay = ViewBag.TuNgay,
-                                denNgay = ViewBag.DenNgay,
-                                search = ViewBag.Search
+                                search = search,
+                                phoneNumber = phoneNumber,
+                                fromDate = fromDate,
+                                toDate = toDate
                             })">
                                 <i class="fas fa-chevron-right"></i>
                             </a>
@@ -370,47 +402,7 @@
     }
 </div>
 
-<!-- Modal chi tiết đơn hàng -->
-<div class="modal fade" id="orderDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Chi tiết đơn hàng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="orderDetailContent">
-                <!-- Nội dung sẽ được load động -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal thông tin vận chuyển -->
-<div class="modal fade" id="shippingInfoModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Thông tin vận chuyển</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="shippingInfoContent">
-                <!-- Nội dung sẽ được load động -->
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-let currentStatus = '@trangThai';
-
-// Lọc đơn hàng theo trạng thái
-function filterOrders(status) {
-    currentStatus = status;
-    const url = new URL(window.location);
-    url.searchParams.set('trangThai', status);
-    window.location.href = url.toString();
-}
-
 // Validate số điện thoại cho khách vãng lai
 document.addEventListener('DOMContentLoaded', function() {
     const phoneInput = document.querySelector('input[name="phoneNumber"]');
@@ -443,6 +435,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Validate ngày cho người dùng đã đăng nhập
+    const fromDateInput = document.querySelector('input[name="fromDate"]');
+    const toDateInput = document.querySelector('input[name="toDate"]');
+    
+    if (fromDateInput && toDateInput) {
+        fromDateInput.addEventListener('change', function() {
+            if (toDateInput.value && this.value > toDateInput.value) {
+                alert('Ngày bắt đầu không thể lớn hơn ngày kết thúc');
+                this.value = '';
+            }
+        });
+        
+        toDateInput.addEventListener('change', function() {
+            if (fromDateInput.value && this.value < fromDateInput.value) {
+                alert('Ngày kết thúc không thể nhỏ hơn ngày bắt đầu');
+                this.value = '';
+            }
+        });
+    }
 });
 
 // Hủy đơn hàng
@@ -472,7 +484,7 @@ function cancelOrder(orderId) {
 
 // Xem thông tin vận chuyển
 async function viewShippingInfo(orderId) { 
-            alert('Đơn hàng sẽ đến tay bạn từ 3-5 ngày');  
+    alert('Đơn hàng sẽ đến tay bạn từ 3-5 ngày');  
 }
 </script>
 

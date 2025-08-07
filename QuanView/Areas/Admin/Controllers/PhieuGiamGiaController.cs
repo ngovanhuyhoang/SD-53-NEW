@@ -9,10 +9,16 @@ using QuanApi.Data;
 using QuanApi.Dtos;
 using static QuanApi.Controllers.PhieuGiamGiasController;
 using System.Linq; // Added for .Where() and .ToList()
+using Microsoft.AspNetCore.Authorization;
+using QuanView.ViewModels;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class PhieuGiamGiaController : Controller
     {
         private readonly HttpClient _http;

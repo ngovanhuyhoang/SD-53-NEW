@@ -13,7 +13,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+        sqlServerOptionsAction: sqlOptions =>
+        {
+            sqlOptions.CommandTimeout(120); // 2 phút timeout
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
+});
 
 // 2️⃣ CẤU HÌNH HttpClient GỌI API
 builder.Services.AddHttpClient("MyApi", client =>
@@ -78,6 +88,18 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// 3️⃣ CẤU HÌNH AUTHORIZATION
+builder.Services.AddAuthorization(options =>
+{
+    // Policy cho Admin area - chỉ admin và nhân viên mới được truy cập
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("admin", "nhanvien"));
+    
+    // Policy cho khách hàng
+    options.AddPolicy("CustomerPolicy", policy =>
+        policy.RequireRole("KhachHang"));
+});
+
 // 4️⃣ CẤU HÌNH CORS CHO FRONTEND
 builder.Services.AddCors(options =>
 {
@@ -110,20 +132,19 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-app.UseRouting();
-app.UseSession();
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-});
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("AllowFrontend");
+app.UseRouting();
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
 
 // 8️⃣ ROUTING
 app.MapControllerRoute(

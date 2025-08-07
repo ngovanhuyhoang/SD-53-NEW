@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanView.ViewModels;
 using System.Net.Http.Json;
@@ -8,6 +9,7 @@ using System.Text.Json;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class LungQuanController : Controller
     {
         private readonly HttpClient _httpClient;

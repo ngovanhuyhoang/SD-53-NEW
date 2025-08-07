@@ -3,15 +3,21 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BanQuanAu1.Web.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
+using QuanView.ViewModels;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class BannerController : Controller
     {
         private readonly BanQuanAu1DbContext _context;

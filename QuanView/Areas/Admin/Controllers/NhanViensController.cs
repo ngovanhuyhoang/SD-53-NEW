@@ -7,10 +7,16 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using QuanApi.Data;
+using Microsoft.AspNetCore.Authorization;
+using QuanView.ViewModels;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class NhanViensController : Controller
     {
         private readonly BanQuanAu1DbContext _context;

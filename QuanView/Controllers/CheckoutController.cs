@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
@@ -8,6 +9,12 @@ using QuanView.Controllers;
 using Microsoft.AspNetCore.Http;
 using QuanApi.Dtos;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Text;
+using QuanView.Models;
 
 namespace QuanView.Controllers
 {
@@ -26,6 +33,7 @@ namespace QuanView.Controllers
         }
     }
 
+    [Authorize]
     public class CheckoutController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -35,9 +43,40 @@ namespace QuanView.Controllers
             _httpClient = httpClientFactory.CreateClient("MyApi");
         }
 
+        private bool ValidateVietnamesePhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return false;
+
+            phoneNumber = phoneNumber.Trim();
+
+            string pattern = @"^(0|\+84)(3[2-9]|5[689]|7[06-9]|8[1-689]|9[0-46-9])[0-9]{7}$";
+            
+            return Regex.IsMatch(phoneNumber, pattern);
+        }
+
+        private string FormatPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return phoneNumber;
+
+            string cleaned = Regex.Replace(phoneNumber, @"[^\d+]", "");
+            
+            if (cleaned.StartsWith("+84"))
+            {
+                cleaned = "0" + cleaned.Substring(3);
+            }
+            
+            if (cleaned.StartsWith("84"))
+            {
+                cleaned = "0" + cleaned.Substring(2);
+            }
+            
+            return cleaned;
+        }
+
         public async Task<IActionResult> Index()
         {
-            // Lấy thông tin giỏ hàng từ session
             var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
 
             if (!cart.Any())
@@ -88,6 +127,22 @@ namespace QuanView.Controllers
         {
             try
             {
+                // Validate số điện thoại người nhận
+                if (string.IsNullOrWhiteSpace(checkoutData.SoDienThoaiNguoiNhan))
+                {
+                    return Json(new { success = false, message = "Số điện thoại người nhận không được để trống" });
+                }
+
+                string formattedPhone = FormatPhoneNumber(checkoutData.SoDienThoaiNguoiNhan);
+                
+                if (!ValidateVietnamesePhoneNumber(formattedPhone))
+                {
+                    return Json(new { success = false, message = "Số điện thoại người nhận không hợp lệ" });
+                }
+
+                // Cập nhật số điện thoại đã được format
+                checkoutData.SoDienThoaiNguoiNhan = formattedPhone;
+
                 // Lấy giỏ hàng từ session
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
 

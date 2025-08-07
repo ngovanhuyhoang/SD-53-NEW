@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using System.Net.Http;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Policy = "AdminPolicy")]
     public class DotGiamGiaController : Controller
     {
         private readonly HttpClient _httpClient;
