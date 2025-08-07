@@ -12,7 +12,7 @@ using System;
 namespace BanQuanAu1.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class KhachHangController : Controller
     {
         private readonly HttpClient _httpClient;

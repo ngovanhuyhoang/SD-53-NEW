@@ -10,12 +10,13 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using QuanApi.Dtos;
 using BanQuanAu1.Web.Data;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class NhanViensController : Controller
     {
 

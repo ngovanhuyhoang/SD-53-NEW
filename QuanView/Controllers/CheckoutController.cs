@@ -33,7 +33,7 @@ namespace QuanView.Controllers
         }
     }
 
-    [Authorize]
+    //[Authorize]
     public class CheckoutController : Controller
     {
         private readonly HttpClient _httpClient;

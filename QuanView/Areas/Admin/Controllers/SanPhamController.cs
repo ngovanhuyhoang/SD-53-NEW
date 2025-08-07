@@ -16,7 +16,7 @@ using System.Net.Http.Json;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class SanPhamController : Controller
     {
         private readonly HttpClient _http;
@@ -418,9 +418,9 @@ namespace QuanView.Areas.Admin.Controllers
             ViewBag.LoaiOngs = await GetSelectList("loaiong", "idLoaiOng", "tenLoaiOng");
             ViewBag.KieuDangs = await GetSelectList("kieudang", "idKieuDang", "tenKieuDang");
             ViewBag.LungQuans = await GetSelectList("lungquan", "idLungQuan", "tenLungQuan");
-            ViewBag.KichCos = await GetSelectList("kichcos", "idKichCo", "tenKichCo");
-            ViewBag.MauSacs = await GetSelectList("mausacs", "idMauSac", "tenMauSac");
-            ViewBag.HoaTiets = await GetSelectList("hoatiets", "idHoaTiet", "tenHoaTiet");
+            ViewBag.KichCos = await GetSelectList("kichco", "idKichCo", "tenKichCo");
+            ViewBag.MauSacs = await GetSelectList("mausac", "idMauSac", "tenMauSac");
+            ViewBag.HoaTiets = await GetSelectList("hoatiet", "idHoaTiet", "tenHoaTiet");
         }
 
         private async Task<List<SelectListItem>> GetSelectList(string url, string idField, string nameField)

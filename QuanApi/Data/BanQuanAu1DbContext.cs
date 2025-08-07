@@ -52,5 +52,6 @@ namespace BanQuanAu1.Web.Data
             // Seed data
         }
         public DbSet<QuanApi.Data.HoaTiet> HoaTiet { get; set; } = default!;
+        public DbSet<QuanApi.Data.VaiTro> VaiTro { get; set; } = default!;
     }
 }

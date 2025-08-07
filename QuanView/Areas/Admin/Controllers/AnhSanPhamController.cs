@@ -9,7 +9,7 @@ using System.Linq;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    [Authorize/*(Policy = "AdminPolicy")*/]
     public class AnhSanPhamController : Controller
     {
         private readonly HttpClient _http;

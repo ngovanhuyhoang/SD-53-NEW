@@ -24,7 +24,7 @@ public class ChartsApiController : ControllerBase
             var endDate = DateTime.Now.Date.AddDays(1).AddTicks(-1); // Cuối ngày hôm nay
 
             var monthlyData = await _context.HoaDons
-                .Where(h => h.TrangThai == "DaThanhToan" &&
+                .Where(h => h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công" &&
                             h.TrangThaiHoaDon == true &&
                             h.NgayTao >= startDate && h.NgayTao <= endDate)
                 .GroupBy(h => new { h.NgayTao.Year, h.NgayTao.Month })
@@ -112,7 +112,7 @@ public class ChartsApiController : ControllerBase
                 .Include(ct => ct.SanPhamChiTiet)
                     .ThenInclude(spct => spct.SanPham)
                 .Include(ct => ct.HoaDon)
-                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" &&
+                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                            ct.HoaDon.TrangThaiHoaDon == true &&
                            ct.TrangThai == true &&
                            ct.HoaDon.NgayTao >= DateTime.Now.AddMonths(-3)) // 3 tháng gần nhất
@@ -215,7 +215,7 @@ public class ChartsApiController : ControllerBase
         {
             var totalRevenue = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
-                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" &&
+                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                            ct.HoaDon.TrangThaiHoaDon == true &&
                            ct.HoaDon.NgayTao >= DateTime.Now.AddMonths(-3) &&
                            ct.TrangThai == true)
@@ -245,7 +245,7 @@ public class ChartsApiController : ControllerBase
                     .ThenInclude(spct => spct.SanPham)
                         .ThenInclude(sp => sp.DanhMuc)
                 .Include(ct => ct.HoaDon)
-                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" &&
+                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                            ct.HoaDon.TrangThaiHoaDon == true &&
                            ct.HoaDon.NgayTao >= DateTime.Now.AddMonths(-3) &&
                            ct.TrangThai == true)
@@ -402,7 +402,7 @@ public class ChartsApiController : ControllerBase
         {
             var today = DateTime.Today;
             var todaySales = await _context.HoaDons
-                .Where(h => h.TrangThai == "DaThanhToan" &&
+                .Where(h => h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công" &&
                            h.TrangThaiHoaDon == true &&
                            h.NgayTao.Date == today)
                 .SumAsync(h => h.TongTien - (h.TienGiam ?? 0));
@@ -426,7 +426,7 @@ public class ChartsApiController : ControllerBase
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
             var monthSales = await _context.HoaDons
-                .Where(h => h.TrangThai == "DaThanhToan" &&
+                .Where(h => h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công" &&
                            h.TrangThaiHoaDon == true &&
                            h.NgayTao >= firstDay && h.NgayTao <= lastDay)
                 .SumAsync(h => h.TongTien - (h.TienGiam ?? 0));
@@ -451,7 +451,7 @@ public class ChartsApiController : ControllerBase
 
             var totalQuantity = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
-                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" &&
+                .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                             ct.HoaDon.TrangThaiHoaDon == true &&
                             ct.TrangThai == true &&
                             ct.HoaDon.NgayTao >= firstDay &&
