@@ -1,0 +1,18 @@
+@model QuanApi.Data.HoaTiet
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaHoaTiet" class="form-label">Mã họa tiết</label>
+        <input asp-for="MaHoaTiet" class="form-control" required />
+        <span asp-validation-for="MaHoaTiet" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenHoaTiet" class="form-label">Tên họa tiết</label>
+        <input asp-for="TenHoaTiet" class="form-control" required />
+        <span asp-validation-for="TenHoaTiet" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form> 
