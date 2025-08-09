@@ -98,7 +98,6 @@ namespace QuanView.Controllers
                     }
                 }
                 
-                // Nếu khách vãng lai hoặc không tìm thấy đơn hàng của user đã đăng nhập
                 if (string.IsNullOrEmpty(phoneNumber))
                 {
                     ViewBag.Search = search;
@@ -209,7 +208,6 @@ namespace QuanView.Controllers
                 }
                 else
                 {
-                    // Xử lý lỗi từ API
                     var errorMessage = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("API trả về lỗi: {StatusCode} - {ErrorMessage}", response.StatusCode, errorMessage);
                     
@@ -224,7 +222,6 @@ namespace QuanView.Controllers
                     ViewBag.ToDate = toDate;
                     ViewBag.IsAuthenticated = isAuthenticated;
                     
-                    // Trả về ViewModel rỗng với phân trang
                     var emptyViewModel = new
                     {
                         HoaDons = new List<HoaDon>(),
@@ -339,7 +336,7 @@ namespace QuanView.Controllers
 
         // POST: DonHang/HuyDon/{id}
         [HttpPost]
-        public async Task<IActionResult> HuyDon(Guid id)
+        public async Task<IActionResult> HuyDon(Guid id, [FromBody] HuyDonRequest request)
         {
             try
             {
@@ -348,7 +345,8 @@ namespace QuanView.Controllers
                     new StringContent(JsonSerializer.Serialize(new { 
                         TrangThai = "Đã hủy",
                         NguoiCapNhat = "Customer",
-                        LanCapNhatCuoi = DateTime.UtcNow
+                        LanCapNhatCuoi = DateTime.UtcNow,
+                        LyDoHuyDon = request.LyDoHuyDon
                     }), Encoding.UTF8, "application/json"));
                 
                 if (response.IsSuccessStatusCode)
@@ -368,5 +366,10 @@ namespace QuanView.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra khi hủy đơn hàng" });
             }
         }
+    }
+
+    public class HuyDonRequest
+    {
+        public string LyDoHuyDon { get; set; }
     }
 }

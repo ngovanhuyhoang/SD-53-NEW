@@ -51,6 +51,9 @@ namespace QuanApi.Data
         [MaxLength(100)]
         public string? NguoiCapNhat { get; set; }
 
+        [MaxLength(500)]
+        public string? LyDoHuyDon { get; set; }
+
         public bool TrangThaiHoaDon { get; set; } = true;
         [ForeignKey("IDKhachHang")]
         public virtual KhachHang? KhachHang { get; set; }

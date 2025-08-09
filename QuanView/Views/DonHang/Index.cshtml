@@ -290,7 +290,7 @@
                             <td>@hoaDon.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
                                 <div class="d-flex gap-2">
-                                    @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận")
+                                    @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
                                     {
                                         <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')" title="Hủy đơn">
                                             <i class="bi bi-x-circle"></i> Hủy đơn
@@ -459,12 +459,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Hủy đơn hàng
 function cancelOrder(orderId) {
+    // Hiển thị form nhập lý do hủy đơn
+    const lyDo = prompt('Vui lòng nhập lý do hủy đơn hàng:');
+    
+    if (lyDo === null) {
+        // Người dùng nhấn Cancel
+        return;
+    }
+    
+    if (lyDo.trim() === '') {
+        alert('Vui lòng nhập lý do hủy đơn hàng!');
+        return;
+    }
+    
     if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
         fetch(`/DonHang/HuyDon/${orderId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify({
+                LyDoHuyDon: lyDo.trim()
+            })
         })
         .then(response => response.json())
         .then(result => {

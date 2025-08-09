@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 
 namespace QuanView.Areas.Admin.Controllers
 {
@@ -51,6 +52,20 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
+            var ngayHienTai = DateTime.Today;
+            
+            if (model.NgayBatDau.Date < ngayHienTai)
+            {
+                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày hiện tại!");
+                return View(model);
+            }
+            
+            if (model.NgayBatDau > model.NgayKetThuc)
+            {
+                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày kết thúc!");
+                return View(model);
+            }
+
             if (string.IsNullOrWhiteSpace(selectedIds))
             {
                 ModelState.AddModelError("", "Vui lòng chọn ít nhất 1 sản phẩm.");
@@ -86,7 +101,7 @@ namespace QuanView.Areas.Admin.Controllers
 
             if (response.IsSuccessStatusCode)
             {
-                TempData["Reload"] = true;
+                TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
                 return RedirectToAction(nameof(Index));
 
             }
@@ -107,7 +122,6 @@ namespace QuanView.Areas.Admin.Controllers
 
             var dot = await res.Content.ReadFromJsonAsync<DotGiamGia>();
 
-            // GỌI API lấy sản phẩm đã chọn
             var spRes = await _httpClient.GetAsync($"DotGiamGias/{id}/SanPhams");
             if (spRes.IsSuccessStatusCode)
             {
@@ -130,6 +144,20 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid) return View(model);
             if (id != model.IDDotGiamGia) return BadRequest();
 
+            var ngayHienTai = DateTime.Today;
+            
+            if (model.NgayBatDau.Date < ngayHienTai)
+            {
+                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày hiện tại!");
+                return View(model);
+            }
+            
+            if (model.NgayBatDau > model.NgayKetThuc)
+            {
+                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày kết thúc!");
+                return View(model);
+            }
+
             var dto = new
             {
                 IDDotGiamGia = model.IDDotGiamGia,
@@ -147,11 +175,9 @@ namespace QuanView.Areas.Admin.Controllers
 
             if (res.IsSuccessStatusCode)
             {
-                TempData["Reload"] = true;
-
+                TempData["SuccessMessage"] = "Cập nhật đợt giảm giá thành công!";
                 return RedirectToAction(nameof(Index));
             }
-
 
             ModelState.AddModelError("", "Cập nhật thất bại");
 
@@ -167,20 +193,22 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var res = await _httpClient.DeleteAsync($"DotGiamGias/{id}");
+            TempData[res.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
+                res.IsSuccessStatusCode ? "Xóa đợt giảm giá thành công!" : "Xóa đợt giảm giá thất bại!";
             return RedirectToAction(nameof(Index));
         }
 
         // PUT: Cập nhật trạng thái
         [HttpGet]
-        public async Task<IActionResult> UpdateTrangThai(Guid id, bool trangThai)
+        public async Task<IActionResult> UpdateTrangThai(Guid id, bool trangThai) 
         {
             var request = new HttpRequestMessage(HttpMethod.Put,
                 $"DotGiamGias/UpdateTrangThai?id={id}&trangThai={trangThai}");
 
             var response = await _httpClient.SendAsync(request);
 
-            TempData[response.IsSuccessStatusCode ? "Message" : "Error"] =
-                response.IsSuccessStatusCode ? "Cập nhật trạng thái thành công." : "Thay đổi trạng thái thất bại!";
+            TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
+                response.IsSuccessStatusCode ? "Cập nhật trạng thái thành công!" : "Thay đổi trạng thái thất bại!";
 
             return RedirectToAction(nameof(Index));
         }
