@@ -388,6 +388,13 @@
                                             <div class="font-weight-bold">
                                                 @(chiTiet.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")
                                             </div>
+                                            <div class="text-muted small">
+                                                Màu sắc: @(chiTiet.SanPhamChiTiet?.MauSac?.TenMauSac ?? "-")
+                                                &nbsp;|&nbsp;
+                                                Kích cỡ: @(chiTiet.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-")
+                                                &nbsp;|&nbsp;
+                                                Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
+                                            </div>
                                         </td>
                                         <td>@chiTiet.DonGia.ToString("N0") VNĐ</td>
                                         <td>@chiTiet.SoLuong</td>
@@ -443,6 +450,10 @@
                     <div class="info-row">
                         <span class="info-label">Giảm giá:</span>
                         <span class="info-value">@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phí vận chuyển:</span>
+                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label font-weight-bold">Tổng cộng:</span>

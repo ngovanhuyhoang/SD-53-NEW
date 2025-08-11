@@ -360,6 +360,7 @@ namespace QuanApi.Controllers
             public bool Shipping { get; set; }
             public string? PaymentMethod { get; set; } // Mã phương thức thanh toán ("cash", "bank", ...)
             public decimal? CustomerPaid { get; set; }
+            public decimal? ShippingFee { get; set; } // Phí vận chuyển
         }
 
         [HttpPost("thanh-toan")]
@@ -386,6 +387,19 @@ namespace QuanApi.Controllers
                 return BadRequest("Chưa chọn phương thức thanh toán.");
             }
 
+            // Xác định trạng thái hóa đơn dựa trên phương thức thanh toán và địa chỉ
+            string trangThaiHoaDon;
+            if (dto.Shipping && !string.IsNullOrEmpty(dto.Address) && dto.PaymentMethod == "cash" || dto.PaymentMethod == "Tiền mặt" || dto.PaymentMethod == "tiền mặt")
+            {
+                // Nếu có giao hàng, có địa chỉ và thanh toán bằng tiền mặt -> Đã xác nhận
+                trangThaiHoaDon = "Đã xác nhận";
+            }
+            else
+            {
+                // Các trường hợp khác -> Đã thanh toán
+                trangThaiHoaDon = "DaThanhToan";
+            }
+
             // 1. Tạo hóa đơn
             var hoaDon = new HoaDon
             {
@@ -396,7 +410,7 @@ namespace QuanApi.Controllers
                 SoDienThoaiNguoiNhan = dto.CustomerPhone,
                 DiaChiGiaoHang = dto.Address,
                 TongTien = 0,
-                TrangThai = "DaThanhToan",
+                TrangThai = trangThaiHoaDon,
                 NgayTao = DateTime.Now,
                 TrangThaiHoaDon = true,
                 IDPhuongThucThanhToan = paymentMethodId
@@ -504,7 +518,15 @@ namespace QuanApi.Controllers
                 }
             }
 
-            // 4. (Tùy chọn) Lưu CustomerPaid vào ghi chú hoặc trường phù hợp nếu muốn
+            // 4. Thêm phí vận chuyển nếu có
+            if (dto.Shipping && dto.ShippingFee.HasValue && dto.ShippingFee.Value > 0)
+            {
+                hoaDon.PhiVanChuyen = dto.ShippingFee.Value;
+                hoaDon.TongTien += dto.ShippingFee.Value;
+                Console.WriteLine($"[PayInvoice] Add Shipping Fee: {dto.ShippingFee.Value}");
+            }
+
+            // 5. (Tùy chọn) Lưu CustomerPaid vào ghi chú hoặc trường phù hợp nếu muốn
             // hoaDon.GhiChu = $"Khách đưa: {dto.CustomerPaid}";
 
             await _context.SaveChangesAsync();

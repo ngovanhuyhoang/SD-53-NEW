@@ -28,6 +28,9 @@ namespace QuanApi.Data
         [Range(0, double.MaxValue, ErrorMessage = "Tiền giảm phải lớn hơn hoặc bằng 0.")]
         public decimal? TienGiam { get; set; }
 
+        [Range(0, double.MaxValue, ErrorMessage = "Phí vận chuyển phải lớn hơn hoặc bằng 0.")]
+        public decimal? PhiVanChuyen { get; set; }
+
         [Required]
         [MaxLength(50)]
         public string TrangThai { get; set; }

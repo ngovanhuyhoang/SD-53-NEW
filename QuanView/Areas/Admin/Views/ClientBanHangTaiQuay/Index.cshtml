@@ -89,7 +89,8 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Phí vận chuyển:</label>
-                        <input type="number" class="form-control" id="shippingFee" value="0" min="0" onchange="updatePaymentInfo()" />
+                        <input type="number" class="form-control" id="shippingFee" value="0" min="0" readonly />
+                        <small class="text-muted">Phí vận chuyển cố định: 50.000 VNĐ</small>
                     </div>
                  
                     <div class="mb-2">
@@ -573,7 +574,7 @@
 </td>
                 <td>
                     <button class="btn btn-sm btn-light" onclick="changeQty(${i},-1)">-</button>
-                    <span class="mx-2">${p.qty}</span>
+                    <input type="number" class="form-control form-control-sm d-inline-block mx-2 text-center" style="width:80px" min="1" value="${p.qty}" onchange="changeQtyManual(${i}, this.value)" oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
                     <button class="btn btn-sm btn-light" onclick="changeQty(${i},1)">+</button>
                 </td>
                 <td>${(p.price * p.qty).toLocaleString()} VND</td>
@@ -610,6 +611,24 @@
         }
         prod.qty += delta;
         if (prod.qty < 1) prod.qty = 1;
+        renderInvoice();
+        saveInvoicesToStorage();
+    }
+
+    // Nhập số lượng thủ công
+    function changeQtyManual(idx, value) {
+        let inv = invoices[currentInvoice];
+        let prod = inv.products[idx];
+        let qty = parseInt(value, 10);
+        if (isNaN(qty) || qty < 1) qty = 1;
+
+        let productInfo = products.find(p => p.id == prod.id);
+        let maxQty = productInfo ? productInfo.stock : (prod.stock || 1);
+        if (qty > maxQty) {
+            alert(`Vượt quá số lượng tồn kho! Hiện có: ${maxQty}`);
+            qty = maxQty;
+        }
+        prod.qty = qty;
         renderInvoice();
         saveInvoicesToStorage();
     }
@@ -750,6 +769,8 @@
             $('#shippingFormCard').show();
             $('#btnShowAddress').show();
             $('#btnAddAddress').show();
+            // Set phí vận chuyển cố định là 50.000 VNĐ
+            $('#shippingFee').val(50000);
             // Nếu đã chọn khách hàng thì tự động điền địa chỉ
             if (selectedCustomer) {
                 loadCustomerAddress();
@@ -758,6 +779,8 @@
             $('#shippingFormCard').hide();
             $('#btnShowAddress').hide();
             $('#btnAddAddress').hide();
+            // Reset phí vận chuyển về 0
+            $('#shippingFee').val(0);
         }
         updatePaymentInfo();
     }
@@ -802,7 +825,8 @@
         let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
         let discount = discountValue || 0;
         let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
-        shippingFee = parseInt($('#shippingFee').val()) || 0;
+        // Phí vận chuyển cố định 50.000 VNĐ khi bật giao hàng
+        shippingFee = useShipping ? 50000 : 0;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
@@ -882,7 +906,7 @@
             Shipping: useShipping,
             PaymentMethod: paymentMethod,
             CustomerPaid: customerPaid,
-            ShippingFee: shippingFee
+            ShippingFee: useShipping ? 50000 : 0 // Phí vận chuyển cố định 50.000 VNĐ khi bật giao hàng
         };
         $.ajax({
             url: '/Admin/ClientBanHangTaiQuay/thanh-toan',

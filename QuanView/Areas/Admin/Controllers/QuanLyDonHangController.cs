@@ -55,6 +55,7 @@ namespace QuanView.Areas.Admin.Controllers
             public string MaHoaDon { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
+            public decimal? PhiVanChuyen { get; set; }
             public string TrangThai { get; set; }
             public DateTime NgayTao { get; set; }
             public string TenNguoiNhan { get; set; }
@@ -111,8 +112,13 @@ namespace QuanView.Areas.Admin.Controllers
             public Guid IDSanPhamChiTiet { get; set; }
             public string MaSPChiTiet { get; set; }
             public decimal GiaBan { get; set; }
+            public KichCoDto KichCo { get; set; }
+            public MauSacDto MauSac { get; set; }
             public SanPhamDetailDto SanPham { get; set; }
         }
+
+        public class KichCoDto { public string TenKichCo { get; set; } }
+        public class MauSacDto { public string TenMauSac { get; set; } }
 
         public class SanPhamDetailDto
         {
@@ -249,6 +255,7 @@ namespace QuanView.Areas.Admin.Controllers
                             MaHoaDon = hoaDonData.MaHoaDon,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
+                            PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                             TrangThai = hoaDonData.TrangThai,
                             NgayTao = hoaDonData.NgayTao,
                             TenNguoiNhan = hoaDonData.TenNguoiNhan,
@@ -308,7 +315,15 @@ namespace QuanView.Areas.Admin.Controllers
                                     {
                                         IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                         MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
-                                        GiaBan = ct.SanPhamChiTiet.GiaBan
+                                        GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                        KichCo = ct.SanPhamChiTiet.KichCo != null ? new KichCo
+                                        {
+                                            TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo
+                                        } : null,
+                                        MauSac = ct.SanPhamChiTiet.MauSac != null ? new MauSac
+                                        {
+                                            TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac
+                                        } : null
                                     };
 
                                     if (ct.SanPhamChiTiet.SanPham != null)

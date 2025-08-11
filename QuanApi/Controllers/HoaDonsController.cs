@@ -76,12 +76,17 @@ namespace QuanApi.Controllers
         {
             try
             {
-                var hoaDon = await _context.HoaDons
-                    .Include(h => h.KhachHang)
-                    .Include(h => h.NhanVien)
-                    .Include(h => h.PhieuGiamGia)
-                    .Include(h => h.PhuongThucThanhToan)
-                    .Include(h => h.ChiTietHoaDons)
+            var hoaDon = await _context.HoaDons
+                .Include(h => h.KhachHang)
+                .Include(h => h.NhanVien)
+                .Include(h => h.PhieuGiamGia)
+                .Include(h => h.PhuongThucThanhToan)
+                .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(spct => spct.KichCo)
+                .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(spct => spct.MauSac)
                     .Where(h => h.IDHoaDon == id)
                     .Select(h => new
                     {
@@ -89,6 +94,7 @@ namespace QuanApi.Controllers
                         MaHoaDon = h.MaHoaDon,
                         TongTien = h.TongTien,
                         TienGiam = h.TienGiam,
+                    PhiVanChuyen = h.PhiVanChuyen,
                         TrangThai = h.TrangThai,
                         NgayTao = h.NgayTao,
                         TenNguoiNhan = h.TenNguoiNhan,
@@ -130,6 +136,8 @@ namespace QuanApi.Controllers
                                 IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                 MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
                                 GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                KichCo = new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo },
+                                MauSac = new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac },
                                 SanPham = new
                                 {
                                     IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
