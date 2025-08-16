@@ -232,9 +232,9 @@
             <a href="@Url.Action("Index")" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </a>
-            <button class="btn btn-info">
+            <a href="@Url.Action("XuatHoaDon", "QuanLyDonHang", new { area = "Admin", id = Model.IDHoaDon })" target="_blank" class="btn btn-info">
                 <i class="fas fa-file-invoice"></i> Xuất hóa đơn
-            </button>
+            </a>
         </div>
     </div>
 

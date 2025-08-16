@@ -482,5 +482,109 @@ namespace QuanView.Areas.Admin.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
+                // GET: Admin/QuanLyDonHang/XuatHoaDon/{id}
+        [HttpGet]
+        public async Task<IActionResult> XuatHoaDon(Guid id)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDonData = await response.Content.ReadFromJsonAsync<HoaDonDetailDto>();
+                if (hoaDonData == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDon = new HoaDon
+                {
+                    IDHoaDon = hoaDonData.IDHoaDon,
+                    MaHoaDon = hoaDonData.MaHoaDon,
+                    TongTien = hoaDonData.TongTien,
+                    TienGiam = hoaDonData.TienGiam ?? 0,
+                    PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
+                    TrangThai = hoaDonData.TrangThai,
+                    NgayTao = hoaDonData.NgayTao,
+                    TenNguoiNhan = hoaDonData.TenNguoiNhan,
+                    SoDienThoaiNguoiNhan = hoaDonData.SoDienThoaiNguoiNhan,
+                    DiaChiGiaoHang = hoaDonData.DiaChiGiaoHang,
+                };
+
+                if (hoaDonData.KhachHang != null)
+                {
+                    hoaDon.KhachHang = new KhachHang
+                    {
+                        IDKhachHang = hoaDonData.KhachHang.IDKhachHang,
+                        TenKhachHang = hoaDonData.KhachHang.TenKhachHang,
+                        SoDienThoai = hoaDonData.KhachHang.SoDienThoai,
+                        Email = hoaDonData.KhachHang.Email
+                    };
+                }
+
+                if (hoaDonData.PhuongThucThanhToan != null)
+                {
+                    hoaDon.PhuongThucThanhToan = new PhuongThucThanhToan
+                    {
+                        IDPhuongThucThanhToan = hoaDonData.PhuongThucThanhToan.IDPhuongThucThanhToan,
+                        TenPhuongThuc = hoaDonData.PhuongThucThanhToan.TenPhuongThuc
+                    };
+                }
+
+                if (hoaDonData.ChiTietHoaDons != null)
+                {
+                    hoaDon.ChiTietHoaDons = new List<ChiTietHoaDon>();
+                    foreach (var ct in hoaDonData.ChiTietHoaDons)
+                    {
+                        var chiTiet = new ChiTietHoaDon
+                        {
+                            IDChiTietHoaDon = ct.IDChiTietHoaDon,
+                            MaChiTietHoaDon = ct.MaChiTietHoaDon,
+                            SoLuong = ct.SoLuong,
+                            DonGia = ct.DonGia,
+                            ThanhTien = ct.ThanhTien
+                        };
+
+                        if (ct.SanPhamChiTiet != null)
+                        {
+                            chiTiet.SanPhamChiTiet = new SanPhamChiTiet
+                            {
+                                IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
+                                MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
+                                GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                KichCo = ct.SanPhamChiTiet.KichCo != null ? new KichCo
+                                {
+                                    TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo
+                                } : null,
+                                MauSac = ct.SanPhamChiTiet.MauSac != null ? new MauSac
+                                {
+                                    TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac
+                                } : null,
+                                SanPham = ct.SanPhamChiTiet.SanPham != null ? new SanPham
+                                {
+                                    IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
+                                    TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
+                                    MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
+                                } : null
+                            };
+                        }
+
+                        hoaDon.ChiTietHoaDons.Add(chiTiet);
+                    }
+                }
+
+                return View("Invoice", hoaDon);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi khi xuất hóa đơn: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
     }
 }
