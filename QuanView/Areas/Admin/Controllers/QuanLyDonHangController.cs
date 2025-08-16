@@ -62,6 +62,7 @@ namespace QuanView.Areas.Admin.Controllers
             public string SoDienThoaiNguoiNhan { get; set; }
             public string DiaChiGiaoHang { get; set; }
             public string GhiChu { get; set; }
+            public string? LyDoHuyDon { get; set; }
             public KhachHangDetailDto KhachHang { get; set; }
             public NhanVienDetailDto NhanVien { get; set; }
             public PhieuGiamGiaDto PhieuGiamGia { get; set; }
@@ -261,6 +262,7 @@ namespace QuanView.Areas.Admin.Controllers
                             TenNguoiNhan = hoaDonData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = hoaDonData.SoDienThoaiNguoiNhan,
                             DiaChiGiaoHang = hoaDonData.DiaChiGiaoHang,
+                            LyDoHuyDon = hoaDonData.LyDoHuyDon,
                         };
 
                         // Add related data if exists

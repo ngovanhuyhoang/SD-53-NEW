@@ -345,6 +345,13 @@
                                 <span class="info-label">Trạng thái:</span>
                                 <span class="status-badge">@Model.TrangThai</span>
                             </div>
+                            @if (Model.TrangThai == "Đã hủy" && !string.IsNullOrEmpty(Model.LyDoHuyDon))
+                            {
+                                <div class="info-row">
+                                    <span class="info-label">Lý do hủy đơn:</span>
+                                    <span class="info-value text-danger">@Model.LyDoHuyDon</span>
+                                </div>
+                            }
                         </div>
                         <div class="col-md-6">
                             <div class="info-row">

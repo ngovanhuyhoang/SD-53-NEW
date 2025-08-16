@@ -100,6 +100,7 @@ namespace QuanApi.Controllers
                         TenNguoiNhan = h.TenNguoiNhan,
                         SoDienThoaiNguoiNhan = h.SoDienThoaiNguoiNhan,
                         DiaChiGiaoHang = h.DiaChiGiaoHang,
+                        LyDoHuyDon = h.LyDoHuyDon,
                         KhachHang = h.KhachHang != null ? new
                         {
                             IDKhachHang = h.KhachHang.IDKhachHang,
@@ -285,16 +286,49 @@ namespace QuanApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteHoaDon(Guid id)
         {
-            var hoaDon = await _context.HoaDons.FindAsync(id);
-            if (hoaDon == null)
+            try
             {
-                return NotFound();
+                var hoaDon = await _context.HoaDons
+                    .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                    .FirstOrDefaultAsync(h => h.IDHoaDon == id);
+                
+                if (hoaDon == null)
+                {
+                    return NotFound();
+                }
+
+                // Hoàn trả số lượng sản phẩm về kho trước khi xóa đơn hàng
+                if (hoaDon.TrangThai != "Đã hủy") // Chỉ hoàn trả nếu đơn hàng chưa bị hủy
+                {
+                    _logger.LogInformation($"Bắt đầu hoàn trả số lượng sản phẩm cho đơn hàng {id} trước khi xóa");
+                    
+                    foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+                    {
+                        if (chiTiet.SanPhamChiTiet != null)
+                        {
+                            var soLuongCu = chiTiet.SanPhamChiTiet.SoLuong;
+                            // Hoàn trả số lượng sản phẩm về kho
+                            chiTiet.SanPhamChiTiet.SoLuong += chiTiet.SoLuong;
+                            
+                            _logger.LogInformation($"Hoàn trả {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} về kho: {soLuongCu} -> {chiTiet.SanPhamChiTiet.SoLuong}");
+                        }
+                    }
+                    
+                    _logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
+                }
+
+                _context.HoaDons.Remove(hoaDon);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Đã xóa đơn hàng {id} thành công");
+                return NoContent();
             }
-
-            _context.HoaDons.Remove(hoaDon);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting order {id}: {ex.Message}");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         private bool HoaDonExists(Guid id)
@@ -308,16 +342,46 @@ namespace QuanApi.Controllers
         {
             try
             {
-                var hoaDon = await _context.HoaDons.FindAsync(id);
+                var hoaDon = await _context.HoaDons
+                    .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                    .FirstOrDefaultAsync(h => h.IDHoaDon == id);
+                
                 if (hoaDon == null)
                 {
                     return NotFound("Không tìm thấy hóa đơn");
+                }
+
+                // Nếu đơn hàng đang chuyển sang trạng thái "Đã hủy", hoàn trả số lượng sản phẩm
+                if (dto.TrangThai == "Đã hủy" && hoaDon.TrangThai != "Đã hủy")
+                {
+                    _logger.LogInformation($"Bắt đầu hoàn trả số lượng sản phẩm cho đơn hàng {id}");
+                    
+                    foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+                    {
+                        if (chiTiet.SanPhamChiTiet != null)
+                        {
+                            var soLuongCu = chiTiet.SanPhamChiTiet.SoLuong;
+                            // Hoàn trả số lượng sản phẩm về kho
+                            chiTiet.SanPhamChiTiet.SoLuong += chiTiet.SoLuong;
+                            
+                            _logger.LogInformation($"Hoàn trả {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} về kho: {soLuongCu} -> {chiTiet.SanPhamChiTiet.SoLuong}");
+                        }
+                    }
+                    
+                    _logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
                 }
 
                 // Cập nhật trạng thái
                 hoaDon.TrangThai = dto.TrangThai;
                 hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
                 hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
+                
+                // Lưu lý do hủy đơn nếu có
+                if (dto.TrangThai == "Đã hủy" && !string.IsNullOrEmpty(dto.LyDoHuyDon))
+                {
+                    hoaDon.LyDoHuyDon = dto.LyDoHuyDon;
+                }
 
                 await _context.SaveChangesAsync();
                 
@@ -515,5 +579,6 @@ namespace QuanApi.Controllers
         public string TrangThai { get; set; }
         public string NguoiCapNhat { get; set; }
         public DateTime LanCapNhatCuoi { get; set; }
+        public string? LyDoHuyDon { get; set; }
     }
 } 
