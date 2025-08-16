@@ -33,6 +33,41 @@
             </div>
         </div>
     </div>
+    <!-- Thống kê phí vận chuyển -->
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Đơn có phí vận chuyển hôm nay</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenHomNay">0 đơn</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Tổng phí vận chuyển hôm nay</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongPhiVanChuyenHomNay">0 đ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Đơn có phí vận chuyển tháng này</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenThang">0 đơn</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Tổng phí vận chuyển tháng này</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongPhiVanChuyenThang">0 đ</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Biểu đồ -->
     <div class="row">
@@ -135,6 +170,21 @@
 
             $.get('/api/ChartsApi/month-product-quantity', function (data) {
                 $('#soLuongDaBan').text(data + ' sản phẩm');
+            });
+
+            // Thống kê phí vận chuyển hôm nay
+            $.get('/api/ChartsApi/today-shipping-stats', function (res) {
+                if (res && typeof res === 'object') {
+                    $('#soDonVanChuyenHomNay').text((res.count || 0) + ' đơn');
+                    $('#tongPhiVanChuyenHomNay').text((res.totalShipping || 0).toLocaleString('vi-VN') + ' đ');
+                }
+            });
+            // Thống kê phí vận chuyển tháng này
+            $.get('/api/ChartsApi/month-shipping-stats', function (res) {
+                if (res && typeof res === 'object') {
+                    $('#soDonVanChuyenThang').text((res.count || 0) + ' đơn');
+                    $('#tongPhiVanChuyenThang').text((res.totalShipping || 0).toLocaleString('vi-VN') + ' đ');
+                }
             });
         });
     </script>

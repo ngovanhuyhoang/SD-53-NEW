@@ -597,4 +597,54 @@ public class ChartsApiController : ControllerBase
             return BadRequest(new { success = false, message = ex.Message });
         }
     }
+
+    // API cho thống kê phí vận chuyển trong ngày
+    [HttpGet("today-shipping-stats")]
+    public async Task<IActionResult> GetTodayShippingStats()
+    {
+        try
+        {
+            var today = DateTime.Today;
+            var query = _context.HoaDons
+                .Where(h => (h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công")
+                            && h.TrangThaiHoaDon == true
+                            && h.NgayTao.Date == today
+                            && h.PhiVanChuyen.HasValue && h.PhiVanChuyen > 0);
+
+            var count = await query.CountAsync();
+            var totalShipping = await query.SumAsync(h => h.PhiVanChuyen ?? 0);
+
+            return Ok(new { count, totalShipping });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    // API cho thống kê phí vận chuyển trong tháng
+    [HttpGet("month-shipping-stats")]
+    public async Task<IActionResult> GetMonthShippingStats()
+    {
+        try
+        {
+            var now = DateTime.Now;
+            var firstDay = new DateTime(now.Year, now.Month, 1);
+            var lastDay = firstDay.AddMonths(1).AddDays(-1);
+            var query = _context.HoaDons
+                .Where(h => (h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công")
+                            && h.TrangThaiHoaDon == true
+                            && h.NgayTao >= firstDay && h.NgayTao <= lastDay
+                            && h.PhiVanChuyen.HasValue && h.PhiVanChuyen > 0);
+
+            var count = await query.CountAsync();
+            var totalShipping = await query.SumAsync(h => h.PhiVanChuyen ?? 0);
+
+            return Ok(new { count, totalShipping });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
 }
