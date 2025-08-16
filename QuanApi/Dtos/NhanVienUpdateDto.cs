@@ -43,8 +43,8 @@ namespace QuanApi.Dtos
         public Guid IDVaiTro { get; set; }
 
         [Required(ErrorMessage = "Trạng thái là bắt buộc.")]
-        [CustomValidation(typeof(NhanVienUpdateDto), "ValidateTrangThai")]
         public bool TrangThai { get; set; }
+
 
         [Required]
         public Guid IDNguoiCapNhat { get; set; }

@@ -191,35 +191,49 @@ namespace QuanApi.Controllers
             _logger.LogInformation("Attempting to create new employee: {@Dto}", nhanVienCreateDto);
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid model state for employee creation. Errors: {@ModelStateErrors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
-                return BadRequest(ModelState); // Return validation errors
+                _logger.LogWarning("Invalid model state for employee creation. Errors: {@ModelStateErrors}",
+                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
+                return BadRequest(ModelState);
             }
 
             try
             {
+                // Nếu client không truyền IDVaiTro => lấy mặc định vai trò Admin
+                if (nhanVienCreateDto.IDVaiTro == Guid.Empty || !await _context.VaiTro.AnyAsync(v => v.IDVaiTro == nhanVienCreateDto.IDVaiTro))
+                {
+                    var adminRole = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.ToLower() == "admin");
+                    if (adminRole == null)
+                    {
+                        return BadRequest("Không tìm thấy vai trò Admin trong hệ thống. Vui lòng tạo trước.");
+                    }
+
+                    nhanVienCreateDto.IDVaiTro = adminRole.IDVaiTro;
+                }
+
                 var nhanVien = _mapper.Map<NhanVien>(nhanVienCreateDto);
 
-                // Set server-side controlled properties
                 nhanVien.IDNhanVien = Guid.NewGuid();
                 nhanVien.NgayTao = DateTime.Now;
-                nhanVien.TrangThai = nhanVienCreateDto.TrangThai; // Lấy từ DTO
-                // nhanVien.NguoiTao = User.Identity.Name; // If you have authentication
+                nhanVien.NguoiTao = nhanVienCreateDto.IDNguoiTao.ToString(); // Map thủ công vì type khác
+                nhanVien.TrangThai = nhanVienCreateDto.TrangThai;
 
                 _context.NhanViens.Add(nhanVien);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Employee {MaNhanVien} created successfully with ID: {Id}.", nhanVien.MaNhanVien, nhanVien.IDNhanVien);
 
-                // Map the created entity back to a response DTO before returning
-                // Reload VaiTro to ensure TenVaiTro is available for mapping
                 await _context.Entry(nhanVien).Reference(n => n.VaiTro).LoadAsync();
-                var nhanVienResponseDto = _mapper.Map<NhanVienResponseDto>(nhanVien);
 
-                return CreatedAtAction(nameof(GetNhanVien), new { id = nhanVien.IDNhanVien }, nhanVienResponseDto);
+                var response = _mapper.Map<NhanVienResponseDto>(nhanVien);
+                return CreatedAtAction(nameof(GetNhanVien), new { id = nhanVien.IDNhanVien }, response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating employee: {@Dto}", nhanVienCreateDto);
-                return StatusCode(500, "Internal server error when creating employee.");
+                return StatusCode(500, new
+                {
+                    message = "Internal server error when creating employee.",
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
             }
         }
 
@@ -241,22 +255,19 @@ namespace QuanApi.Controllers
 
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid model state for employee update (ID: {Id}). Errors: {@ModelStateErrors}", id, ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
+                _logger.LogWarning("Invalid model state for employee update (ID: {Id}). Errors: {@ModelStateErrors}",
+                    id, ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
                 return BadRequest(ModelState);
             }
 
             try
             {
-            
                 var currentUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-                
                 if (Guid.TryParse(currentUserIdClaim, out Guid currentUserId) && id == currentUserId)
                 {
-                    
                     var nhanVienHienTai = await _context.NhanViens.AsNoTracking().FirstOrDefaultAsync(nv => nv.IDNhanVien == id);
 
-                   
                     if (nhanVienHienTai != null && nhanVienHienTai.TrangThai != nhanVienUpdateDto.TrangThai)
                     {
                         _logger.LogWarning("User with ID {currentUserId} attempted to change their own status.", currentUserId);
@@ -271,19 +282,28 @@ namespace QuanApi.Controllers
                     return NotFound($"Employee with ID {id} not found.");
                 }
 
-                
+                // ⚡ Nếu client không gửi IDVaiTro -> mặc định Admin
+                if (nhanVienUpdateDto.IDVaiTro == Guid.Empty ||
+                    !await _context.VaiTro.AnyAsync(v => v.IDVaiTro == nhanVienUpdateDto.IDVaiTro))
+                {
+                    var adminRole = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.ToLower() == "admin");
+                    if (adminRole == null)
+                    {
+                        return BadRequest("Không tìm thấy vai trò Admin trong hệ thống. Vui lòng tạo trước.");
+                    }
+
+                    nhanVienUpdateDto.IDVaiTro = adminRole.IDVaiTro;
+                }
+
+                // map dto -> entity
                 _mapper.Map(nhanVienUpdateDto, nhanVienToUpdate);
 
-               
                 if (!string.IsNullOrEmpty(nhanVienUpdateDto.MatKhau))
                 {
-                   
                     nhanVienToUpdate.MatKhau = nhanVienUpdateDto.MatKhau;
                 }
 
-                
                 nhanVienToUpdate.LanCapNhatCuoi = DateTime.Now;
-            
 
                 _context.Entry(nhanVienToUpdate).State = EntityState.Modified;
 
@@ -317,7 +337,8 @@ namespace QuanApi.Controllers
 
 
 
-  
+
+
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
