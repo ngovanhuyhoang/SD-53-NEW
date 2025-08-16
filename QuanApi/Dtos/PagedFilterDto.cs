@@ -13,7 +13,7 @@ namespace QuanApi.Dtos
         public string? SortBy { get; set; }
         public string? SortOrder { get; set; } = "asc"; 
 
-  
+
         public string ToQueryString()
         {
             var properties = GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);

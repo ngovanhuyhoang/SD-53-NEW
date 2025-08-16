@@ -10,7 +10,7 @@ namespace QuanApi.Dtos
         public string Email { get; set; } = string.Empty;
         public string SoDienThoai { get; set; } = string.Empty;
 
-   
+
         public DateTime? NgaySinh { get; set; }
         public bool? GioiTinh { get; set; }
         public string? QueQuan { get; set; }

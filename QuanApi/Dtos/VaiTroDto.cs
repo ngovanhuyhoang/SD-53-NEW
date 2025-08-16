@@ -2,9 +2,7 @@
 
 namespace QuanApi.Dtos
 {
-    /// <summary>
-    /// DTO dùng để trả về thông tin vai trò.
-    /// </summary>
+
     public class VaiTroDto
     {
         public Guid IDVaiTro { get; set; }

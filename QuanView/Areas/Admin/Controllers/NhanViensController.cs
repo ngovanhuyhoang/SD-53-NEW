@@ -11,12 +11,11 @@ using System.Text.Json;
 using QuanApi.Dtos;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    //[Authorize(Policy = "AdminPolicy")]
     public class NhanViensController : Controller
     {
 
@@ -34,7 +33,9 @@ namespace QuanView.Areas.Admin.Controllers
         // GET: Admin/NhanViens
         public async Task<IActionResult> Index(string? searchTerm, Guid? idVaiTro, bool? trangThai, int pageNumber = 1, int pageSize = 10)
         {
-            _logger.LogInformation("Truy cập trang Index của NhanViensController.");
+
+            _logger.LogInformation("Truy cập trang Index của NhanViensController với filter: searchTerm={SearchTerm}, idVaiTro={IDVaiTro}, trangThai={TrangThai}, pageNumber={PageNumber}, pageSize={PageSize}.",
+                                    searchTerm, idVaiTro, trangThai, pageNumber, pageSize);
             try
             {
                 var filter = new NhanVienFilterDto
@@ -122,7 +123,7 @@ namespace QuanView.Areas.Admin.Controllers
         // GET: Admin/NhanViens/Create
         public IActionResult Create()
         {
-       
+   
             return View(new NhanVienCreateDto());
         }
 
@@ -133,8 +134,8 @@ namespace QuanView.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Create: ModelState không hợp lệ. Lỗi: {Errors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
-  
+                var modelErrors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                _logger.LogWarning("Create: ModelState không hợp lệ. Lỗi: {Errors}", modelErrors);
                 return View(createDto);
             }
 
@@ -185,7 +186,6 @@ namespace QuanView.Areas.Admin.Controllers
                 ModelState.AddModelError(string.Empty, "Có lỗi xảy ra khi tạo nhân viên.");
             }
 
-       
             return View(createDto);
         }
         // GET: Admin/NhanViens/Edit/5
@@ -216,14 +216,18 @@ namespace QuanView.Areas.Admin.Controllers
                         TenNhanVien = nhanVienResponseDto.TenNhanVien,
                         Email = nhanVienResponseDto.Email,
                         SoDienThoai = nhanVienResponseDto.SoDienThoai,
-                        NgaySinh = nhanVienResponseDto.NgaySinh, 
-                        GioiTinh = nhanVienResponseDto.GioiTinh, 
-                        QueQuan = nhanVienResponseDto.QueQuan,   
-                        CCCD = nhanVienResponseDto.CCCD,        
+                        NgaySinh = nhanVienResponseDto.NgaySinh,
+                        GioiTinh = nhanVienResponseDto.GioiTinh,
+                        QueQuan = nhanVienResponseDto.QueQuan,
+                        CCCD = nhanVienResponseDto.CCCD,
                         IDVaiTro = nhanVienResponseDto.IDVaiTro,
                         TrangThai = nhanVienResponseDto.TrangThai,
                         MatKhau = null
                     };
+
+                    var currentUserId = GetCurrentUserId();
+                    ViewBag.IsCurrentUser = currentUserId.HasValue && currentUserId.Value == id;
+                    _logger.LogInformation("Is current user editing their own profile? {IsCurrentUser}", (bool?)ViewBag.IsCurrentUser);
 
                     await LoadVaiTroDropdown();
                     ViewBag.NhanVienId = id;
@@ -253,11 +257,26 @@ namespace QuanView.Areas.Admin.Controllers
         // POST: Admin/NhanViens/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("MaNhanVien,TenNhanVien,Email,MatKhau,SoDienThoai,NgaySinh,GioiTinh,QueQuan,CCCD,IDVaiTro,TrangThai,IDNguoiCapNhat")] NhanVienUpdateDto updateDto) // Đã thêm NgaySinh, GioiTinh, QueQuan, CCCD
+        public async Task<IActionResult> Edit(Guid id, [Bind("MaNhanVien,TenNhanVien,Email,MatKhau,SoDienThoai,NgaySinh,GioiTinh,QueQuan,CCCD,IDVaiTro,TrangThai,IDNguoiCapNhat")] NhanVienUpdateDto updateDto)
         {
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue && id == currentUserId.Value)
+            {
+                var nhanVienHienTai = await _httpClient.GetFromJsonAsync<NhanVienResponseDto>($"NhanVien/{id}");
+                if (nhanVienHienTai != null && nhanVienHienTai.TrangThai != updateDto.TrangThai)
+                {
+                    ModelState.AddModelError(string.Empty, "Bạn không thể tự thay đổi trạng thái của mình.");
+                    await LoadVaiTroDropdown();
+                    ViewBag.NhanVienId = id;
+                    ViewBag.IsCurrentUser = true;
+                    return View(updateDto);
+                }
+            }
+
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Edit: ModelState không hợp lệ cho nhân viên ID: {Id}. Lỗi: {Errors}", id, ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
+                var modelErrors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                _logger.LogWarning("Edit: ModelState không hợp lệ cho nhân viên ID: {Id}. Lỗi: {Errors}", id, modelErrors);
                 await LoadVaiTroDropdown();
                 ViewBag.NhanVienId = id;
                 return View(updateDto);
@@ -320,39 +339,16 @@ namespace QuanView.Areas.Admin.Controllers
             ViewBag.NhanVienId = id;
             return View(updateDto);
         }
-        // GET: Admin/NhanViens/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+
+        private Guid? GetCurrentUserId()
         {
-            if (id == null)
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(userIdClaim, out Guid userId))
             {
-                return NotFound();
+                return userId;
             }
-            var nhanVien = await _context.NhanViens
-                .Include(n => n.VaiTro)
-                .FirstOrDefaultAsync(m => m.IDNhanVien == id);
-            if (nhanVien == null)
-            {
-                return NotFound();
-            }
-
-            return View(nhanVien);
+            return null;
         }
-
-        // POST: Admin/NhanViens/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
-        {
-            var nhanVien = await _context.NhanViens.FindAsync(id);
-            if (nhanVien != null)
-            {
-                _context.NhanViens.Remove(nhanVien);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
 
         private async Task LoadVaiTroDropdown()
         {

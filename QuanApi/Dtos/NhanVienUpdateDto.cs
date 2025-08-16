@@ -1,7 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanApi.Dtos
 {
@@ -28,7 +27,8 @@ namespace QuanApi.Dtos
         [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
         public string SoDienThoai { get; set; } = string.Empty;
 
-        [CustomValidation(typeof(NhanVienUpdateDto), "ValidateNgaySinh")]
+        [Required(ErrorMessage = "Ngày sinh là bắt buộc.")]
+        [CustomValidation(typeof(NhanVienUpdateDto), nameof(ValidateAge))]
         public DateTime? NgaySinh { get; set; }
 
         public bool? GioiTinh { get; set; }
@@ -36,8 +36,7 @@ namespace QuanApi.Dtos
         [StringLength(100, ErrorMessage = "Quê quán không được vượt quá 100 ký tự.")]
         public string? QueQuan { get; set; }
 
-        [StringLength(12, MinimumLength = 12, ErrorMessage = "CCCD phải có đúng 12 số.")]
-        [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD không hợp lệ, phải là 12 chữ số.")]
+        [StringLength(20, ErrorMessage = "CCCD không được vượt quá 20 ký tự.")]
         public string? CCCD { get; set; }
 
         [Required(ErrorMessage = "ID Vai trò là bắt buộc.")]
@@ -47,43 +46,22 @@ namespace QuanApi.Dtos
         [CustomValidation(typeof(NhanVienUpdateDto), "ValidateTrangThai")]
         public bool TrangThai { get; set; }
 
+        [Required]
         public Guid IDNguoiCapNhat { get; set; }
 
-        // Bổ sung ID của nhân viên cần cập nhật để so sánh với người đang đăng nhập
-        public Guid IDNhanVien { get; set; }
+        public Guid IDNhanVienCanCapNhat { get; set; }
 
-        public static ValidationResult? ValidateNgaySinh(DateTime? ngaySinh, ValidationContext context)
+        public static ValidationResult? ValidateAge(DateTime? ngaySinh, ValidationContext context)
         {
             if (ngaySinh.HasValue)
             {
                 var today = DateTime.Today;
                 var age = today.Year - ngaySinh.Value.Year;
-                if (ngaySinh.Value.Date > today.AddYears(-age))
-                {
-                    age--;
-                }
+                if (ngaySinh.Value.Date > today.AddYears(-age)) age--;
 
                 if (age < 18)
                 {
-                    return new ValidationResult("Nhân viên phải đủ 18 tuổi trở lên.", new[] { nameof(NgaySinh) });
-                }
-            }
-            return ValidationResult.Success;
-        }
-
-        public static ValidationResult? ValidateTrangThai(bool trangThai, ValidationContext context)
-        {
-            var httpContextAccessor = context.GetService(typeof(IHttpContextAccessor)) as IHttpContextAccessor;
-            if (httpContextAccessor?.HttpContext != null)
-            {
-                var currentUserIdClaim = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
-                if (currentUserIdClaim != null && Guid.TryParse(currentUserIdClaim.Value, out var currentUserId))
-                {
-                    var dto = context.ObjectInstance as NhanVienUpdateDto;
-                    if (dto != null && dto.IDNhanVien == currentUserId && !trangThai)
-                    {
-                        return new ValidationResult("Không thể tự khóa tài khoản của chính mình.", new[] { nameof(TrangThai) });
-                    }
+                    return new ValidationResult("Nhân viên phải trên 18 tuổi.", new[] { nameof(NgaySinh) });
                 }
             }
             return ValidationResult.Success;

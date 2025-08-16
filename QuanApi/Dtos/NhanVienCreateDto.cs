@@ -27,7 +27,8 @@ namespace QuanApi.Dtos
         [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
         public string SoDienThoai { get; set; } = string.Empty;
 
-        [CustomValidation(typeof(NhanVienCreateDto), "ValidateNgaySinh")]
+        [Required(ErrorMessage = "Ngày sinh là bắt buộc.")]
+        [CustomValidation(typeof(NhanVienCreateDto), nameof(ValidateAge))]
         public DateTime? NgaySinh { get; set; }
 
         public bool? GioiTinh { get; set; }
@@ -35,8 +36,7 @@ namespace QuanApi.Dtos
         [StringLength(100, ErrorMessage = "Quê quán không được vượt quá 100 ký tự.")]
         public string? QueQuan { get; set; }
 
-        [StringLength(12, MinimumLength = 12, ErrorMessage = "CCCD phải có đúng 12 số.")]
-        [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD không hợp lệ, phải là 12 chữ số.")]
+        [StringLength(20, ErrorMessage = "CCCD không được vượt quá 20 ký tự.")]
         public string? CCCD { get; set; }
 
         [Required(ErrorMessage = "ID Vai trò là bắt buộc.")]
@@ -45,20 +45,17 @@ namespace QuanApi.Dtos
         public bool TrangThai { get; set; } = true;
         public Guid IDNguoiTao { get; set; }
 
-        public static ValidationResult? ValidateNgaySinh(DateTime? ngaySinh, ValidationContext context)
+        public static ValidationResult? ValidateAge(DateTime? ngaySinh, ValidationContext context)
         {
             if (ngaySinh.HasValue)
             {
                 var today = DateTime.Today;
                 var age = today.Year - ngaySinh.Value.Year;
-                if (ngaySinh.Value.Date > today.AddYears(-age))
-                {
-                    age--;
-                }
+                if (ngaySinh.Value.Date > today.AddYears(-age)) age--;
 
                 if (age < 18)
                 {
-                    return new ValidationResult("Nhân viên phải đủ 18 tuổi trở lên.", new[] { nameof(NgaySinh) });
+                    return new ValidationResult("Nhân viên phải trên 18 tuổi.", new[] { nameof(NgaySinh) });
                 }
             }
             return ValidationResult.Success;

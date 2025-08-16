@@ -4,12 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using BanQuanAu1.Web.Data; 
-using QuanApi.Data;
-using Microsoft.Extensions.Logging; 
-using AutoMapper; 
-using QuanApi.Dtos; 
-using System.Text.Json; 
+using BanQuanAu1.Web.Data; // Ensure this namespace is correct for your DbContext
+using QuanApi.Data; // Ensure this namespace is correct for your NhanVien model
+using Microsoft.Extensions.Logging; // For ILogger
+using AutoMapper; // For AutoMapper
+using QuanApi.Dtos; // Your DTOs
+using System.Text.Json;
+using System.Security.Claims; // For JsonSerializer, if used for error handling
 
 namespace QuanApi.Controllers
 {
@@ -29,6 +30,10 @@ namespace QuanApi.Controllers
         }
 
         // GET: api/NhanVien
+        /// <summary>
+        /// Retrieves a list of all employees, including their roles, mapped to PagedResultGeneric<NhanVienResponseDto>.
+        /// </summary>
+        /// <returns>A PagedResultGeneric<NhanVienResponseDto> object.</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResultGeneric<NhanVienResponseDto>))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -39,7 +44,7 @@ namespace QuanApi.Controllers
             {
                 var query = _context.NhanViens.Include(n => n.VaiTro).AsQueryable();
 
-       
+                // Apply filters
                 if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
                 {
                     query = query.Where(nv =>
@@ -47,8 +52,8 @@ namespace QuanApi.Controllers
                         nv.TenNhanVien.Contains(filter.SearchTerm) ||
                         nv.Email.Contains(filter.SearchTerm) ||
                         nv.SoDienThoai.Contains(filter.SearchTerm) ||
-                        (nv.QueQuan != null && nv.QueQuan.Contains(filter.SearchTerm)) || 
-                        (nv.CCCD != null && nv.CCCD.Contains(filter.SearchTerm))); 
+                        (nv.QueQuan != null && nv.QueQuan.Contains(filter.SearchTerm)) || // Thêm QueQuan
+                        (nv.CCCD != null && nv.CCCD.Contains(filter.SearchTerm))); // Thêm CCCD
                 }
 
                 if (filter.IDVaiTro.HasValue && filter.IDVaiTro.Value != Guid.Empty)
@@ -61,6 +66,7 @@ namespace QuanApi.Controllers
                     query = query.Where(nv => nv.TrangThai == filter.TrangThai.Value);
                 }
 
+                // Sorting (optional, you can add more complex sorting logic)
                 if (!string.IsNullOrWhiteSpace(filter.SortBy))
                 {
                     switch (filter.SortBy.ToLower())
@@ -77,16 +83,16 @@ namespace QuanApi.Controllers
                         case "sodienthoai":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.SoDienThoai) : query.OrderBy(nv => nv.SoDienThoai);
                             break;
-                        case "ngaysinh": 
+                        case "ngaysinh": // Thêm NgaySinh
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.NgaySinh) : query.OrderBy(nv => nv.NgaySinh);
                             break;
-                        case "gioitinh": 
+                        case "gioitinh": // Thêm GioiTinh
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.GioiTinh) : query.OrderBy(nv => nv.GioiTinh);
                             break;
-                        case "quequan":
+                        case "quequan": // Thêm QueQuan
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.QueQuan) : query.OrderBy(nv => nv.QueQuan);
                             break;
-                        case "cccd":
+                        case "cccd": // Thêm CCCD
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.CCCD) : query.OrderBy(nv => nv.CCCD);
                             break;
                         case "tenvaitro":
@@ -99,13 +105,13 @@ namespace QuanApi.Controllers
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.NgayTao) : query.OrderBy(nv => nv.NgayTao);
                             break;
                         default:
-                            query = query.OrderBy(nv => nv.NgayTao);
+                            query = query.OrderBy(nv => nv.NgayTao); // Default sort
                             break;
                     }
                 }
                 else
                 {
-                    query = query.OrderBy(nv => nv.NgayTao); 
+                    query = query.OrderBy(nv => nv.NgayTao); // Default sort if no sortBy is provided
                 }
 
 
@@ -136,6 +142,11 @@ namespace QuanApi.Controllers
 
 
         // GET: api/NhanVien/5
+        /// <summary>
+        /// Retrieves a specific employee by ID, mapped to NhanVienResponseDto.
+        /// </summary>
+        /// <param name="id">The ID of the employee.</param>
+        /// <returns>A NhanVienResponseDto object if found, otherwise NotFound.</returns>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NhanVienResponseDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -166,6 +177,11 @@ namespace QuanApi.Controllers
         }
 
         // POST: api/NhanVien
+        /// <summary>
+        /// Creates a new employee from NhanVienCreateDto.
+        /// </summary>
+        /// <param name="nhanVienCreateDto">The DTO containing employee data to create.</param>
+        /// <returns>The created NhanVienResponseDto object with 201 Created status.</returns>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(NhanVienResponseDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -176,19 +192,25 @@ namespace QuanApi.Controllers
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for employee creation. Errors: {@ModelStateErrors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
-                return BadRequest(ModelState); 
+                return BadRequest(ModelState); // Return validation errors
             }
 
             try
             {
                 var nhanVien = _mapper.Map<NhanVien>(nhanVienCreateDto);
+
+                // Set server-side controlled properties
                 nhanVien.IDNhanVien = Guid.NewGuid();
                 nhanVien.NgayTao = DateTime.Now;
-                nhanVien.TrangThai = nhanVienCreateDto.TrangThai;
+                nhanVien.TrangThai = nhanVienCreateDto.TrangThai; // Lấy từ DTO
+                // nhanVien.NguoiTao = User.Identity.Name; // If you have authentication
 
                 _context.NhanViens.Add(nhanVien);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Employee {MaNhanVien} created successfully with ID: {Id}.", nhanVien.MaNhanVien, nhanVien.IDNhanVien);
+
+                // Map the created entity back to a response DTO before returning
+                // Reload VaiTro to ensure TenVaiTro is available for mapping
                 await _context.Entry(nhanVien).Reference(n => n.VaiTro).LoadAsync();
                 var nhanVienResponseDto = _mapper.Map<NhanVienResponseDto>(nhanVien);
 
@@ -202,6 +224,12 @@ namespace QuanApi.Controllers
         }
 
         // PUT: api/NhanVien/5
+        /// <summary>
+        /// Updates an existing employee from NhanVienUpdateDto.
+        /// </summary>
+        /// <param name="id">The ID of the employee to update.</param>
+        /// <param name="nhanVienUpdateDto">The DTO containing updated employee data.</param>
+        /// <returns>NoContent if successful, otherwise BadRequest or NotFound.</returns>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -210,14 +238,32 @@ namespace QuanApi.Controllers
         public async Task<IActionResult> PutNhanVien(Guid id, [FromBody] NhanVienUpdateDto nhanVienUpdateDto)
         {
             _logger.LogInformation("Attempting to update employee with ID: {Id}. DTO: {@Dto}", id, nhanVienUpdateDto);
+
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for employee update (ID: {Id}). Errors: {@ModelStateErrors}", id, ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
-                return BadRequest(ModelState); 
+                return BadRequest(ModelState);
             }
 
             try
             {
+            
+                var currentUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+                
+                if (Guid.TryParse(currentUserIdClaim, out Guid currentUserId) && id == currentUserId)
+                {
+                    
+                    var nhanVienHienTai = await _context.NhanViens.AsNoTracking().FirstOrDefaultAsync(nv => nv.IDNhanVien == id);
+
+                   
+                    if (nhanVienHienTai != null && nhanVienHienTai.TrangThai != nhanVienUpdateDto.TrangThai)
+                    {
+                        _logger.LogWarning("User with ID {currentUserId} attempted to change their own status.", currentUserId);
+                        return BadRequest("Bạn không thể thay đổi trạng thái của chính mình.");
+                    }
+                }
+
                 var nhanVienToUpdate = await _context.NhanViens.FindAsync(id);
                 if (nhanVienToUpdate == null)
                 {
@@ -225,18 +271,19 @@ namespace QuanApi.Controllers
                     return NotFound($"Employee with ID {id} not found.");
                 }
 
-    
+                
                 _mapper.Map(nhanVienUpdateDto, nhanVienToUpdate);
 
-    
+               
                 if (!string.IsNullOrEmpty(nhanVienUpdateDto.MatKhau))
                 {
-                    nhanVienToUpdate.MatKhau = nhanVienUpdateDto.MatKhau; 
+                   
+                    nhanVienToUpdate.MatKhau = nhanVienUpdateDto.MatKhau;
                 }
 
-              
+                
                 nhanVienToUpdate.LanCapNhatCuoi = DateTime.Now;
-              
+            
 
                 _context.Entry(nhanVienToUpdate).State = EntityState.Modified;
 
@@ -268,7 +315,9 @@ namespace QuanApi.Controllers
             }
         }
 
-        // DELETE: api/NhanVien/5
+
+
+  
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
