@@ -195,6 +195,7 @@ namespace QuanApi.Controllers
                     IDPhuongThucThanhToan = dto.PhuongThucThanhToanId,
                     TongTien = dto.TongTien,
                     TienGiam = dto.TienGiam ?? 0,
+                    PhiVanChuyen = dto.PhiVanChuyen ?? 0, // Thêm phí vận chuyển
                     TrangThai = "Chờ xác nhận",
                     TenNguoiNhan = dto.TenNguoiNhan ?? "",
                     SoDienThoaiNguoiNhan = dto.SoDienThoaiNguoiNhan ?? "",
@@ -559,6 +560,7 @@ namespace QuanApi.Controllers
         public Guid PhuongThucThanhToanId { get; set; }
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
+        public decimal? PhiVanChuyen { get; set; }
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }
         public string DiaChiGiaoHang { get; set; }

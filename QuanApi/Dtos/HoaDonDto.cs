@@ -9,6 +9,7 @@ namespace QuanApi.Dtos
         public decimal TongTien { get; set; }
         public decimal TienGiam { get; set; }
         public decimal PhiShip { get; set; }
+        public decimal? PhiVanChuyen { get; set; } // Thêm trường phí vận chuyển
         public decimal DaTra { get; set; }
         public decimal CanThanhToan { get; set; }
         public string TrangThai { get; set; } = string.Empty;

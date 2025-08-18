@@ -60,9 +60,9 @@ namespace QuanView.Areas.Admin.Controllers
                 return View(model);
             }
             
-            if (model.NgayBatDau > model.NgayKetThuc)
+            if (model.NgayKetThuc < model.NgayBatDau)
             {
-                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày kết thúc!");
+                ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
                 return View(model);
             }
 
@@ -151,10 +151,10 @@ namespace QuanView.Areas.Admin.Controllers
                 ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày hiện tại!");
                 return View(model);
             }
-            
-            if (model.NgayBatDau > model.NgayKetThuc)
+
+            if (model.NgayKetThuc < model.NgayBatDau)
             {
-                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày kết thúc!");
+                ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
                 return View(model);
             }
 

@@ -54,7 +54,26 @@ namespace QuanApi.Controllers
                         TenSanPham = ct.SanPham.TenSanPham,
                         TrangThai = ct.SanPham.TrangThai,
                         originalPrice = ct.GiaBan,
-                        price = ct.GiaBan, // Sẽ tính toán sau nếu cần
+                        price = (
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= DateTime.Now
+                                && dgg.NgayKetThuc >= DateTime.Now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() > 0
+                            ? ct.GiaBan * (1 - (decimal)(
+                                (from dgg in _context.DotGiamGias
+                                 join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                                 where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                    && dgg.TrangThai == true
+                                    && dgg.NgayBatDau <= DateTime.Now
+                                    && dgg.NgayKetThuc >= DateTime.Now
+                                 select dgg.PhanTramGiam
+                                ).FirstOrDefault() / 100.0m))
+                            : ct.GiaBan
+                        ),
                         TenDanhMuc = ct.SanPham.DanhMuc.TenDanhMuc,
                         AnhDaiDien = ct.AnhSanPhams
                             .Where(a => a.LaAnhChinh)
@@ -101,7 +120,26 @@ namespace QuanApi.Controllers
                         TenSanPham = ct.SanPham.TenSanPham,
                         TrangThai = ct.SanPham.TrangThai,
                         originalPrice = ct.GiaBan,
-                        price = ct.GiaBan, // Sẽ tính toán sau nếu cần
+                        price = (
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= DateTime.Now
+                                && dgg.NgayKetThuc >= DateTime.Now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() > 0
+                            ? ct.GiaBan * (1 - (decimal)(
+                                (from dgg in _context.DotGiamGias
+                                 join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                                 where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+                                    && dgg.TrangThai == true
+                                    && dgg.NgayBatDau <= DateTime.Now
+                                    && dgg.NgayKetThuc >= DateTime.Now
+                                 select dgg.PhanTramGiam
+                                ).FirstOrDefault() / 100.0m))
+                            : ct.GiaBan
+                        ),
                         TenDanhMuc = ct.SanPham.DanhMuc.TenDanhMuc,
                         AnhDaiDien = ct.AnhSanPhams
                             .Where(a => a.LaAnhChinh)

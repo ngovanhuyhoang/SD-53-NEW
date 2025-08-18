@@ -233,6 +233,7 @@ namespace QuanView.Controllers
                     phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
+                    phiVanChuyen = checkoutData.PhiVanChuyen, // Thêm phí vận chuyển
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -554,6 +555,38 @@ namespace QuanView.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
+
+        // Tạo địa chỉ mới cho khách hàng
+        [HttpPost]
+        public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
+        {
+            try
+            {
+                // Kiểm tra user có đăng nhập không
+                var customerIdClaim = User.FindFirst("custom:id_khachhang")?.Value;
+                if (string.IsNullOrEmpty(customerIdClaim) || !Guid.TryParse(customerIdClaim, out Guid customerId))
+                {
+                    return BadRequest("Vui lòng đăng nhập để lưu địa chỉ!");
+                }
+
+                // Gán ID khách hàng từ claims
+                dto.IDKhachHang = customerId;
+
+                // Gọi API tạo địa chỉ
+                var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-dia-chi", dto);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<object>();
+                    return Ok(result);
+                }
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return StatusCode((int)response.StatusCode, errorContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
     }
 
     public class CheckoutDto
@@ -567,10 +600,10 @@ namespace QuanView.Controllers
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
         public string GhiChu { get; set; }
-        public string MaGiamGia { get; set; } // Thêm property này để nhận mã giảm giá
+        public string MaGiamGia { get; set; } 
+        public decimal PhiVanChuyen { get; set; } = 50000; 
     }
 
-    // DTO cho response phiếu giảm giá
     public class PhieuGiamGiaResponse
     {
         public bool Success { get; set; }
@@ -581,7 +614,6 @@ namespace QuanView.Controllers
         public decimal? DonToiThieu { get; set; }
     }
 
-    // DTO cho địa chỉ
     public class AddressDto
     {
         public Guid IDDiaChi { get; set; }

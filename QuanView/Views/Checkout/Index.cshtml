@@ -360,6 +360,9 @@
                                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAddressForm()">
                                     <i class="fa fa-eraser"></i> Xóa form
                                 </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="openSaveAddressModal()">
+                                    <i class="fa fa-save"></i> Lưu địa chỉ
+                                </button>
                             </div>
                             <textarea class="form-control" id="diaChiGiaoHang" name="diaChiGiaoHang" rows="3" required placeholder="Nhập địa chỉ chi tiết"></textarea>
                         </div>
@@ -762,8 +765,9 @@
             diaChiGiaoHang: diaChiGiaoHang,
             phuongThucThanhToanId: phuongThucThanhToan,
             ghiChu: document.getElementById('ghiChu').value,
-        tongTien: tongTien - discountValue,
+        tongTien: tongTien - discountValue + 50000, // Cộng thêm phí vận chuyển 50,000 VNĐ
         tienGiam: discountValue || 0,
+        phiVanChuyen: 50000, // Gửi phí vận chuyển lên server
         maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
         };
     
@@ -1298,6 +1302,9 @@
         // Đảm bảo tamTinh là số
         tamTinh = parseFloat(tamTinh) || 0;
         
+        // Phí vận chuyển cố định 50,000 VNĐ
+        const phiVanChuyen = 50000;
+        
         // Kiểm tra phiếu giảm giá hiện tại có hợp lệ không
         const discountInfo = sessionStorage.getItem('appliedDiscount');
         if (discountInfo) {
@@ -1321,7 +1328,7 @@
                     showNotification(`Phiếu giảm giá công khai ${discount.maCode} đã bị xóa vì đơn hàng không đủ điều kiện tối thiểu ${donToiThieu.toLocaleString()} VND!`, 'warning');
                     
                     // Cập nhật UI với discount = 0
-                    const tongCong = tamTinh;
+                    const tongCong = tamTinh + phiVanChuyen;
                     document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
                     document.getElementById('giamGia').textContent = '0 VND';
                     document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
@@ -1355,12 +1362,13 @@
             discountValue = 0;
         }
         
-        // Đảm bảo tổng cộng không âm
-        const tongCong = Math.max(0, tamTinh - discountValue);
+        // Đảm bảo tổng cộng không âm (tạm tính - giảm giá + phí vận chuyển)
+        const tongCong = Math.max(0, tamTinh - discountValue + phiVanChuyen);
 
         console.log('updatePaymentInfo calculation:', {
             tamTinh: tamTinh,
             giamGia: discountValue,
+            phiVanChuyen: phiVanChuyen,
             tongCong: tongCong,
             discountValue: discountValue
         });
@@ -1368,6 +1376,7 @@
         // Cập nhật giao diện
         document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
         document.getElementById('giamGia').textContent = discountValue.toLocaleString() + ' VND';
+        document.getElementById('phiVanChuyen').textContent = phiVanChuyen.toLocaleString() + ' VNĐ';
         document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
     }
 
@@ -1465,4 +1474,183 @@
             console.error('Error testing session cart:', error);
         }
     }
-</script> 
+
+    // Mở modal lưu địa chỉ
+    function openSaveAddressModal() {
+        // Kiểm tra user có đăng nhập không
+        const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+        if (!customerIdClaim || customerIdClaim === '') {
+            alert('Vui lòng đăng nhập để lưu địa chỉ!');
+            return;
+        }
+
+        // Lấy thông tin từ form hiện tại
+        const tenNguoiNhan = $('#tenNguoiNhan').val();
+        const soDienThoai = $('#soDienThoaiNguoiNhan').val();
+        const diaChiChiTiet = $('#diaChiGiaoHang').val();
+
+        // Điền vào modal
+        $('#saveAddressName').val(tenNguoiNhan);
+        $('#saveAddressPhone').val(soDienThoai);
+        $('#saveAddressDetail').val(diaChiChiTiet);
+
+        // Hiển thị modal
+        $('#saveAddressModal').modal('show');
+    }
+
+    // Lưu địa chỉ mới
+    function saveNewAddress() {
+        const addressData = {
+            idKhachHang: '@User.FindFirst("custom:id_khachhang")?.Value',
+            tenNguoiNhan: $('#saveAddressName').val(),
+            sdtNguoiNhan: $('#saveAddressPhone').val(),
+            diaChiChiTiet: $('#saveAddressDetail').val(),
+            laMacDinh: $('#saveAddressDefault').is(':checked')
+        };
+
+        // Validation
+        if (!addressData.diaChiChiTiet) {
+            alert('Vui lòng nhập địa chỉ chi tiết!');
+            $('#saveAddressDetail').focus();
+            return;
+        }
+
+        if (!addressData.tenNguoiNhan) {
+            alert('Vui lòng nhập tên người nhận!');
+            $('#saveAddressName').focus();
+            return;
+        }
+
+        // Validate số điện thoại nếu có nhập
+        if (addressData.sdtNguoiNhan && addressData.sdtNguoiNhan.trim() !== '') {
+            if (!validateVietnamesePhoneNumber(addressData.sdtNguoiNhan)) {
+                alert('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ.');
+                $('#saveAddressPhone').focus();
+                return;
+            }
+        }
+
+        // Gọi API tạo địa chỉ
+        $.ajax({
+            url: '/Checkout/TaoDiaChi',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(addressData),
+            success: function(response) {
+                alert('Lưu địa chỉ thành công!');
+                $('#saveAddressModal').modal('hide');
+                
+                // Cập nhật form checkout nếu là địa chỉ mặc định
+                if (addressData.laMacDinh) {
+                    $('#tenNguoiNhan').val(addressData.tenNguoiNhan);
+                    $('#soDienThoaiNguoiNhan').val(addressData.sdtNguoiNhan);
+                    $('#diaChiGiaoHang').val(addressData.diaChiChiTiet);
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Lỗi khi lưu địa chỉ!';
+                if (xhr.responseText) {
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        errorMessage = error.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = xhr.responseText;
+                    }
+                }
+                alert(errorMessage);
+            }
+        });
+    }
+
+    // Hàm validate số điện thoại Việt Nam
+    function validateVietnamesePhoneNumber(phoneNumber) {
+        if (!phoneNumber || phoneNumber.trim() === '') {
+            return true; // Cho phép để trống
+        }
+
+        const cleaned = phoneNumber.replace(/[^\d+]/g, '');
+        
+        // Format số điện thoại
+        let formatted = cleaned;
+        if (cleaned.startsWith('+84')) {
+            formatted = '0' + cleaned.substring(3);
+        } else if (cleaned.startsWith('84')) {
+            formatted = '0' + cleaned.substring(2);
+        }
+        
+        // Regex pattern cho số điện thoại Việt Nam
+        const pattern = /^(0)(3[2-9]|5[689]|7[06-9]|8[1-689]|9[0-46-9])[0-9]{7}$/;
+        
+        return pattern.test(formatted);
+    }
+
+    // Thêm validation real-time cho số điện thoại
+    $(document).ready(function() {
+        // Validation real-time cho số điện thoại trong modal
+        $('#saveAddressPhone').on('input', function() {
+            const phone = $(this).val();
+            const phoneField = $(this);
+            
+            // Xóa validation cũ
+            phoneField.removeClass('is-invalid is-valid');
+            phoneField.closest('.form-group').find('.invalid-feedback').remove();
+            
+            if (phone && phone.trim() !== '') {
+                if (validateVietnamesePhoneNumber(phone)) {
+                    phoneField.addClass('is-valid');
+                } else {
+                    phoneField.addClass('is-invalid');
+                    phoneField.closest('.form-group').append('<div class="invalid-feedback">Số điện thoại không hợp lệ</div>');
+                }
+            }
+        });
+        
+        // Xóa validation khi đóng modal
+        $('#saveAddressModal').on('hidden.bs.modal', function() {
+            $('#saveAddressName').removeClass('is-invalid is-valid');
+            $('#saveAddressPhone').removeClass('is-invalid is-valid');
+            $('#saveAddressDetail').removeClass('is-invalid is-valid');
+            $('.invalid-feedback').remove();
+        });
+    });
+</script>
+
+<!-- Modal Lưu Địa Chỉ -->
+<div class="modal fade" id="saveAddressModal" tabindex="-1" aria-labelledby="saveAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveAddressModalLabel">
+                    <i class="fa fa-save"></i> Lưu địa chỉ mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Tên người nhận <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="saveAddressName" placeholder="Nhập tên người nhận">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="tel" class="form-control" id="saveAddressPhone" placeholder="Nhập số điện thoại">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Địa chỉ chi tiết <span class="required">*</span></label>
+                    <textarea class="form-control" id="saveAddressDetail" rows="3" placeholder="Nhập địa chỉ chi tiết"></textarea>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="saveAddressDefault">
+                    <label class="form-check-label" for="saveAddressDefault">
+                        Đặt làm địa chỉ mặc định
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="saveNewAddress()">
+                    <i class="fa fa-save"></i> Lưu địa chỉ
+                </button>
+            </div>
+        </div>
+    </div>
+</div> 
