@@ -84,53 +84,93 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Create()
         {
             await LoadDropdownData();
+            ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(QuanView.Areas.Admin.Models.SanPhamDto dto)
+        public async Task<IActionResult> Create(QuanView.Areas.Admin.Models.SanPhamDto dto, Guid? SanPhamDaCoId)
         {
+            // Nếu chọn sản phẩm đã có, xóa lỗi validation các trường sản phẩm chính
+            if (SanPhamDaCoId.HasValue && SanPhamDaCoId.Value != Guid.Empty)
+            {
+                // Xóa lỗi cho các trường sản phẩm chính (tùy model, có thể cần bổ sung thêm)
+                ModelState.Remove(nameof(dto.MaSanPham));
+                ModelState.Remove(nameof(dto.TenSanPham));
+                ModelState.Remove(nameof(dto.IDDanhMuc));
+                ModelState.Remove(nameof(dto.IDThuongHieu));
+                ModelState.Remove(nameof(dto.IDChatLieu));
+                ModelState.Remove(nameof(dto.IDLoaiOng));
+                ModelState.Remove(nameof(dto.IDKieuDang));
+                ModelState.Remove(nameof(dto.IDLungQuan));
+                ModelState.Remove(nameof(dto.CoXepLy));
+                ModelState.Remove(nameof(dto.CoGian));
+                ModelState.Remove(nameof(dto.TrangThai));
+            }
+
             if (!ModelState.IsValid)
             {
                 await LoadDropdownData();
+                ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
                 return View(dto);
             }
 
-            dto.IDSanPham = Guid.NewGuid();
-
-            var response = await _http.PostAsJsonAsync("sanphams", dto);
-            if (!response.IsSuccessStatusCode)
+            if (SanPhamDaCoId.HasValue && SanPhamDaCoId.Value != Guid.Empty)
             {
-                var msg = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
-                await LoadDropdownData();
-                return View(dto);
-            }
-
-            if (dto.ChiTietSanPhams != null && dto.ChiTietSanPhams.Any())
-            {
-                foreach (var ct in dto.ChiTietSanPhams)
+                // Thêm biến thể cho sản phẩm đã có
+                if (dto.ChiTietSanPhams != null && dto.ChiTietSanPhams.Any())
                 {
-                    ct.IdSanPhamChiTiet = Guid.NewGuid();
-                    ct.IdSanPham = dto.IDSanPham;
-
-                    var res = await _http.PostAsJsonAsync("sanphamchitiets", ct);
-                    if (!res.IsSuccessStatusCode)
+                    foreach (var ct in dto.ChiTietSanPhams)
                     {
-                        var msg = await res.Content.ReadAsStringAsync();
-                        ModelState.AddModelError(string.Empty, $"Lỗi lưu biến thể: {msg}");
-
-                        // Nạp lại dữ liệu dropdown nếu có lỗi
-                        await LoadDropdownData();
-                        return View(dto);
+                        ct.IdSanPhamChiTiet = Guid.NewGuid();
+                        ct.IdSanPham = SanPhamDaCoId.Value;
+                        var res = await _http.PostAsJsonAsync("sanphamchitiets", ct);
+                        if (!res.IsSuccessStatusCode)
+                        {
+                            var msg = await res.Content.ReadAsStringAsync();
+                            ModelState.AddModelError(string.Empty, $"Lỗi lưu biến thể: {msg}");
+                            await LoadDropdownData();
+                            ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+                            return View(dto);
+                        }
                     }
-
                 }
+                return RedirectToAction("Index");
             }
+            else
+            {
+                // Tạo sản phẩm mới như hiện tại
+                dto.IDSanPham = Guid.NewGuid();
+                var response = await _http.PostAsJsonAsync("sanphams", dto);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var msg = await response.Content.ReadAsStringAsync();
+                    ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
+                    await LoadDropdownData();
+                    ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+                    return View(dto);
+                }
 
-
-            return RedirectToAction("Index");
+                if (dto.ChiTietSanPhams != null && dto.ChiTietSanPhams.Any())
+                {
+                    foreach (var ct in dto.ChiTietSanPhams)
+                    {
+                        ct.IdSanPhamChiTiet = Guid.NewGuid();
+                        ct.IdSanPham = dto.IDSanPham;
+                        var res = await _http.PostAsJsonAsync("sanphamchitiets", ct);
+                        if (!res.IsSuccessStatusCode)
+                        {
+                            var msg = await res.Content.ReadAsStringAsync();
+                            ModelState.AddModelError(string.Empty, $"Lỗi lưu biến thể: {msg}");
+                            await LoadDropdownData();
+                            ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+                            return View(dto);
+                        }
+                    }
+                }
+                return RedirectToAction("Index");
+            }
         }
 
         public async Task<IActionResult> Edit(Guid id)

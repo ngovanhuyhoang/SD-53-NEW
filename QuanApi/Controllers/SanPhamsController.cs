@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using System.IO;
 
 
 namespace QuanApi.Controllers
@@ -341,6 +342,65 @@ namespace QuanApi.Controllers
                 .ToListAsync();
 
             return Ok(images);
+        }
+
+        [HttpPost("chitiet/{sanPhamChiTietId}/upload-image")]
+        public async Task<IActionResult> UploadProductImage(Guid sanPhamChiTietId, IFormFile file, bool laAnhChinh = false)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Không có file ảnh.");
+
+            // Tạo tên file duy nhất
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(uploadPath));
+            using (var stream = new FileStream(uploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var urlAnh = $"/uploads/{fileName}";
+
+            // Tạo bản ghi ảnh sản phẩm như logic cũ
+            var anhSanPham = new AnhSanPham
+            {
+                IDAnhSanPham = Guid.NewGuid(),
+                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+                IDSanPhamChiTiet = sanPhamChiTietId,
+                UrlAnh = urlAnh,
+                LaAnhChinh = laAnhChinh,
+                NgayTao = DateTime.UtcNow,
+                NguoiTao = User?.Identity?.Name ?? "System",
+                TrangThai = true
+            };
+
+            // Nếu đặt làm ảnh chính, bỏ ảnh chính cũ
+            if (laAnhChinh)
+            {
+                var anhChinhCu = await _context.AnhSanPhams
+                    .Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.LaAnhChinh && a.TrangThai)
+                    .FirstOrDefaultAsync();
+
+                if (anhChinhCu != null)
+                {
+                    anhChinhCu.LaAnhChinh = false;
+                    anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
+                    anhChinhCu.NguoiCapNhat = User?.Identity?.Name ?? "System";
+                }
+            }
+
+            _context.AnhSanPhams.Add(anhSanPham);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Upload ảnh thành công.",
+                urlAnh,
+                anhSanPham.IDAnhSanPham,
+                anhSanPham.MaAnh,
+                anhSanPham.LaAnhChinh
+            });
         }
     }
 }

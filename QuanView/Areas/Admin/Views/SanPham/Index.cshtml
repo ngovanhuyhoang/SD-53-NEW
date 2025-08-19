@@ -167,20 +167,18 @@
             </div>
             <div class="modal-body">
                 <form id="addImageForm">
-                    <input type="hidden" id="sanPhamChiTietId" />
                     <div class="mb-3">
-                        <label for="imageUrl" class="form-label">URL ảnh</label>
-                        <input type="url" class="form-control" id="imageUrl" required placeholder="Nhập URL ảnh" onchange="previewImage()">
+                        <label for="imageFile" class="form-label">Chọn ảnh từ máy</label>
+                        <input type="file" class="form-control" id="imageFile" accept="image/*" required onchange="previewImageFile()">
                         <div id="imagePreview" class="image-upload-preview" style="display:none;">
-                            <img id="previewImg" src="" alt="Preview" onerror="this.style.display='none'; document.getElementById('imagePreview').style.display='none';">
+                            <img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
                         </div>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="isMainImage">
-                        <label class="form-check-label" for="isMainImage">
-                            Đặt làm ảnh chính
-                        </label>
+                        <label class="form-check-label" for="isMainImage">Đặt làm ảnh chính</label>
                     </div>
+                    <input type="hidden" id="sanPhamChiTietId" />
                 </form>
             </div>
             <div class="modal-footer">
@@ -334,7 +332,7 @@
         // Hiển thị modal thêm ảnh
         function showAddImageModal(sanPhamChiTietId) {
             document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
-            document.getElementById('imageUrl').value = '';
+            document.getElementById('imageFile').value = ''; // Clear file input
             document.getElementById('isMainImage').checked = false;
             document.getElementById('imagePreview').style.display = 'none';
             
@@ -345,16 +343,18 @@
             }
         }
 
-        // Preview ảnh khi nhập URL
-        function previewImage() {
-            const imageUrl = document.getElementById('imageUrl').value;
+        // Preview ảnh khi chọn file
+        function previewImageFile() {
+            const fileInput = document.getElementById('imageFile');
             const previewDiv = document.getElementById('imagePreview');
             const previewImg = document.getElementById('previewImg');
-            
-            if (imageUrl) {
-                previewImg.src = imageUrl;
-                previewImg.style.display = 'block';
-                previewDiv.style.display = 'block';
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewDiv.style.display = 'block';
+                };
+                reader.readAsDataURL(fileInput.files[0]);
             } else {
                 previewDiv.style.display = 'none';
             }
@@ -363,68 +363,45 @@
         // Thêm ảnh mới
         function addImage() {
             const sanPhamChiTietId = document.getElementById('sanPhamChiTietId').value;
-            const imageUrl = document.getElementById('imageUrl').value;
+            const fileInput = document.getElementById('imageFile');
             const isMainImage = document.getElementById('isMainImage').checked;
             const addButton = document.querySelector('#addImageModal .btn-primary');
 
-            if (!imageUrl) {
-                alert('Vui lòng nhập URL ảnh');
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Vui lòng chọn ảnh!');
                 return;
             }
 
-            // Hiển thị loading state
+            // Hiển thị loading
             const originalText = addButton.innerHTML;
             addButton.innerHTML = '<span class="loading-spinner"></span> Đang thêm...';
             addButton.disabled = true;
 
-            const data = {
-                urlAnh: imageUrl,
-                laAnhChinh: isMainImage
-            };
+            // Tạo FormData để upload file
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('sanPhamChiTietId', sanPhamChiTietId);
+            formData.append('laAnhChinh', isMainImage);
 
-            fetch(`/Admin/AnhSanPham/AddImage?sanPhamChiTietId=${sanPhamChiTietId}`, {
+            fetch('/Admin/AnhSanPham/UploadImage', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
+                body: formData
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text().then(text => {
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error('Invalid JSON response:', text);
-                        throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
-                    }
-                });
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Hiển thị thông báo thành công
                     showNotification('Thêm ảnh thành công!', 'success');
-                    // Đóng modal và reload ảnh
-                    const modalElement = document.getElementById('addImageModal');
-                    if (modalElement) {
-                        // Bootstrap 4
-                        $(modalElement).modal('hide');
-                    }
-                    // Reload ảnh trong modal và cập nhật giao diện chính
+                    $('#addImageModal').modal('hide');
                     loadImages(sanPhamChiTietId);
-                    updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage);
+                    updateProductImageDisplay(sanPhamChiTietId, data.urlAnh, isMainImage);
                 } else {
                     showNotification('Lỗi: ' + (data.message || 'Không thể thêm ảnh'), 'error');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 showNotification('Có lỗi xảy ra khi thêm ảnh: ' + error.message, 'error');
             })
             .finally(() => {
-                // Khôi phục button
                 addButton.innerHTML = originalText;
                 addButton.disabled = false;
             });

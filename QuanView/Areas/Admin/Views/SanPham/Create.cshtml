@@ -3,155 +3,185 @@
 @{
     ViewData["Title"] = "Thêm sản phẩm";
 }
-
-<h2 class="mb-4">Thêm sản phẩm</h2>
-
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        Thêm sản phẩm
+    </div>
+    <div class="card-body">
+        @if (!ViewData.ModelState.IsValid)
         {
-            <p>@error.ErrorMessage</p>
+            <div class="alert alert-danger">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
         }
+
+        <form asp-area="Admin" asp-controller="SanPham" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <!-- Chọn sản phẩm đã có -->
+            <div class="form-group">
+                <label for="sanPhamDaCo">Chọn sản phẩm đã có (nếu muốn thêm biến thể):</label>
+                <select id="sanPhamDaCo" name="SanPhamDaCoId" class="form-control">
+                    <option value="">-- Tạo sản phẩm mới --</option>
+                    @if (ViewBag.SanPhams != null)
+                    {
+                        foreach (var sp in ViewBag.SanPhams as List<SelectListItem>)
+                        {
+                            <option value="@sp.Value">@sp.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Thông tin sản phẩm mới -->
+            <div id="thongTinSanPhamMoi">
+                <div class="form-group">
+                    <label asp-for="MaSanPham"></label>
+                    <input asp-for="MaSanPham" class="form-control" />
+                    <span asp-validation-for="MaSanPham" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="TenSanPham"></label>
+                    <input asp-for="TenSanPham" class="form-control" />
+                    <span asp-validation-for="TenSanPham" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDDanhMuc">Danh mục</label>
+                    <select asp-for="IDDanhMuc" class="form-control" asp-items="ViewBag.DanhMucs">
+                        <option value="">-- Chọn danh mục --</option>
+                    </select>
+                    <span asp-validation-for="IDDanhMuc" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDThuongHieu">Thương hiệu</label>
+                    <select asp-for="IDThuongHieu" class="form-control" asp-items="ViewBag.ThuongHieus">
+                        <option value="">-- Chọn thương hiệu --</option>
+                    </select>
+                    <span asp-validation-for="IDThuongHieu" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDChatLieu">Chất liệu</label>
+                    <select asp-for="IDChatLieu" class="form-control" asp-items="ViewBag.ChatLieus">
+                        <option value="">-- Chọn chất liệu --</option>
+                    </select>
+                    <span asp-validation-for="IDChatLieu" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDLoaiOng">Loại ống</label>
+                    <select asp-for="IDLoaiOng" class="form-control" asp-items="ViewBag.LoaiOngs">
+                        <option value="">-- Chọn loại ống --</option>
+                    </select>
+                    <span asp-validation-for="IDLoaiOng" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDKieuDang">Kiểu dáng</label>
+                    <select asp-for="IDKieuDang" class="form-control" asp-items="ViewBag.KieuDangs">
+                        <option value="">-- Chọn kiểu dáng --</option>
+                    </select>
+                    <span asp-validation-for="IDKieuDang" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDLungQuan">Lưng quần</label>
+                    <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans">
+                        <option value="">-- Chọn lưng quần --</option>
+                    </select>
+                    <span asp-validation-for="IDLungQuan" class="text-danger"></span>
+                </div>
+
+                <div class="form-group form-check">
+                    <input asp-for="CoXepLy" class="form-check-input" />
+                    <label asp-for="CoXepLy" class="form-check-label"></label>
+                </div>
+
+                <div class="form-group form-check">
+                    <input asp-for="CoGian" class="form-check-input" />
+                    <label asp-for="CoGian" class="form-check-label"></label>
+                </div>
+
+                <div class="form-group form-check">
+                    <input asp-for="TrangThai" class="form-check-input" />
+                    <label asp-for="TrangThai" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <!-- PHẦN TẠO BIẾN THỂ LUÔN HIỆN -->
+            <h4 class="mt-4">Chọn biến thể sản phẩm</h4>
+            <div class="form-group">
+                <label>Kích cỡ:</label>
+                <select id="kichCoSelect" multiple class="form-control">
+                    @if (ViewBag.KichCos != null)
+                    {
+                        foreach (var item in ViewBag.KichCos as List<SelectListItem>)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Màu sắc:</label>
+                <select id="mauSacSelect" multiple class="form-control">
+                    @if (ViewBag.MauSacs != null)
+                    {
+                        foreach (var item in ViewBag.MauSacs as List<SelectListItem>)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Họa tiết: <small class="text-muted">(Có thể bỏ qua)</small></label>
+                <select id="hoaTietSelect" multiple class="form-control">
+                    <option value="">Không có họa tiết</option>
+                    @if (ViewBag.HoaTiets != null)
+                    {
+                        foreach (var item in ViewBag.HoaTiets as List<SelectListItem>)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <button type="button" class="btn btn-info mb-3" onclick="generateVariants()">Tạo biến thể</button>
+            <!-- 🧮 Bảng biến thể -->
+            <table class="table" id="variantTable">
+                <thead>
+                    <tr>
+                        <th>Kích cỡ</th>
+                        <th>Màu sắc</th>
+                        <th>Họa tiết</th>
+                        <th>Số lượng</th>
+                        <th>Giá bán</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button type="submit" class="btn btn-success">Lưu</button>
+            <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">Hủy</a>
+        </form>
     </div>
-}
-
-<form asp-area="Admin" asp-controller="SanPham" asp-action="Create" method="post">
-    @Html.AntiForgeryToken() <!-- ✅ Thêm dòng này -->
-    <!-- 🧾 Thông tin sản phẩm -->
-    <div class="form-group">
-        <label asp-for="MaSanPham"></label>
-        <input asp-for="MaSanPham" class="form-control" />
-        <span asp-validation-for="MaSanPham" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="TenSanPham"></label>
-        <input asp-for="TenSanPham" class="form-control" />
-        <span asp-validation-for="TenSanPham" class="text-danger"></span>
-    </div>
-
-    <!-- 🔽 Dropdown đơn -->
-    <div class="form-group">
-        <label asp-for="IDDanhMuc">Danh mục</label>
-        <select asp-for="IDDanhMuc" class="form-control" asp-items="ViewBag.DanhMucs">
-            <option value="">-- Chọn danh mục --</option>
-        </select>
-        <span asp-validation-for="IDDanhMuc" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="IDThuongHieu">Thương hiệu</label>
-        <select asp-for="IDThuongHieu" class="form-control" asp-items="ViewBag.ThuongHieus">
-            <option value="">-- Chọn thương hiệu --</option>
-        </select>
-        <span asp-validation-for="IDThuongHieu" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="IDChatLieu">Chất liệu</label>
-        <select asp-for="IDChatLieu" class="form-control" asp-items="ViewBag.ChatLieus">
-            <option value="">-- Chọn chất liệu --</option>
-        </select>
-        <span asp-validation-for="IDChatLieu" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="IDLoaiOng">Loại ống</label>
-        <select asp-for="IDLoaiOng" class="form-control" asp-items="ViewBag.LoaiOngs">
-            <option value="">-- Chọn loại ống --</option>
-        </select>
-        <span asp-validation-for="IDLoaiOng" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="IDKieuDang">Kiểu dáng</label>
-        <select asp-for="IDKieuDang" class="form-control" asp-items="ViewBag.KieuDangs">
-            <option value="">-- Chọn kiểu dáng --</option>
-        </select>
-        <span asp-validation-for="IDKieuDang" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="IDLungQuan">Lưng quần</label>
-        <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans">
-            <option value="">-- Chọn lưng quần --</option>
-        </select>
-        <span asp-validation-for="IDLungQuan" class="text-danger"></span>
-    </div>
-
-    <!-- ☑️ Checkboxes -->
-    <div class="form-group form-check">
-        <input asp-for="CoXepLy" class="form-check-input" />
-        <label asp-for="CoXepLy" class="form-check-label"></label>
-    </div>
-
-    <div class="form-group form-check">
-        <input asp-for="CoGian" class="form-check-input" />
-        <label asp-for="CoGian" class="form-check-label"></label>
-    </div>
-
-    <div class="form-group form-check">
-        <input asp-for="TrangThai" class="form-check-input" />
-        <label asp-for="TrangThai" class="form-check-label"></label>
-    </div>
-
-    <!-- 🎯 Chọn biến thể -->
-    <h4 class="mt-4">Chọn biến thể sản phẩm</h4>
-
-    <div class="form-group">
-        <label>Kích cỡ:</label>
-        <select id="kichCoSelect" multiple class="form-control">
-            @foreach (var item in ViewBag.KichCos as List<SelectListItem>)
-            {
-                <option value="@item.Value">@item.Text</option>
-            }
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>Màu sắc:</label>
-        <select id="mauSacSelect" multiple class="form-control">
-            @foreach (var item in ViewBag.MauSacs as List<SelectListItem>)
-            {
-                <option value="@item.Value">@item.Text</option>
-            }
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>Họa tiết: <small class="text-muted">(Có thể bỏ qua)</small></label>
-        <select id="hoaTietSelect" multiple class="form-control">
-            <option value="">Không có họa tiết</option>
-            @foreach (var item in ViewBag.HoaTiets as List<SelectListItem>)
-            {
-                <option value="@item.Value">@item.Text</option>
-            }
-        </select>
-    </div>
-
-    <button type="button" class="btn btn-info mb-3" onclick="generateVariants()">Tạo biến thể</button>
-
-    <!-- 🧮 Bảng biến thể -->
-    <table class="table" id="variantTable">
-        <thead>
-            <tr>
-                <th>Kích cỡ</th>
-                <th>Màu sắc</th>
-                <th>Họa tiết</th>
-                <th>Số lượng</th>
-                <th>Giá bán</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <button type="submit" class="btn btn-success">Lưu</button>
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">Hủy</a>
-</form>
-
+</div>
 @section Scripts {
     <script>
+        document.getElementById("sanPhamDaCo").addEventListener("change", function() {
+            var isNew = !this.value;
+            document.getElementById("thongTinSanPhamMoi").style.display = isNew ? "block" : "none";
+        });
+        window.addEventListener("DOMContentLoaded", function() {
+            var isNew = !document.getElementById("sanPhamDaCo").value;
+            document.getElementById("thongTinSanPhamMoi").style.display = isNew ? "block" : "none";
+        });
+
         function generateVariants() {
             const kichCos = [...document.getElementById("kichCoSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
             const mauSacs = [...document.getElementById("mauSacSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
@@ -163,9 +193,7 @@
             let index = 0;
             kichCos.forEach(kc => {
                 mauSacs.forEach(ms => {
-                    // Nếu không chọn họa tiết nào, sinh 1 bản ghi với giá trị rỗng
                     const hoaTietData = hoaTiets.length > 0 ? hoaTiets : [{ id: "", text: "Không" }];
-
                     hoaTietData.forEach(ht => {
                         const row = `<tr>
                                     <td>
@@ -195,6 +223,5 @@
             });
         }
     </script>
-
     @await Html.PartialAsync("_ValidationScriptsPartial")
 }
