@@ -66,7 +66,7 @@
                                     <form method="post" action="/GioHang/Update" class="d-inline">
                                         <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
                                         <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
-                                        <button type="submit" name="soluong" value="@(item.SoLuong+1)" class="cart-qty-btn">&gt;</button>
+                                        <button type="submit" name="soluong" value="@(item.SoLuong+1)" class="cart-qty-btn" @(item.SoLuong >= (item.SanPhamChiTiet?.SoLuong ?? 0) ? "disabled" : "")>&gt;</button>
                                     </form>
                                 </div>
                             </td>

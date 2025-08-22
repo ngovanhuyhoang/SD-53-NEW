@@ -45,6 +45,7 @@ namespace QuanView.Controllers
                                     TenSanPham = spct.TenSanPham
                                 },
                                 GiaBan = spct.price,
+                                SoLuong = spct.SoLuong,
                                 AnhSanPhams = new List<AnhSanPham>
                                 {
                                     new AnhSanPham
@@ -71,7 +72,33 @@ namespace QuanView.Controllers
             {
                 gioHangDb = new QuanApi.Data.GioHang { ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>() };
             }
-            // Merge giỏ hàng session nếu có
+            // Populate SoLuongTon for db cart
+            foreach (var item in gioHangDb.ChiTietGioHangs)
+            {
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                if (responseSpct.IsSuccessStatusCode)
+                {
+                    var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                    if (spct != null)
+                    {
+                        item.GiaBan = spct.price;
+                        if (item.SanPhamChiTiet == null)
+                        {
+                            item.SanPhamChiTiet = new SanPhamChiTiet();
+                        }
+                        item.SanPhamChiTiet.SoLuong = spct.SoLuong;
+                        item.SanPhamChiTiet.SanPham = new SanPham { TenSanPham = spct.TenSanPham };
+                        item.SanPhamChiTiet.AnhSanPhams = new List<AnhSanPham>
+                        {
+                            new AnhSanPham
+                            {
+                                UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                LaAnhChinh = true
+                            }
+                        };
+                    }
+                }
+            }
             var cartSession = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart");
             if (cartSession != null && cartSession.Any())
             {
@@ -93,9 +120,19 @@ namespace QuanView.Controllers
         {
             try
             {
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{idsp}");
+                if (!responseSpct.IsSuccessStatusCode)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy sản phẩm!" });
+                }
+                var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                if (spct == null || spct.SoLuong < soluong)
+                {
+                    return Json(new { success = false, message = "Số lượng vượt quá tồn kho!" });
+                }
+
                 if (iduser.HasValue && iduser != Guid.Empty)
                 {
-                    // Người dùng đã đăng nhập - lưu vào database
                     var response = await _httpClient.PostAsync($"GioHangs/add?iduser={iduser}&idsp={idsp}&soluong={soluong}", null);
                     if (response.IsSuccessStatusCode)
                     {
@@ -111,30 +148,24 @@ namespace QuanView.Controllers
                     // Khách hàng - lưu vào session
                     var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
                     
-                    // Kiểm tra sản phẩm đã có trong giỏ hàng chưa
                     var existingItem = cart.FirstOrDefault(x => x.IDSanPhamChiTiet == idsp);
                     if (existingItem != null)
                     {
+                        if (existingItem.SoLuong + soluong > spct.SoLuong)
+                        {
+                            return Json(new { success = false, message = "Số lượng vượt quá tồn kho!" });
+                        }
                         existingItem.SoLuong += soluong;
                     }
                     else
                     {
-                        // Lấy thông tin sản phẩm
-                        var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{idsp}");
-                        if (responseSpct.IsSuccessStatusCode)
+                        cart.Add(new QuanApi.Data.ChiTietGioHang
                         {
-                            var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                            if (spct != null)
-                            {
-                                cart.Add(new QuanApi.Data.ChiTietGioHang
-                                {
-                                    IDChiTietGioHang = Guid.NewGuid(),
-                                    IDSanPhamChiTiet = idsp,
-                                    SoLuong = soluong,
-                                    GiaBan = spct.price
-                                });
-                            }
-                        }
+                            IDChiTietGioHang = Guid.NewGuid(),
+                            IDSanPhamChiTiet = idsp,
+                            SoLuong = soluong,
+                            GiaBan = spct.price
+                        });
                     }
                     
                     HttpContext.Session.SetObjectAsJson("Cart", cart);
@@ -154,6 +185,47 @@ namespace QuanView.Controllers
         {
             try
             {
+                if (soluong < 1)
+                {
+                    return await Delete(idghct, iduser);
+                }
+
+                Guid idsp;
+                if (iduser.HasValue && iduser != Guid.Empty)
+                {
+                    // Lấy ID sản phẩm từ database
+                    var ghctResponse = await _httpClient.GetAsync($"GioHangs/get-chi-tiet?idghct={idghct}");
+                    if (!ghctResponse.IsSuccessStatusCode)
+                    {
+                        return RedirectToAction(nameof(Index), new { iduser = iduser });
+                    }
+                    var ghct = await ghctResponse.Content.ReadFromJsonAsync<QuanApi.Data.ChiTietGioHang>();
+                    idsp = ghct?.IDSanPhamChiTiet ?? Guid.Empty;
+                }
+                else
+                {
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idghct);
+                    if (item == null)
+                    {
+                        return RedirectToAction(nameof(Index));
+                    }
+                    idsp = item.IDSanPhamChiTiet;
+                }
+
+                // Kiểm tra tồn kho
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{idsp}");
+                if (!responseSpct.IsSuccessStatusCode)
+                {
+                    return RedirectToAction(nameof(Index), new { iduser = iduser });
+                }
+                var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                if (spct == null || spct.SoLuong < soluong)
+                {
+                    TempData["ErrorMessage"] = "Số lượng vượt quá tồn kho!";
+                    return RedirectToAction(nameof(Index), new { iduser = iduser });
+                }
+
                 if (iduser.HasValue && iduser != Guid.Empty)
                 {
                     // Người dùng đã đăng nhập - cập nhật database
@@ -170,14 +242,7 @@ namespace QuanView.Controllers
                     var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idghct);
                     if (item != null)
                     {
-                        if (soluong <= 0)
-                        {
-                            cart.Remove(item);
-                        }
-                        else
-                        {
-                            item.SoLuong = soluong;
-                        }
+                        item.SoLuong = soluong;
                         HttpContext.Session.SetObjectAsJson("Cart", cart);
                     }
                 }
