@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using QuanApi.Data;
 using QuanView.ViewModels;
 using System.Net.Http.Json;
+using AddAnhSanPhamDto = QuanApi.Dtos.AddAnhSanPhamDto;
 
 namespace QuanView.Areas.Admin.Controllers
 {
@@ -297,7 +298,7 @@ namespace QuanView.Areas.Admin.Controllers
                     if (ct.IdSanPham == Guid.Empty)
                     {
                         ct.IdSanPham = dto.IDSanPham;
-                        System.Diagnostics.Debug.WriteLine($"�� Fixed IdSanPham: {ct.IdSanPham}");
+                        System.Diagnostics.Debug.WriteLine($" Fixed IdSanPham: {ct.IdSanPham}");
                     }
 
                     // 🔍 Debug: Kiểm tra dữ liệu trước khi gửi API
@@ -309,7 +310,7 @@ namespace QuanView.Areas.Admin.Controllers
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                         WriteIndented = true
                     });
-                    System.Diagnostics.Debug.WriteLine($"�� JSON being sent: {jsonContent}");
+                    System.Diagnostics.Debug.WriteLine($" JSON being sent: {jsonContent}");
 
                     var res = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct);
 
@@ -501,6 +502,42 @@ namespace QuanView.Areas.Admin.Controllers
                 NguoiCapNhat = img.NguoiCapNhat,
                 TrangThai = img.TrangThai
             }).ToList() ?? new List<QuanView.Areas.Admin.Models.AnhSanPhamDto>();
+        }
+
+        [HttpPost]
+        [Route("Admin/AnhSanPham/UploadImage")]
+        public async Task<IActionResult> UploadImage(IFormFile file, Guid sanPhamChiTietId, bool laAnhChinh)
+        {
+            if (file == null || file.Length == 0)
+                return Json(new { success = false, message = "Không có file ảnh." });
+
+            // 1. Lưu file vào wwwroot/uploads/
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(uploadPath));
+            using (var stream = new FileStream(uploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            var urlAnh = $"/uploads/{fileName}";
+
+            // 2. Gọi API backend để lưu thông tin ảnh vào DB
+            var dto = new AddAnhSanPhamDto
+            {
+                UrlAnh = urlAnh,
+                LaAnhChinh = laAnhChinh
+            };
+
+            // Gọi API backend (MyApi là HttpClient đã cấu hình base address)
+            var response = await _http.PostAsJsonAsync($"sanphams/chitiet/{sanPhamChiTietId}/images", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var msg = await response.Content.ReadAsStringAsync();
+                return Json(new { success = false, message = "Lỗi lưu ảnh vào DB: " + msg });
+            }
+
+            return Json(new { success = true, urlAnh });
         }
     }
 }
