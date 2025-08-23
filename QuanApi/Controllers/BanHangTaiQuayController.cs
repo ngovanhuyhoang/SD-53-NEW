@@ -387,16 +387,17 @@ namespace QuanApi.Controllers
                 return BadRequest("Chưa chọn phương thức thanh toán.");
             }
 
-            // Xác định trạng thái hóa đơn dựa trên phương thức thanh toán và địa chỉ
             string trangThaiHoaDon;
-            if (dto.Shipping && !string.IsNullOrEmpty(dto.Address) && dto.PaymentMethod == "cash" || dto.PaymentMethod == "Tiền mặt" || dto.PaymentMethod == "tiền mặt")
+            var cashPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+             {
+    "cash", "Tiền mặt", "tiền mặt"
+    };
+            if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
             {
-                // Nếu có giao hàng, có địa chỉ và thanh toán bằng tiền mặt -> Đã xác nhận
                 trangThaiHoaDon = "Đã xác nhận";
             }
             else
             {
-                // Các trường hợp khác -> Đã thanh toán
                 trangThaiHoaDon = "DaThanhToan";
             }
 
@@ -759,6 +760,7 @@ namespace QuanApi.Controllers
                 return StatusCode(500, "Lỗi khi lấy danh sách địa chỉ khách hàng");
             }
         }
+        
 
         // Phương thức tính giá sau khi áp dụng đợt giảm giá
         private async Task<decimal> TinhGiaSauGiam(Guid sanPhamChiTietId, decimal giaGoc)

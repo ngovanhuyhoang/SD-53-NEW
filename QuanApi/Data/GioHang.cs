@@ -12,8 +12,7 @@ namespace QuanApi.Data
         [MaxLength(50)]
         public string MaGioHang { get; set; }
 
-        [Required]
-        public Guid IDKhachHang { get; set; }
+        public Guid? IDKhachHang { get; set; }
 
         public DateTime NgayTao { get; set; } = DateTime.Now;
 
