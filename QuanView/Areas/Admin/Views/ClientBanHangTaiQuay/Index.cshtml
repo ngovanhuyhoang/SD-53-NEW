@@ -9,7 +9,7 @@
 <div class="container mt-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <ul class="nav nav-tabs" id="invoiceTabs"></ul>
-        <button class="btn btn-primary" id="btnAddInvoice">+ Tạo hóa đơn</button>
+        <button class="btn btn-primary" id="btnAddInvoice">+ Tạo giỏ hàng</button>
     </div>
     <div class="d-flex justify-content-end mb-2">
         @* <button class="btn btn-info me-2" id="btnQRCode">QR Code</button> *@
@@ -325,9 +325,9 @@
 </div>
 
 <script>
-    let invoices = [];
-    let currentInvoice = 0;
-    const maxInvoices = 5;
+    let gioHangs = [];
+    let currentGioHang = 0;
+    const maxGioHangs = 5;
 
     // Dữ liệu động
     let products = [];
@@ -339,15 +339,11 @@
     let selectedPaymentCode;
     let shippingFee = 0;
 
-    // Lưu hóa đơn vào localStorage
-    function saveInvoicesToStorage() {
-        localStorage.setItem('invoices', JSON.stringify(invoices));
-    }
-
     // Load sản phẩm từ API
-    function loadProducts() {
+    function loadProducts(callback) {
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-san-pham', function(data) {
             products = data;
+            if (callback) callback();
         });
     }
 
@@ -469,8 +465,13 @@
 
     // Chọn phiếu giảm giá
     function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
-        let inv = invoices[currentInvoice];
-        let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
+        let gh = gioHangs[currentGioHang];
+        if (!gh || !gh.products) {
+            alert('Không có giỏ hàng nào được chọn!');
+            return;
+        }
+        
+        let total = gh.products.reduce((sum, p) => sum + p.thanhTien, 0);
         
         // Kiểm tra đơn tối thiểu
         if (total < donToiThieu) {
@@ -497,7 +498,7 @@
         alert(`Đã áp dụng phiếu giảm giá ${code}! Giảm ${discountAmount.toLocaleString()} VND`);
     }
 
-    // Xóa phiếu giảm giá
+            // Xóa phiếu giảm giá
     function clearDiscount() {
         $('#discountCode').val('');
         discountValue = 0;
@@ -520,35 +521,73 @@
         $('#confirmPaymentModal').modal('show');
     }
 
-    // Thêm hóa đơn mới
-    function addInvoice() {
-        invoices.push({products: []});
-        currentInvoice = invoices.length - 1;
-        saveInvoicesToStorage();
+    // Tạo giỏ hàng mới
+    function taoGioHang() {
+        const dto = {
+            idKhachHang: selectedCustomer ? selectedCustomer.id : null,
+            nguoiTao: "Admin"
+        };
+        
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/tao-gio-hang',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                const gioHang = {
+                    id: res.idGioHang,
+                    ma: res.maGioHang,
+                    products: []
+                };
+                gioHangs.push(gioHang);
+                currentGioHang = gioHangs.length - 1;
+                // Lưu vào localStorage
+                localStorage.setItem('currentGioHangId', res.idGioHang);
+                renderTabs();
+                loadGioHang(); // Load dữ liệu từ server
+            },
+            error: function(err) {
+                alert('Tạo giỏ hàng thất bại!');
+            }
+        });
     }
 
-    // Render tabs hóa đơn
+    // Render tabs giỏ hàng
     function renderTabs() {
         let html = '';
-        invoices.forEach((inv, idx) => {
+        gioHangs.forEach((gh, idx) => {
             html += `<li class="nav-item">
-                <a class="nav-link ${idx === currentInvoice ? 'active' : ''}" href="#" onclick="switchInvoice(${idx})">Hóa đơn ${idx+1}${inv.products.length > 0 ? '<span class=\'badge bg-danger ms-1\'>'+inv.products.length+'</span>' : ''}</a>
+                <a class="nav-link ${idx === currentGioHang ? 'active' : ''}" href="#" onclick="switchGioHang(${idx})">Giỏ hàng ${idx+1}${gh.products.length > 0 ? '<span class=\'badge bg-danger ms-1\'>'+gh.products.length+'</span>' : ''}</a>
             </li>`;
         });
         $('#invoiceTabs').html(html);
     }
 
-    // Chuyển hóa đơn
-    function switchInvoice(idx) {
-        currentInvoice = idx;
+    // Chuyển giỏ hàng
+    function switchGioHang(idx) {
+        currentGioHang = idx;
         renderTabs();
-        renderInvoice();
+        loadGioHang(); // Load dữ liệu từ server thay vì render trực tiếp
     }
 
-    // Render danh sách sản phẩm trong hóa đơn
-    function renderInvoice() {
-        let inv = invoices[currentInvoice];
-        if (!inv || inv.products.length === 0) {
+    // Load thông tin giỏ hàng từ server
+    function loadGioHang() {
+        if (gioHangs.length === 0 || !gioHangs[currentGioHang]) return;
+        
+        const gioHang = gioHangs[currentGioHang];
+        $.get(`/Admin/ClientBanHangTaiQuay/gio-hang/${gioHang.id}`, function(data) {
+            gioHang.products = data.sanPhams || [];
+            renderGioHang();
+            updatePaymentInfo(); // Cập nhật thông tin thanh toán
+        }).fail(function() {
+            alert('Lỗi khi tải thông tin giỏ hàng!');
+        });
+    }
+
+    // Render danh sách sản phẩm trong giỏ hàng
+    function renderGioHang() {
+        let gh = gioHangs[currentGioHang];
+        if (!gh || gh.products.length === 0) {
             $('#invoiceContent').html(`
                 <div class="text-center my-5">
                     <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" width="100" />
@@ -557,31 +596,25 @@
             `);
             return;
         }
-        let rows = inv.products.map((p, i) => `
+        let rows = gh.products.map((p, i) => `
             <tr>
                 <td>${i+1}</td>
-                <td><img src="${p.img}" width="60"/></td>
-                <td>${p.name}<br><small>Kích cỡ: ${p.size}</small></td>
+                <td><img src="${p.anh}" width="60"/></td>
+                <td>${p.ten}<br><small>Kích cỡ: ${p.kichCo} | Màu sắc: ${p.mauSac}</small></td>
                 <td>
-    ${
-        (p.originalPrice && p.originalPrice > p.price)
-        ? `<div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;">
-      <span style="color:#888;text-decoration:line-through;font-size:0.95em;">${p.originalPrice.toLocaleString()} VND</span>
-      <span style="color:#d32f2f;font-weight:bold;font-size:1em;">${p.price.toLocaleString()} VND</span>
-   </div>`
-        : `<span style="font-weight:bold;">${p.price.toLocaleString()} VND</span>`
-    }
-</td>
-                <td>
-                    <button class="btn btn-sm btn-light" onclick="changeQty(${i},-1)">-</button>
-                    <input type="number" class="form-control form-control-sm d-inline-block mx-2 text-center" style="width:80px" min="1" value="${p.qty}" onchange="changeQtyManual(${i}, this.value)" oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
-                    <button class="btn btn-sm btn-light" onclick="changeQty(${i},1)">+</button>
+                    ${p.giaGoc && p.giaGoc > p.giaBan ? `<span style="color:#888;text-decoration:line-through;font-size:0.95em;">${p.giaGoc.toLocaleString()} VND</span><br>` : ''}
+                    <span style="font-weight:bold; color:#d32f2f;">${p.giaBan.toLocaleString()} VND</span>
                 </td>
-                <td>${(p.price * p.qty).toLocaleString()} VND</td>
-                <td><button class="btn btn-danger btn-sm" onclick="removeProduct(${i})">🗑</button></td>
+                <td>
+                    <button class="btn btn-sm btn-light" onclick="changeQty('${p.id}',-1)">-</button>
+                    <input type="number" class="form-control form-control-sm d-inline-block mx-2 text-center" style="width:80px" min="1" value="${p.soLuong}" onchange="changeQtyManual('${p.id}', this.value)" oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
+                    <button class="btn btn-sm btn-light" onclick="changeQty('${p.id}',1)">+</button>
+                </td>
+                <td>${p.thanhTien.toLocaleString()} VND</td>
+                <td><button class="btn btn-danger btn-sm" onclick="removeProduct('${p.id}')">🗑</button></td>
             </tr>
         `).join('');
-        let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
+        let total = gh.products.reduce((sum, p) => sum + p.thanhTien, 0);
         $('#invoiceContent').html(`
             <table class="table table-bordered align-middle">
                 <thead>
@@ -599,46 +632,116 @@
     }
 
     // Thay đổi số lượng sản phẩm
-    function changeQty(idx, delta) {
-        let inv = invoices[currentInvoice];
-        let prod = inv.products[idx];
-        let productInfo = products.find(p => p.id == prod.id);
-        let maxQty = productInfo ? productInfo.stock : 1;
+    function changeQty(productId, delta) {
+        const gh = gioHangs[currentGioHang];
+        const product = gh.products.find(p => p.id === productId);
+        if (!product) return;
 
-        if (prod.qty + delta > maxQty) {
-            alert('Vượt quá số lượng tồn kho!');
+        const newQty = product.soLuong + delta;
+        if (newQty < 1) {
+            // Xóa sản phẩm nếu số lượng = 0
+            removeProduct(productId);
             return;
         }
-        prod.qty += delta;
-        if (prod.qty < 1) prod.qty = 1;
-        renderInvoice();
-        saveInvoicesToStorage();
+
+        const dto = {
+            idGioHang: gh.id,
+            idSanPhamChiTiet: productId,
+            soLuongMoi: newQty,
+            nguoiCapNhat: "Admin"
+        };
+
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/cap-nhat-so-luong-gio-hang',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                loadGioHang(); // Reload từ server
+                loadProducts(); // cập nhật lại tồn kho
+            },
+            error: function(xhr) {
+                let msg = 'Cập nhật số lượng thất bại!';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                else if (xhr.responseText) {
+                    try {
+                        let obj = JSON.parse(xhr.responseText);
+                        if (obj.message) msg = obj.message;
+                        else msg = xhr.responseText;
+                    } catch {
+                        msg = xhr.responseText;
+                    }
+                }
+                window.alert(msg);
+            }
+        });
     }
 
     // Nhập số lượng thủ công
-    function changeQtyManual(idx, value) {
-        let inv = invoices[currentInvoice];
-        let prod = inv.products[idx];
-        let qty = parseInt(value, 10);
-        if (isNaN(qty) || qty < 1) qty = 1;
-
-        let productInfo = products.find(p => p.id == prod.id);
-        let maxQty = productInfo ? productInfo.stock : (prod.stock || 1);
-        if (qty > maxQty) {
-            alert(`Vượt quá số lượng tồn kho! Hiện có: ${maxQty}`);
-            qty = maxQty;
+    function changeQtyManual(productId, value) {
+        const qty = parseInt(value, 10);
+        if (isNaN(qty) || qty < 1) {
+            removeProduct(productId);
+            return;
         }
-        prod.qty = qty;
-        renderInvoice();
-        saveInvoicesToStorage();
+
+        const gh = gioHangs[currentGioHang];
+        const dto = {
+            idGioHang: gh.id,
+            idSanPhamChiTiet: productId,
+            soLuongMoi: qty,
+            nguoiCapNhat: "Admin"
+        };
+
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/cap-nhat-so-luong-gio-hang',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                loadGioHang(); // Reload từ server
+                loadProducts(); // cập nhật lại tồn kho
+            },
+            error: function(xhr) {
+                let msg = 'Cập nhật số lượng thất bại!';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                else if (xhr.responseText) {
+                    try {
+                        let obj = JSON.parse(xhr.responseText);
+                        if (obj.message) msg = obj.message;
+                        else msg = xhr.responseText;
+                    } catch {
+                        msg = xhr.responseText;
+                    }
+                }
+                window.alert(msg);
+            }
+        });
     }
 
-    // Xóa sản phẩm khỏi hóa đơn
-    function removeProduct(idx) {
-        invoices[currentInvoice].products.splice(idx, 1);
-        renderTabs();
-        renderInvoice();
-        saveInvoicesToStorage();
+    // Xóa sản phẩm khỏi giỏ hàng
+    function removeProduct(productId) {
+        const gh = gioHangs[currentGioHang];
+        const dto = {
+            idGioHang: gh.id,
+            idSanPhamChiTiet: productId,
+            nguoiCapNhat: "Admin"
+        };
+
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/xoa-khoi-gio-hang',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                loadGioHang(); // Reload từ server
+                renderTabs();
+                loadProducts(); // cập nhật lại tồn kho
+            },
+            error: function(err) {
+                alert('Xóa sản phẩm thất bại!');
+            }
+        });
     }
 
     // Render modal chọn sản phẩm
@@ -680,7 +783,7 @@
                         <td>${p.size}</td>
                         <td>${p.color}</td>
                         <td><span class="badge ${p.stock > 10 ? 'bg-success' : p.stock > 5 ? 'bg-warning' : 'bg-danger'}">${p.stock}</span></td>
-                        <td><button class="btn btn-success btn-sm" onclick="addProductToInvoice('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>Chọn</button></td>
+                        <td><button class="btn btn-success btn-sm" onclick="addProductToGioHang('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>Chọn</button></td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -688,37 +791,47 @@
         $('#productList').html(html);
     }
 
-    // Thêm sản phẩm vào hóa đơn
-    function addProductToInvoice(productId) {
-        let prod = products.find(p => p.id == productId);
-        let inv = invoices[currentInvoice];
-        let exist = inv.products.find(p => p.id == productId);
-        let maxQty = prod.stock || 0;
-
-        // Kiểm tra sản phẩm có tồn tại và có hàng không
-        if (!prod) {
-            alert('Không tìm thấy sản phẩm!');
-            return;
-        }
-        
-        if (maxQty <= 0) {
-            alert('Sản phẩm đã hết hàng!');
+    // Thêm sản phẩm vào giỏ hàng
+    function addProductToGioHang(productId) {
+        if (gioHangs.length === 0) {
+            alert('Vui lòng tạo giỏ hàng trước!');
             return;
         }
 
-        if (exist) {
-            if (exist.qty + 1 > maxQty) {
-                alert(`Vượt quá số lượng tồn kho! Hiện có: ${maxQty}`);
-                return;
+        const gh = gioHangs[currentGioHang];
+        const dto = {
+            idGioHang: gh.id,
+            idSanPhamChiTiet: productId,
+            soLuong: 1,
+            nguoiCapNhat: "Admin"
+        };
+
+        $.ajax({
+            url: '/Admin/ClientBanHangTaiQuay/them-vao-gio-hang',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                $('#productModal').modal('hide');
+                loadGioHang(); // Reload từ server
+                renderTabs();
+                loadProducts(); // cập nhật lại tồn kho
+            },
+            error: function(xhr) {
+                let msg = 'Thêm sản phẩm thất bại!';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                else if (xhr.responseText) {
+                    try {
+                        let obj = JSON.parse(xhr.responseText);
+                        if (obj.message) msg = obj.message;
+                        else msg = xhr.responseText;
+                    } catch {
+                        msg = xhr.responseText;
+                    }
+                }
+                window.alert(msg);
             }
-            exist.qty += 1;
-        } else {
-            inv.products.push({ ...prod, qty: 1 });
-        }
-        $('#productModal').modal('hide');
-        renderTabs();
-        renderInvoice();
-        saveInvoicesToStorage();
+        });
     }
 
     function showCustomerModal() {
@@ -760,6 +873,12 @@
         }
         
         updatePaymentInfo();
+        
+        // Cập nhật thông tin khách hàng trong giỏ hàng hiện tại nếu có
+        if (gioHangs.length > 0 && gioHangs[currentGioHang]) {
+            const gh = gioHangs[currentGioHang];
+            // Có thể thêm API để cập nhật khách hàng cho giỏ hàng nếu cần
+        }
     }
 
     // Toggle giao hàng
@@ -821,8 +940,8 @@
 
     // Cập nhật thông tin thanh toán
     function updatePaymentInfo() {
-        let inv = invoices[currentInvoice];
-        let total = inv.products.reduce((sum, p) => sum + p.price * p.qty, 0);
+        let gh = gioHangs[currentGioHang];
+        let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
         let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
         // Phí vận chuyển cố định 50.000 VNĐ khi bật giao hàng
@@ -834,12 +953,15 @@
         $('#discountAmount').text(discount.toLocaleString() + " VND");
         $('#payAmount').text(pay.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
+        
+        // Cập nhật phí vận chuyển trong input
+        $('#shippingFee').val(shippingFee);
     }
 
-    // Gọi lại khi render hóa đơn
-    let oldRenderInvoice = renderInvoice;
-    renderInvoice = function() {
-        oldRenderInvoice();
+    // Gọi lại khi render giỏ hàng
+    let oldRenderGioHang = renderGioHang;
+    renderGioHang = function() {
+        oldRenderGioHang();
         updatePaymentInfo();
     }
 
@@ -880,8 +1002,8 @@
     }
 
     function payInvoice() {
-        let inv = invoices[currentInvoice];
-        if (!inv || inv.products.length === 0) return alert('Không có sản phẩm trong hóa đơn!');
+        let gh = gioHangs[currentGioHang];
+        if (!gh || !gh.products || gh.products.length === 0) return alert('Không có sản phẩm trong giỏ hàng!');
 
         // Lấy lại các thông tin đã chọn từ ngoài giao diện
         let paymentMethod = $('#selectedPaymentMethod').text() || "Tiền mặt";
@@ -895,33 +1017,32 @@
 
         // Dữ liệu gửi đi
         let dto = {
-            CustomerId: selectedCustomer ? selectedCustomer.id : null,
-            CustomerName: selectedCustomer ? selectedCustomer.name : $('#shipName').val(),
-            CustomerPhone: selectedCustomer ? selectedCustomer.phone : $('#shipPhone').val(),
-            CustomerEmail: selectedCustomer ? selectedCustomer.email : $('#shipEmail').val(),
-            Address: $('#shipAddress').val(),
-            Products: inv.products.map(p => ({ ProductDetailId: p.id, Quantity: p.qty })),
-            DiscountCode: $('#discountCode').val(),
-            UsePoint: usePoint,
-            Shipping: useShipping,
-            PaymentMethod: paymentMethod,
-            CustomerPaid: customerPaid,
-            ShippingFee: useShipping ? 50000 : 0 // Phí vận chuyển cố định 50.000 VNĐ khi bật giao hàng
+            idGioHang: gh.id,
+            customerName: selectedCustomer ? selectedCustomer.name : $('#shipName').val(),
+            customerPhone: selectedCustomer ? selectedCustomer.phone : $('#shipPhone').val(),
+            customerEmail: selectedCustomer ? selectedCustomer.email : $('#shipEmail').val(),
+            address: $('#shipAddress').val(),
+            discountCode: $('#discountCode').val(),
+            usePoint: usePoint,
+            shipping: useShipping,
+            paymentMethod: paymentMethod,
+            customerPaid: customerPaid,
+            shippingFee: useShipping ? 50000 : 0 // Phí vận chuyển cố định 50.000 VNĐ khi bật giao hàng
         };
         $.ajax({
-            url: '/Admin/ClientBanHangTaiQuay/thanh-toan',
+            url: '/Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(dto),
             success: function(res) {
                 alert('Thanh toán thành công!');
                 $('#confirmPaymentModal').modal('hide');
-                invoices.splice(currentInvoice, 1);
-                if (invoices.length === 0) addInvoice();
-                currentInvoice = 0;
+                localStorage.removeItem('currentGioHangId');
+                gioHangs.splice(currentGioHang, 1);
+                if (gioHangs.length === 0) taoGioHang();
+                currentGioHang = 0;
                 renderTabs();
-                renderInvoice();
-                saveInvoicesToStorage(); // Thêm dòng này
+                loadGioHang(); // Load dữ liệu từ server
             },
             error: function(err) {
                 alert('Thanh toán thất bại!');
@@ -957,37 +1078,56 @@
         });
     }
 
-    // Khởi tạo hóa đơn đầu tiên và load dữ liệu động
+    // Khởi tạo giỏ hàng đầu tiên và load dữ liệu động
     $(document).ready(function() {
-        let storedInvoices = localStorage.getItem('invoices');
-        if (storedInvoices) {
-            invoices = JSON.parse(storedInvoices);
-            if (invoices.length === 0) addInvoice();
+        let savedGioHangId = localStorage.getItem('currentGioHangId');
+        if (savedGioHangId) {
+            // Gọi API lấy lại giỏ hàng
+            $.get(`/Admin/ClientBanHangTaiQuay/gio-hang/${savedGioHangId}`, function(data) {
+                if (data && data.idGioHang) {
+                    gioHangs = [{
+                        id: data.idGioHang,
+                        ma: data.maGioHang,
+                        products: data.sanPhams || []
+                    }];
+                    currentGioHang = 0;
+                    renderTabs();
+                    renderGioHang();
+                } else {
+                    taoGioHang();
+                }
+            }).fail(function() {
+                taoGioHang();
+            });
         } else {
-            addInvoice();
+            taoGioHang();
         }
-        renderTabs();
-        renderInvoice();
         loadProducts();
         loadCustomers();
         loadPaymentMethods(); // Load phương thức thanh toán động từ API
 
         $('#btnAddInvoice').click(function() {
-            if (invoices.length < maxInvoices) {
-                addInvoice();
-                renderTabs();
-                renderInvoice();
+            if (gioHangs.length < maxGioHangs) {
+                taoGioHang();
             } else {
-                alert('Chỉ được tối đa 5 hóa đơn chờ!');
+                alert('Chỉ được tối đa 5 giỏ hàng chờ!');
             }
         });
 
+        // Khi mở modal chọn sản phẩm, luôn reload sản phẩm mới nhất
         $('#btnAddProduct').click(function() {
-            renderProductModal();
-            $('#productModal').modal('show');
+            loadProducts(function() {
+                renderProductModal();
+                $('#productModal').modal('show');
+            });
         });
-
-
+        
+                    // Cập nhật thông tin thanh toán ban đầu
+        setTimeout(function() {
+            if (gioHangs.length > 0) {
+                updatePaymentInfo();
+            }
+        }, 1000);
     });
 
     function loadPaymentMethods() {

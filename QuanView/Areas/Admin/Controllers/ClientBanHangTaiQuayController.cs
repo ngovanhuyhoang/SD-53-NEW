@@ -186,5 +186,75 @@ namespace QuanView.Areas.Admin.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
+
+        // Tạo giỏ hàng mới
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/tao-gio-hang")]
+        public async Task<IActionResult> TaoGioHang([FromBody] TaoGioHangDto dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-gio-hang", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Thêm sản phẩm vào giỏ hàng
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/them-vao-gio-hang")]
+        public async Task<IActionResult> ThemVaoGioHang([FromBody] ThemVaoGioHangDto dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/them-vao-gio-hang", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Cập nhật số lượng trong giỏ hàng
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/cap-nhat-so-luong-gio-hang")]
+        public async Task<IActionResult> CapNhatSoLuongGioHang([FromBody] CapNhatSoLuongGioHangDto dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/cap-nhat-so-luong-gio-hang", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Xóa sản phẩm khỏi giỏ hàng
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/xoa-khoi-gio-hang")]
+        public async Task<IActionResult> XoaKhoiGioHang([FromBody] XoaKhoiGioHangDto dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/xoa-khoi-gio-hang", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Lấy thông tin giỏ hàng
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/gio-hang/{idGioHang}")]
+        public async Task<IActionResult> GetGioHang(Guid idGioHang)
+        {
+            var response = await _httpClient.GetAsync($"BanHangTaiQuay/gio-hang/{idGioHang}");
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Xóa giỏ hàng
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/xoa-gio-hang")]
+        public async Task<IActionResult> XoaGioHang([FromBody] XoaGioHangDto dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/xoa-gio-hang", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Chuyển giỏ hàng thành hóa đơn
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don")]
+        public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
+        {
+            var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
     }
 }

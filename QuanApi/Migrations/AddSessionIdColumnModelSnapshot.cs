@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace QuanApi.Migrations
 {
     [DbContext(typeof(BanQuanAu1DbContext))]
-    partial class BanQuanAu1DbContextModelSnapshot : ModelSnapshot
+    partial class AddSessionIdColumnModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
