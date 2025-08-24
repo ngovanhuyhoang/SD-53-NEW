@@ -43,6 +43,8 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.HoaTiet)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.SanPham) // Thêm include này để tránh lỗi
 
                 .Select(s => new SanPhamDto
                 {
@@ -66,7 +68,7 @@ namespace QuanApi.Controllers
                     TenLungQuan = s.LungQuan.TenLungQuan,
                     // Lấy ảnh chính hoặc ảnh đầu tiên từ SanPhamChiTiet đầu tiên
                     AnhChinh = s.SanPhamChiTiets
-                        .Where(ct => ct.AnhSanPhams != null)
+                        .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
                         .SelectMany(ct => ct.AnhSanPhams)
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
@@ -75,7 +77,7 @@ namespace QuanApi.Controllers
                         .FirstOrDefault(),
                     // Lấy tất cả ảnh sản phẩm từ tất cả SanPhamChiTiet
                     DanhSachAnh = s.SanPhamChiTiets
-                        .Where(ct => ct.AnhSanPhams != null)
+                        .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
                         .SelectMany(ct => ct.AnhSanPhams)
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
@@ -100,7 +102,9 @@ namespace QuanApi.Controllers
                         TenKichCo = ct.KichCo.TenKichCo,
                         TenMauSac = ct.MauSac.TenMauSac,
                         TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
-                        AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
+                        AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ? 
+                            ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? 
+                            ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
                     }).ToList()
                 })
                 .ToListAsync();

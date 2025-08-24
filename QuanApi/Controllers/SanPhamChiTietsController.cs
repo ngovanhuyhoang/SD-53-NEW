@@ -37,6 +37,7 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
+                        .ThenInclude(s => s.DanhMuc) // Thêm include này để tránh lỗi
                     .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
                     .Select(ct => new SanPhamChiTietDto
                     {
@@ -76,7 +77,11 @@ namespace QuanApi.Controllers
                         ),
                         TenDanhMuc = ct.SanPham.DanhMuc.TenDanhMuc,
                         AnhDaiDien = ct.AnhSanPhams
-                            .Where(a => a.LaAnhChinh)
+                            .Where(a => a.LaAnhChinh && a.TrangThai)
+                            .Select(a => a.UrlAnh)
+                            .FirstOrDefault() ?? 
+                            ct.AnhSanPhams
+                            .Where(a => a.TrangThai)
                             .Select(a => a.UrlAnh)
                             .FirstOrDefault() ?? ""
                     })
@@ -102,6 +107,7 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
+                        .ThenInclude(s => s.DanhMuc) // Thêm include này để tránh lỗi
                     .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
                     .Where(ct => ct.IDSanPhamChiTiet == id)
                     .Select(ct => new SanPhamChiTietDto
@@ -142,7 +148,11 @@ namespace QuanApi.Controllers
                         ),
                         TenDanhMuc = ct.SanPham.DanhMuc.TenDanhMuc,
                         AnhDaiDien = ct.AnhSanPhams
-                            .Where(a => a.LaAnhChinh)
+                            .Where(a => a.LaAnhChinh && a.TrangThai)
+                            .Select(a => a.UrlAnh)
+                            .FirstOrDefault() ?? 
+                            ct.AnhSanPhams
+                            .Where(a => a.TrangThai)
                             .Select(a => a.UrlAnh)
                             .FirstOrDefault() ?? ""
                     })
@@ -155,8 +165,8 @@ namespace QuanApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy chi tiết sản phẩm: {Message}", ex.Message);
-                return StatusCode(500, "Lỗi khi tải chi tiết sản phẩm");
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm chi tiết: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi tải sản phẩm chi tiết");
             }
         }
 

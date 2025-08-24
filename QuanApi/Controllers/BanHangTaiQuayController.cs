@@ -587,7 +587,7 @@ namespace QuanApi.Controllers
                 .Include(x => x.AnhSanPhams.Where(a => a.TrangThai))
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
-                .Include(x => x.HoaTiet)
+                .Include(x => x.HoaTiet) // Thêm include này để tránh lỗi
                 .Where(x => x.IDSanPhamChiTiet == id && x.TrangThai)
                 .Select(x => new {
                     id = x.IDSanPhamChiTiet,
@@ -981,6 +981,9 @@ namespace QuanApi.Controllers
                         .ThenInclude(spct => spct.MauSac)
                 .Include(g => g.ChiTietGioHangs.Where(ct => ct.TrangThai))
                     .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(spct => spct.HoaTiet) // Thêm include này để tránh lỗi
+                .Include(g => g.ChiTietGioHangs.Where(ct => ct.TrangThai))
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
                         .ThenInclude(spct => spct.AnhSanPhams.Where(a => a.TrangThai))
                 .FirstOrDefaultAsync(g => g.IDGioHang == idGioHang && g.TrangThai);
 
@@ -1004,6 +1007,7 @@ namespace QuanApi.Controllers
                     ten = ct.SanPhamChiTiet.SanPham.TenSanPham,
                     kichCo = ct.SanPhamChiTiet.KichCo.TenKichCo,
                     mauSac = ct.SanPhamChiTiet.MauSac.TenMauSac,
+                    hoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? ct.SanPhamChiTiet.HoaTiet.TenHoaTiet : null,
                     soLuong = ct.SoLuong,
                     giaBan = ct.GiaBan,
                     giaGoc = ct.SanPhamChiTiet.GiaBan, // Thêm giá gốc

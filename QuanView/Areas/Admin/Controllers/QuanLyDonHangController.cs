@@ -48,6 +48,23 @@ namespace QuanView.Areas.Admin.Controllers
             public string TenNhanVien { get; set; }
         }
 
+        // DTO classes for pagination response
+        public class PaginationInfo
+        {
+            public int TotalCount { get; set; }
+            public int TotalPages { get; set; }
+            public int CurrentPage { get; set; }
+            public int PageSize { get; set; }
+            public bool HasPreviousPage { get; set; }
+            public bool HasNextPage { get; set; }
+        }
+
+        public class PaginatedResponse<T>
+        {
+            public List<T> Data { get; set; }
+            public PaginationInfo Pagination { get; set; }
+        }
+
         // DTO classes for detailed invoice
         public class HoaDonDetailDto
         {
@@ -129,19 +146,37 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang)
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang, int page = 1, int pageSize = 10)
         {
             try
             {
-                var response = await _httpClient.GetAsync("HoaDons");
+                // Xây dựng URL với các tham số phân trang
+                var url = $"HoaDons?page={page}&pageSize={pageSize}";
+                
+                var response = await _httpClient.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
-                    var hoaDonsData = await response.Content.ReadFromJsonAsync<List<HoaDonDto>>();
-                    var filteredHoaDons = new List<HoaDon>();
-
-                    // Convert DTO data to HoaDon objects for View compatibility
-                    if (hoaDonsData != null)
+                    // Đọc response content một lần duy nhất
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"API Response: {responseContent}");
+                    
+                    try
                     {
+                        // Sử dụng JsonSerializer để deserialize từ string đã đọc
+                        var result = System.Text.Json.JsonSerializer.Deserialize<PaginatedResponse<HoaDonDto>>(
+                            responseContent, 
+                            new System.Text.Json.JsonSerializerOptions 
+                            { 
+                                PropertyNameCaseInsensitive = true 
+                            }
+                        );
+                        
+                        var hoaDonsData = result?.Data ?? new List<HoaDonDto>();
+                        var pagination = result?.Pagination ?? new PaginationInfo();
+                        
+                        var filteredHoaDons = new List<HoaDon>();
+
+                        // Convert DTO data to HoaDon objects for View compatibility
                         foreach (var hoaDonData in hoaDonsData)
                         {
                             var hoaDon = new HoaDon
@@ -180,60 +215,81 @@ namespace QuanView.Areas.Admin.Controllers
 
                             filteredHoaDons.Add(hoaDon);
                         }
-                    }
 
-                    // Lọc theo trạng thái
-                    if (!string.IsNullOrEmpty(trangThai))
-                    {
-                        filteredHoaDons = filteredHoaDons.Where(h => h.TrangThai == trangThai).ToList();
-                    }
-
-                    // Lọc theo khoảng thời gian
-                    if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
-                    {
-                        filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date >= tuNgayDate.Date).ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
-                    {
-                        filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date <= denNgayDate.Date).ToList();
-                    }
-
-                    // Lọc theo loại đơn hàng
-                    if (!string.IsNullOrEmpty(loaiDonHang))
-                    {
-                        if (loaiDonHang == "online")
+                        // Lọc theo trạng thái
+                        if (!string.IsNullOrEmpty(trangThai))
                         {
-                            filteredHoaDons = filteredHoaDons.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang)).ToList();
+                            filteredHoaDons = filteredHoaDons.Where(h => h.TrangThai == trangThai).ToList();
                         }
-                        else if (loaiDonHang == "taiquay")
+
+                        // Lọc theo khoảng thời gian
+                        if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
                         {
-                            filteredHoaDons = filteredHoaDons.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang)).ToList();
+                            filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date >= tuNgayDate.Date).ToList();
                         }
-                    }
 
-                    // Lọc theo khách hàng
-                    if (!string.IsNullOrEmpty(khachHang))
+                        if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
+                        {
+                            filteredHoaDons = filteredHoaDons.Where(h => h.NgayTao.Date <= denNgayDate.Date).ToList();
+                        }
+
+                        // Lọc theo loại đơn hàng
+                        if (!string.IsNullOrEmpty(loaiDonHang))
+                        {
+                            if (loaiDonHang == "online")
+                            {
+                                filteredHoaDons = filteredHoaDons.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang)).ToList();
+                            }
+                            else if (loaiDonHang == "taiquay")
+                            {
+                                filteredHoaDons = filteredHoaDons.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang)).ToList();
+                            }
+                        }
+
+                        // Lọc theo khách hàng
+                        if (!string.IsNullOrEmpty(khachHang))
+                        {
+                            filteredHoaDons = filteredHoaDons.Where(h =>
+                                (h.KhachHang != null && h.KhachHang.TenKhachHang.Contains(khachHang, StringComparison.OrdinalIgnoreCase)) ||
+                                (h.TenNguoiNhan != null && h.TenNguoiNhan.Contains(khachHang, StringComparison.OrdinalIgnoreCase)) ||
+                                (h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHang))
+                            ).ToList();
+                        }
+
+                        // Lọc theo mã đơn hàng
+                        if (!string.IsNullOrEmpty(maDonHang))
+                        {
+                            filteredHoaDons = filteredHoaDons.Where(h => h.MaHoaDon.Contains(maDonHang, StringComparison.OrdinalIgnoreCase)).ToList();
+                        }
+
+                        // Tạo ViewBag cho thông tin phân trang
+                        ViewBag.CurrentPage = pagination.CurrentPage;
+                        ViewBag.PageSize = pagination.PageSize;
+                        ViewBag.TotalPages = pagination.TotalPages;
+                        ViewBag.TotalCount = pagination.TotalCount;
+                        ViewBag.HasPreviousPage = pagination.HasPreviousPage;
+                        ViewBag.HasNextPage = pagination.HasNextPage;
+
+                        return View(filteredHoaDons);
+                    }
+                    catch (System.Text.Json.JsonException jsonEx)
                     {
-                        filteredHoaDons = filteredHoaDons.Where(h =>
-                            (h.KhachHang != null && h.KhachHang.TenKhachHang.Contains(khachHang, StringComparison.OrdinalIgnoreCase)) ||
-                            (h.TenNguoiNhan != null && h.TenNguoiNhan.Contains(khachHang, StringComparison.OrdinalIgnoreCase)) ||
-                            (h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHang))
-                        ).ToList();
+                        Console.WriteLine($"JSON Deserialization Error: {jsonEx.Message}");
+                        TempData["ErrorMessage"] = $"Lỗi khi xử lý dữ liệu từ API: {jsonEx.Message}";
+                        return View(new List<HoaDon>());
                     }
-
-                    // Lọc theo mã đơn hàng
-                    if (!string.IsNullOrEmpty(maDonHang))
-                    {
-                        filteredHoaDons = filteredHoaDons.Where(h => h.MaHoaDon.Contains(maDonHang, StringComparison.OrdinalIgnoreCase)).ToList();
-                    }
-
-                    return View(filteredHoaDons);
                 }
-                return View(new List<HoaDon>());
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"API Error: {response.StatusCode} - {errorContent}");
+                    TempData["ErrorMessage"] = $"Lỗi API: {response.StatusCode} - {errorContent}";
+                    return View(new List<HoaDon>());
+                }
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"General Error: {ex.Message}");
                 TempData["ErrorMessage"] = $"Lỗi khi tải danh sách đơn hàng: {ex.Message}";
                 return View(new List<HoaDon>());
             }

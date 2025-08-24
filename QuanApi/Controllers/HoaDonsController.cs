@@ -26,15 +26,27 @@ namespace QuanApi.Controllers
 
         // GET: api/HoaDons - Cho admin (hiển thị tất cả đơn hàng)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetHoaDons()
+        public async Task<ActionResult<IEnumerable<object>>> GetHoaDons(int page = 1, int pageSize = 10)
         {
             try
             {
-                var hoaDons = await _context.HoaDons
+                var query = _context.HoaDons
                     .Include(h => h.KhachHang)
                     .Include(h => h.NhanVien)
                     .Include(h => h.PhieuGiamGia)
                     .Include(h => h.PhuongThucThanhToan)
+                    .Include(h => h.ChiTietHoaDons) // Thêm include này để tránh lỗi
+                    .AsQueryable();
+
+                // Tính tổng số bản ghi
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                // Áp dụng phân trang
+                var hoaDons = await query
+                    .OrderByDescending(h => h.NgayTao)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .Select(h => new
                     {
                         IDHoaDon = h.IDHoaDon,
@@ -61,11 +73,29 @@ namespace QuanApi.Controllers
                     })
                     .ToListAsync();
 
-                return Ok(hoaDons);
+                // Thêm thông tin phân trang vào response headers
+                Response.Headers.Append("X-Total-Count", totalCount.ToString());
+                Response.Headers.Append("X-Total-Pages", totalPages.ToString());
+                Response.Headers.Append("X-Current-Page", page.ToString());
+                Response.Headers.Append("X-Page-Size", pageSize.ToString());
+
+                return Ok(new
+                {
+                    Data = hoaDons,
+                    Pagination = new
+                    {
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        HasPreviousPage = page > 1,
+                        HasNextPage = page < totalPages
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy danh sách hóa đơn");
+                _logger.LogError(ex, "Lỗi khi lấy danh sách hóa đơn: {Message}", ex.Message);
                 return StatusCode(500, "Lỗi server khi lấy danh sách hóa đơn");
             }
         }
@@ -87,6 +117,9 @@ namespace QuanApi.Controllers
                 .Include(h => h.ChiTietHoaDons)
                     .ThenInclude(ct => ct.SanPhamChiTiet)
                         .ThenInclude(spct => spct.MauSac)
+                .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(spct => spct.SanPham) // Thêm include này để tránh lỗi
                     .Where(h => h.IDHoaDon == id)
                     .Select(h => new
                     {
@@ -137,14 +170,14 @@ namespace QuanApi.Controllers
                                 IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                 MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
                                 GiaBan = ct.SanPhamChiTiet.GiaBan,
-                                KichCo = new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo },
-                                MauSac = new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac },
-                                SanPham = new
+                                KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
+                                MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
+                                SanPham = ct.SanPhamChiTiet.SanPham != null ? new
                                 {
                                     IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
                                     TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
                                     MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
-                                }
+                                } : null
                             }
                         }).ToList()
                     })
