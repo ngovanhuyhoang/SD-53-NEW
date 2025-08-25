@@ -147,7 +147,7 @@ namespace QuanView.Controllers
                 {
                     // Khách hàng - lưu vào session
                     var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-                    
+
                     var existingItem = cart.FirstOrDefault(x => x.IDSanPhamChiTiet == idsp);
                     if (existingItem != null)
                     {
@@ -167,7 +167,7 @@ namespace QuanView.Controllers
                             GiaBan = spct.price
                         });
                     }
-                    
+
                     HttpContext.Session.SetObjectAsJson("Cart", cart);
                     return Json(new { success = true, message = "Thêm vào giỏ hàng thành công!" });
                 }
@@ -329,7 +329,7 @@ namespace QuanView.Controllers
             {
                 var customerIdClaim = User.FindFirst("custom:id_khachhang");
                 Guid? customerId = null;
-                
+
                 if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
                 {
                     customerId = parsedCustomerId;
@@ -342,7 +342,7 @@ namespace QuanView.Controllers
 
                 // Lấy phiếu giảm giá công khai cho tất cả người dùng
                 var response = await _httpClient.GetAsync($"PhieuGiamGias/public-vouchers");
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var vouchers = await response.Content.ReadFromJsonAsync<List<object>>();
@@ -353,7 +353,7 @@ namespace QuanView.Controllers
                 {
                     _logger.LogWarning($"API returned status: {response.StatusCode}");
                 }
-                
+
                 return Json(new List<object>());
             }
             catch (Exception ex)
@@ -361,6 +361,10 @@ namespace QuanView.Controllers
                 _logger.LogError($"Error getting customer vouchers: {ex.Message}");
                 return Json(new List<object>());
             }
+        }
+        public IActionResult PaymenCallBack()
+        {
+            return View();
         }
     }
 }
