@@ -1,0 +1,154 @@
+@QuanApi_HostAddress = http://localhost:5228
+
+GET {{QuanApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### Test KichCo APIs
+
+### Get all KichCo
+GET {{baseUrl}}/api/KichCo
+
+### Get KichCo by ID
+GET {{baseUrl}}/api/KichCo/{{kichCoId}}
+
+### Create KichCo
+POST {{baseUrl}}/api/KichCo/Create
+Content-Type: application/json
+
+{
+  "maKichCo": "KC001",
+  "tenKichCo": "Kích cỡ S",
+  "trangThai": true
+}
+
+### Update KichCo
+PUT {{baseUrl}}/api/KichCo/{{kichCoId}}
+Content-Type: application/json
+
+{
+  "maKichCo": "KC001",
+  "tenKichCo": "Kích cỡ S Updated",
+  "trangThai": true
+}
+
+### Delete KichCo
+DELETE {{baseUrl}}/api/KichCo/{{kichCoId}}
+
+### Toggle Status KichCo
+PUT {{baseUrl}}/api/KichCo/ToggleStatus/{{kichCoId}}
+
+### Get Paged KichCo
+GET {{baseUrl}}/api/KichCo/paged?page=1&pageSize=10&keyword=S&trangThai=active
+
+### Test ChatLieu APIs
+
+### Get all ChatLieu
+GET {{baseUrl}}/api/ChatLieu
+
+### Get ChatLieu by ID
+GET {{baseUrl}}/api/ChatLieu/{{chatLieuId}}
+
+### Create ChatLieu
+POST {{baseUrl}}/api/ChatLieu/Create
+Content-Type: application/json
+
+{
+  "maChatLieu": "CL001",
+  "tenChatLieu": "Cotton",
+  "trangThai": true
+}
+
+### Update ChatLieu
+PUT {{baseUrl}}/api/ChatLieu/{{chatLieuId}}
+Content-Type: application/json
+
+{
+  "maChatLieu": "CL001",
+  "tenChatLieu": "Cotton Updated",
+  "trangThai": true
+}
+
+### Delete ChatLieu
+DELETE {{baseUrl}}/api/ChatLieu/{{chatLieuId}}
+
+### Toggle Status ChatLieu
+PUT {{baseUrl}}/api/ChatLieu/ToggleStatus/{{chatLieuId}}
+
+### Get Paged ChatLieu
+GET {{baseUrl}}/api/ChatLieu/paged?page=1&pageSize=10&keyword=Cotton&trangThai=active
+
+### Test MauSac APIs
+
+### Get all MauSac
+GET {{baseUrl}}/api/MauSac
+
+### Get MauSac by ID
+GET {{baseUrl}}/api/MauSac/{{mauSacId}}
+
+### Create MauSac
+POST {{baseUrl}}/api/MauSac/Create
+Content-Type: application/json
+
+{
+  "maMauSac": "MS001",
+  "tenMauSac": "Màu đỏ",
+  "trangThai": true
+}
+
+### Update MauSac
+PUT {{baseUrl}}/api/MauSac/{{mauSacId}}
+Content-Type: application/json
+
+{
+  "maMauSac": "MS001",
+  "tenMauSac": "Màu đỏ Updated",
+  "trangThai": true
+}
+
+### Delete MauSac
+DELETE {{baseUrl}}/api/MauSac/{{mauSacId}}
+
+### Toggle Status MauSac
+PUT {{baseUrl}}/api/MauSac/ToggleStatus/{{mauSacId}}
+
+### Get Paged MauSac
+GET {{baseUrl}}/api/MauSac/paged?page=1&pageSize=10&keyword=đỏ&trangThai=active
+
+### Test HoaTiet APIs
+
+### Get all HoaTiet
+GET {{baseUrl}}/api/HoaTiet
+
+### Get HoaTiet by ID
+GET {{baseUrl}}/api/HoaTiet/{{hoaTietId}}
+
+### Create HoaTiet
+POST {{baseUrl}}/api/HoaTiet/Create
+Content-Type: application/json
+
+{
+  "maHoaTiet": "HT001",
+  "tenHoaTiet": "Họa tiết hoa",
+  "trangThai": true
+}
+
+### Update HoaTiet
+PUT {{baseUrl}}/api/HoaTiet/{{hoaTietId}}
+Content-Type: application/json
+
+{
+  "maHoaTiet": "HT001",
+  "tenHoaTiet": "Họa tiết hoa Updated",
+  "trangThai": true
+}
+
+### Delete HoaTiet
+DELETE {{baseUrl}}/api/HoaTiet/{{hoaTietId}}
+
+### Toggle Status HoaTiet
+PUT {{baseUrl}}/api/HoaTiet/ToggleStatus/{{hoaTietId}}
+
+### Get Paged HoaTiet
+GET {{baseUrl}}/api/HoaTiet/paged?page=1&pageSize=10&keyword=hoa&trangThai=active

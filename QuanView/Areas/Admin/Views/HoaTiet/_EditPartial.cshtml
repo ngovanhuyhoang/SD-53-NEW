@@ -1,0 +1,24 @@
+@model QuanApi.Data.HoaTiet
+
+<form id="editForm" asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IDHoaTiet" />
+    <div class="form-group">
+        <label asp-for="MaHoaTiet" class="control-label"></label>
+        <input asp-for="MaHoaTiet" class="form-control" />
+        <span asp-validation-for="MaHoaTiet" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TenHoaTiet" class="control-label"></label>
+        <input asp-for="TenHoaTiet" class="form-control" />
+        <span asp-validation-for="TenHoaTiet" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TrangThai" class="control-label"></label>
+        <select asp-for="TrangThai" class="form-control">
+            <option value="true">Hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+        </select>
+        <span asp-validation-for="TrangThai" class="text-danger"></span>
+    </div>
+</form> 

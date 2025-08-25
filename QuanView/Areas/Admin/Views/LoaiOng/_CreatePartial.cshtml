@@ -1,0 +1,18 @@
+﻿@model QuanApi.Data.LoaiOng
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaLoaiOng" class="form-label">Mã loại ống</label>
+        <input asp-for="MaLoaiOng" class="form-control" required />
+        <span asp-validation-for="MaLoaiOng" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenLoaiOng" class="form-label">Tên loại ống</label>
+        <input asp-for="TenLoaiOng" class="form-control" required />
+        <span asp-validation-for="TenLoaiOng" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>
