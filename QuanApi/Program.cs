@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using BanQuanAu1.Web.Data;
 
@@ -25,6 +25,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
+builder.Services.AddScoped<ISanPhamValidationService, SanPhamValidationService>();
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
