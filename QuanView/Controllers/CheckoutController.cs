@@ -340,12 +340,19 @@ namespace QuanView.Controllers
             try
             {
                 var customerId = HttpContext.Session.GetString("CustomerId");
-                if (string.IsNullOrEmpty(customerId))
+                string effectiveCustomerId = customerId;
+                if (string.IsNullOrEmpty(effectiveCustomerId))
+                {
+                    var claim = User.FindFirst("custom:id_khachhang")?.Value;
+                    if (!string.IsNullOrEmpty(claim)) effectiveCustomerId = claim;
+                }
+
+                if (string.IsNullOrEmpty(effectiveCustomerId))
                 {
                     return Json(new { success = false, message = "Không tìm thấy thông tin khách hàng" });
                 }
 
-                var response = await _httpClient.GetAsync($"KhachHang/{customerId}/addresses");
+                var response = await _httpClient.GetAsync($"KhachHang/{effectiveCustomerId}/addresses");
                 if (response.IsSuccessStatusCode)
                 {
                     var addresses = await response.Content.ReadFromJsonAsync<List<AddressDto>>();
@@ -585,6 +592,30 @@ namespace QuanView.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        // Xóa địa chỉ đã lưu (gọi API backend, tránh CORS)
+        [HttpDelete]
+        public async Task<IActionResult> DeleteAddress(Guid id)
+        {
+            try
+            {
+                if (id == Guid.Empty)
+                    return BadRequest(new { success = false, message = "ID địa chỉ không hợp lệ" });
+
+                var response = await _httpClient.DeleteAsync($"BanHangTaiQuay/xoa-dia-chi/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return Json(new { success = true, message = "Xóa địa chỉ thành công" });
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                return StatusCode((int)response.StatusCode, new { success = false, message = string.IsNullOrWhiteSpace(error) ? "Xóa địa chỉ thất bại" : error });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = $"Lỗi: {ex.Message}" });
             }
         }
     }

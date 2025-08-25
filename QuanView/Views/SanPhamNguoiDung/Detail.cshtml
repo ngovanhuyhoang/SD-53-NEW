@@ -260,10 +260,26 @@ $('#btnPlus').on('click', function() {
 });
 $(document).ready(function() {
     renderOptions();
-    const firstColor = $('.product-detail-btn-option[data-mau]').first();
-    if (firstColor.length) { firstColor.click(); }
-    const firstSize = $('.product-detail-btn-option[data-size]').first();
-    if (firstSize.length) { firstSize.click(); }
+
+    // Chọn mặc định biến thể còn hàng đầu tiên để tránh hiển thị "Hết hàng" khi sản phẩm còn biến thể khác
+    const firstAvailable = bienThes.find(b => b.SoLuong > 0);
+    if (firstAvailable) {
+        selectedColor = firstAvailable.Mau;
+        selectedSize = firstAvailable.Size;
+
+        // Đánh dấu nút được chọn tương ứng
+        $('.product-detail-btn-option[data-mau]').removeClass('selected');
+        $(`.product-detail-btn-option[data-mau="${selectedColor}"]`).addClass('selected');
+
+        $('.product-detail-btn-option[data-size]').removeClass('selected');
+        $(`.product-detail-btn-option[data-size="${selectedSize}"]`).addClass('selected');
+
+        updatePriceAndQty();
+    } else {
+        // Không có biến thể nào còn hàng
+        $('.product-detail-addcart').text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
+        updateStockInfo(0);
+    }
 });
 function themGioHang() {
     if (!selectedSize || !selectedColor) {
@@ -298,10 +314,22 @@ function themGioHang() {
         idsp: bienThe.IDSanPhamChiTiet,
         soluong: soLuong
     }, function(res) {
-        alert('Đã thêm vào giỏ hàng!');
-    }).fail(function(xhr) {
-        alert('Thêm vào giỏ hàng thất bại!');
+        // Chuẩn hóa dữ liệu trả về
+        try { if (typeof res === 'string') res = JSON.parse(res); } catch (e) {}
+        if (res && res.success === true) {
+            alert('Sản phẩm đã được thêm vào giỏ hàng!');
+        } else {
+            const msg = (res && res.message ? String(res.message) : '').toLowerCase();
+            if (msg.includes('vượt quá tồn kho') || msg.includes('tối đa')) {
+                alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
+            } else {
+                alert('Thêm vào giỏ hàng thất bại!');
+            }
+        }
+    }).fail(function() {
+        // Fallback: lỗi HTTP
+        alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
     });
 }
 </script>
-} 
+}
