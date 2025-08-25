@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace QuanApi.Dtos
+﻿namespace QuanApi.Dtos
 {
     public class SanPhamChiTietDto
     {
@@ -9,13 +7,7 @@ namespace QuanApi.Dtos
         public Guid IdKichCo { get; set; }
         public Guid IdMauSac { get; set; }
         public Guid IdHoaTiet { get; set; }
-        
-        [Required(ErrorMessage = "Số lượng là bắt buộc")]
-        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0")]
         public int SoLuong { get; set; }
-        
-        [Required(ErrorMessage = "Giá bán là bắt buộc")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Giá bán phải lớn hơn 0")]
         public decimal GiaBan { get; set; }
         public decimal originalPrice { get; set; }
         public decimal price { get; set; }
