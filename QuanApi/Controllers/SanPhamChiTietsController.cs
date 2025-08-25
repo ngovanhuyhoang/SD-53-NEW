@@ -1,8 +1,9 @@
-﻿using BanQuanAu1.Web.Data; // Namespace chứa DbContext
+using BanQuanAu1.Web.Data; // Namespace chứa DbContext
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanApi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,13 +18,14 @@ namespace QuanApi.Controllers
     public class SanPhamChiTietsController : ControllerBase
     {
         private readonly BanQuanAu1DbContext _context;
-
         private readonly ILogger<SanPhamChiTietsController> _logger;
+        private readonly ISanPhamValidationService _validationService;
 
-        public SanPhamChiTietsController(BanQuanAu1DbContext context, ILogger<SanPhamChiTietsController> logger)
+        public SanPhamChiTietsController(BanQuanAu1DbContext context, ILogger<SanPhamChiTietsController> logger, ISanPhamValidationService validationService)
         {
             _context = context;
             _logger = logger;
+            _validationService = validationService;
         }
 
         // GET: api/sanphamchitiets
@@ -249,8 +251,25 @@ namespace QuanApi.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                if (dto.IdSanPham == Guid.Empty || dto.IdKichCo == Guid.Empty || dto.IdMauSac == Guid.Empty)
-                    return BadRequest("ID sản phẩm, kích cỡ hoặc màu sắc không hợp lệ.");
+                // Use validation service for comprehensive validation
+                var validationResult = await _validationService.ValidateSanPhamChiTietAsync(dto);
+                if (!validationResult.IsValid)
+                {
+                    foreach (var error in validationResult.Errors)
+                    {
+                        foreach (var message in error.Value)
+                        {
+                            ModelState.AddModelError(error.Key, message);
+                        }
+                    }
+                    return BadRequest(ModelState);
+                }
+
+                // Log warnings if any
+                if (validationResult.Warnings.Any())
+                {
+                    _logger.LogWarning("Validation warnings for new product: {Warnings}", validationResult.GetWarningMessages());
+                }
 
                 var entity = new SanPhamChiTiet
                 {
@@ -261,16 +280,22 @@ namespace QuanApi.Controllers
                     IDHoaTiet = dto.IdHoaTiet == Guid.Empty ? null : dto.IdHoaTiet,
                     SoLuong = dto.SoLuong,
                     GiaBan = dto.GiaBan,
-                    MaSPChiTiet = dto.MaSPChiTiet ?? $"CT_{DateTime.UtcNow.Ticks.ToString()[^6..]}"
+                    MaSPChiTiet = dto.MaSPChiTiet ?? $"CT_{DateTime.UtcNow.Ticks.ToString()[^6..]}",
+                    NgayTao = DateTime.Now,
+                    TrangThai = true
                 };
 
                 _context.SanPhamChiTiets.Add(entity);
                 await _context.SaveChangesAsync();
 
+                _logger.LogInformation("Created new product detail: ID={Id}, Quantity={Quantity}, Price={Price}", 
+                    entity.IDSanPhamChiTiet, entity.SoLuong, entity.GiaBan);
+
                 return CreatedAtAction(nameof(GetById), new { id = entity.IDSanPhamChiTiet }, entity);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error creating product detail");
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }
@@ -295,6 +320,60 @@ namespace QuanApi.Controllers
                     return NotFound();
                 }
 
+                // Validate the updated data
+                var validationResult = await _validationService.ValidateSanPhamChiTietAsync(dto);
+                if (!validationResult.IsValid)
+                {
+                    foreach (var error in validationResult.Errors)
+                    {
+                        foreach (var message in error.Value)
+                        {
+                            ModelState.AddModelError(error.Key, message);
+                        }
+                    }
+                    return BadRequest(ModelState);
+                }
+
+                // Additional validation for quantity and price changes
+                if (entity.SoLuong != dto.SoLuong)
+                {
+                    var quantityValidation = await _validationService.ValidateQuantityUpdateAsync(id, dto.SoLuong);
+                    if (!quantityValidation.IsValid)
+                    {
+                        foreach (var error in quantityValidation.Errors)
+                        {
+                            foreach (var message in error.Value)
+                            {
+                                ModelState.AddModelError(error.Key, message);
+                            }
+                        }
+                        return BadRequest(ModelState);
+                    }
+                }
+
+                if (entity.GiaBan != dto.GiaBan)
+                {
+                    var priceValidation = await _validationService.ValidatePriceUpdateAsync(id, dto.GiaBan);
+                    if (!priceValidation.IsValid)
+                    {
+                        foreach (var error in priceValidation.Errors)
+                        {
+                            foreach (var message in error.Value)
+                            {
+                                ModelState.AddModelError(error.Key, message);
+                            }
+                        }
+                        return BadRequest(ModelState);
+                    }
+                    
+                    // Log price warnings
+                    if (priceValidation.Warnings.Any())
+                    {
+                        _logger.LogWarning("Price validation warnings for product {Id}: {Warnings}", 
+                            id, priceValidation.GetWarningMessages());
+                    }
+                }
+
                 _logger.LogInformation("[PUT] Trước update: ID={ID}, SoLuong={SoLuong}, GiaBan={GiaBan}", entity.IDSanPhamChiTiet, entity.SoLuong, entity.GiaBan);
 
                 // Cập nhật các trường cần thiết
@@ -305,6 +384,7 @@ namespace QuanApi.Controllers
                 entity.SoLuong = dto.SoLuong;
                 entity.GiaBan = dto.GiaBan;
                 entity.MaSPChiTiet = string.IsNullOrEmpty(dto.MaSPChiTiet) ? entity.MaSPChiTiet : dto.MaSPChiTiet;
+                entity.LanCapNhatCuoi = DateTime.Now;
 
                 // Nếu có thêm trường nào cần cập nhật, hãy thêm ở đây
 
