@@ -760,6 +760,51 @@ namespace QuanApi.Controllers
                 return StatusCode(500, "Lỗi khi lấy danh sách địa chỉ khách hàng");
             }
         }
+
+        // Xóa (vô hiệu hóa) địa chỉ của khách hàng
+        [HttpDelete("xoa-dia-chi/{id}")]
+        public async Task<IActionResult> XoaDiaChi(Guid id)
+        {
+            try
+            {
+                var diaChi = await _context.DiaChis.FindAsync(id);
+                if (diaChi == null)
+                {
+                    return NotFound("Không tìm thấy địa chỉ.");
+                }
+
+                // Soft delete địa chỉ
+                bool wasDefault = diaChi.LaMacDinh;
+                diaChi.TrangThai = false;
+                diaChi.LaMacDinh = false;
+                diaChi.LanCapNhatCuoi = DateTime.Now;
+                diaChi.NguoiCapNhat = "System";
+
+                // Nếu đây là địa chỉ mặc định, gán địa chỉ khác làm mặc định (nếu có)
+                if (wasDefault)
+                {
+                    var other = await _context.DiaChis
+                        .Where(x => x.IDKhachHang == diaChi.IDKhachHang && x.TrangThai && x.IDDiaChi != diaChi.IDDiaChi)
+                        .OrderByDescending(x => x.NgayTao)
+                        .FirstOrDefaultAsync();
+
+                    if (other != null)
+                    {
+                        other.LaMacDinh = true;
+                        other.LanCapNhatCuoi = DateTime.Now;
+                        other.NguoiCapNhat = "System";
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Xóa địa chỉ thành công" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi xóa địa chỉ: {ex.Message}");
+                return StatusCode(500, "Lỗi khi xóa địa chỉ");
+            }
+        }
         
 
         // Phương thức tính giá sau khi áp dụng đợt giảm giá
