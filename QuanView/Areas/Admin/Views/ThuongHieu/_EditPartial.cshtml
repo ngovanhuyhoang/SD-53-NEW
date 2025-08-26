@@ -1,11 +1,11 @@
-﻿@model QuanApi.Data.ThuongHieu
+@model QuanApi.Data.ThuongHieu
 
 <form id="editForm" asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="IDThuongHieu" />
     <div class="form-group">
-        <label asp-for="MaThuongHieu" class="control-label"></label>
-        <input asp-for="MaThuongHieu" class="form-control" />
+        <label asp-for="MaThuongHieu" class="control-label">Mã thương hiệu <small class="text-muted">(Không thể chỉnh sửa)</small></label>
+        <input asp-for="MaThuongHieu" class="form-control" readonly style="background-color: #f8f9fa;" />
         <span asp-validation-for="MaThuongHieu" class="text-danger"></span>
     </div>
     <div class="form-group">

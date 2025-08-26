@@ -1,4 +1,4 @@
-﻿@model QuanView.Areas.Admin.Models.SanPhamDto
+@model QuanView.Areas.Admin.Models.SanPhamDto
 
 @{
     ViewData["Title"] = "Thêm sản phẩm";
@@ -39,7 +39,15 @@
             <div id="thongTinSanPhamMoi">
                 <div class="form-group">
                     <label asp-for="MaSanPham"></label>
-                    <input asp-for="MaSanPham" class="form-control" />
+                    <div class="input-group">
+                        <input asp-for="MaSanPham" class="form-control" readonly />
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" onclick="generateProductCode()">
+                                <i class="fas fa-sync-alt"></i> Tạo mã
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Mã sản phẩm sẽ được tự động tạo</small>
                     <span asp-validation-for="MaSanPham" class="text-danger"></span>
                 </div>
 
@@ -180,7 +188,27 @@
         window.addEventListener("DOMContentLoaded", function() {
             var isNew = !document.getElementById("sanPhamDaCo").value;
             document.getElementById("thongTinSanPhamMoi").style.display = isNew ? "block" : "none";
+            
+            // Auto-generate product code when page loads
+            if (isNew) {
+                generateProductCode();
+            }
         });
+        
+        // Function to generate product code
+        function generateProductCode() {
+            const now = new Date();
+            const year = now.getFullYear().toString().substr(-2);
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hour = now.getHours().toString().padStart(2, '0');
+            const minute = now.getMinutes().toString().padStart(2, '0');
+            const second = now.getSeconds().toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            
+            const productCode = `SP${year}${month}${day}${hour}${minute}${second}${random}`;
+            document.querySelector('input[name="MaSanPham"]').value = productCode;
+        }
 
         function generateVariants() {
             const kichCos = [...document.getElementById("kichCoSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
@@ -210,18 +238,122 @@
                                         ${ht.text}
                                     </td>
                                     <td>
-                                        <input name="ChiTietSanPhams[${index}].SoLuong" type="number" class="form-control" value="0" />
+                                        <input name="ChiTietSanPhams[${index}].SoLuong" type="number" class="form-control quantity-input" min="0" step="1" value="0" />
                                     </td>
                                     <td>
-                                        <input name="ChiTietSanPhams[${index}].GiaBan" type="number" class="form-control" step="0.01" value="0" />
+                                        <input name="ChiTietSanPhams[${index}].GiaBan" type="number" class="form-control price-input" min="0.01" step="0.01" value="0" />
                                     </td>
                                 </tr>`;
                         tbody.insertAdjacentHTML("beforeend", row);
+                        
+                        // Apply validation to newly created inputs
+                        setTimeout(() => {
+                            const quantityInput = document.querySelector(`input[name="ChiTietSanPhams[${index}].SoLuong"]`);
+                            const priceInput = document.querySelector(`input[name="ChiTietSanPhams[${index}].GiaBan"]`);
+                            if (quantityInput) addValidationToInput(quantityInput, 'quantity');
+                            if (priceInput) addValidationToInput(priceInput, 'price');
+                        }, 100);
+                        
                         index++;
                     });
                 });
             });
         }
+        
+        // Validation functions
+        function addValidationToInput(input, fieldType) {
+            const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
+            
+            // Prevent negative input
+            input.addEventListener('keydown', function(e) {
+                if (e.key === '-' || e.key === 'Minus') {
+                    e.preventDefault();
+                    showError(this, `${fieldName} không được là số âm!`);
+                    return false;
+                }
+            });
+            
+            // Validate on input
+            input.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                if (value < 0 || this.value.includes('-')) {
+                    this.value = '';
+                    showError(this, `${fieldName} không được là số âm!`);
+                } else if (fieldType === 'price' && value === 0) {
+                    showError(this, 'Giá bán phải lớn hơn 0!');
+                } else {
+                    clearError(this);
+                }
+            });
+        }
+        
+        function showError(input, message) {
+            clearError(input);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'text-danger validation-error';
+            errorDiv.style.fontSize = '0.875em';
+            errorDiv.textContent = message;
+            errorDiv.id = input.name + '_error';
+            input.parentNode.appendChild(errorDiv);
+            input.classList.add('is-invalid');
+        }
+        
+        function clearError(input) {
+            const error = document.getElementById(input.name + '_error');
+            if (error) error.remove();
+            input.classList.remove('is-invalid');
+        }
+        
+        // Form validation on submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            let hasError = false;
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const priceInputs = document.querySelectorAll('.price-input');
+            
+            quantityInputs.forEach(input => {
+                const value = parseInt(input.value);
+                if (value < 0) {
+                    showError(input, 'Số lượng không được là số âm!');
+                    hasError = true;
+                }
+            });
+            
+            priceInputs.forEach(input => {
+                const value = parseFloat(input.value);
+                if (value < 0) {
+                    showError(input, 'Giá bán không được là số âm!');
+                    hasError = true;
+                } else if (value === 0) {
+                    showError(input, 'Giá bán phải lớn hơn 0!');
+                    hasError = true;
+                }
+            });
+            
+            if (hasError) {
+                e.preventDefault();
+                alert('Vui lòng kiểm tra lại thông tin. Số lượng và giá bán không được là số âm!');
+                return false;
+            }
+        });
     </script>
+    
+    <style>
+        .is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        .validation-error {
+            margin-top: 5px;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+    
     @await Html.PartialAsync("_ValidationScriptsPartial")
 }

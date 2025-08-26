@@ -4,8 +4,8 @@
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="IDMauSac" />
     <div class="form-group">
-        <label asp-for="MaMauSac" class="control-label"></label>
-        <input asp-for="MaMauSac" class="form-control" />
+        <label asp-for="MaMauSac" class="control-label">Mã màu sắc <small class="text-muted">(Không thể chỉnh sửa)</small></label>
+        <input asp-for="MaMauSac" class="form-control" readonly style="background-color: #f8f9fa;" />
         <span asp-validation-for="MaMauSac" class="text-danger"></span>
     </div>
     <div class="form-group">

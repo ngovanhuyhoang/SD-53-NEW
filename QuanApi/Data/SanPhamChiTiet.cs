@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace QuanApi.Data
@@ -28,11 +28,11 @@ namespace QuanApi.Data
         public string? QRCode { get; set; }
 
         [Required]
-        [Range(0, double.MaxValue, ErrorMessage = "Giá bán phải lớn hơn hoặc bằng 0.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Giá bán phải lớn hơn 0.")]
         public decimal GiaBan { get; set; }
 
         [Required]
-        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0.")]
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng không được là số âm.")]
         public int SoLuong { get; set; }
 
         public string? MoTa { get; set; }

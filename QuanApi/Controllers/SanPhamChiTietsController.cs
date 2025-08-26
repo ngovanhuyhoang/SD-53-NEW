@@ -1,14 +1,14 @@
-﻿using BanQuanAu1.Web.Data; // Namespace chứa DbContext
+using BanQuanAu1.Web.Data; // Namespace chứa DbContext
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanApi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
-
 
 namespace QuanApi.Controllers
 {
@@ -17,13 +17,14 @@ namespace QuanApi.Controllers
     public class SanPhamChiTietsController : ControllerBase
     {
         private readonly BanQuanAu1DbContext _context;
-
         private readonly ILogger<SanPhamChiTietsController> _logger;
+        private readonly SanPhamValidationService _validationService;
 
         public SanPhamChiTietsController(BanQuanAu1DbContext context, ILogger<SanPhamChiTietsController> logger)
         {
             _context = context;
             _logger = logger;
+            _validationService = new SanPhamValidationService();
         }
 
         // GET: api/sanphamchitiets
@@ -161,6 +162,7 @@ namespace QuanApi.Controllers
                 if (result == null)
                     return NotFound("Không tìm thấy sản phẩm chi tiết.");
 
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -179,6 +181,7 @@ namespace QuanApi.Controllers
                 if (idsanpham == Guid.Empty)
                     return BadRequest("ID sản phẩm không hợp lệ.");
 
+
                 var list = await _context.SanPhamChiTiets
                     .Where(ct => ct.IDSanPham == idsanpham)
                     .Include(ct => ct.KichCo)
@@ -186,11 +189,11 @@ namespace QuanApi.Controllers
                     .Include(ct => ct.HoaTiet)
                     .Include(ct => ct.SanPham)
                     .Include(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
-
                     .ToListAsync();
 
                 if (!list.Any())
                     return NotFound("Không tìm thấy chi tiết sản phẩm cho ID sản phẩm này.");
+
 
                 var result = list.Select(ct => new SanPhamChiTietDto
                 {
@@ -252,6 +255,18 @@ namespace QuanApi.Controllers
                 if (dto.IdSanPham == Guid.Empty || dto.IdKichCo == Guid.Empty || dto.IdMauSac == Guid.Empty)
                     return BadRequest("ID sản phẩm, kích cỡ hoặc màu sắc không hợp lệ.");
 
+
+                // Validate quantity and price
+                if (dto.SoLuong < 0)
+                    return BadRequest("Số lượng không được là số âm.");
+                
+                if (dto.GiaBan < 0)
+                    return BadRequest("Giá bán không được là số âm.");
+                
+                if (dto.GiaBan == 0)
+                    return BadRequest("Giá bán phải lớn hơn 0.");
+
+
                 var entity = new SanPhamChiTiet
                 {
                     IDSanPhamChiTiet = dto.IdSanPhamChiTiet == Guid.Empty ? Guid.NewGuid() : dto.IdSanPhamChiTiet,
@@ -297,6 +312,17 @@ namespace QuanApi.Controllers
 
                 _logger.LogInformation("[PUT] Trước update: ID={ID}, SoLuong={SoLuong}, GiaBan={GiaBan}", entity.IDSanPhamChiTiet, entity.SoLuong, entity.GiaBan);
 
+                // Validate quantity and price before updating
+                if (dto.SoLuong < 0)
+                    return BadRequest("Số lượng không được là số âm.");
+                
+                if (dto.GiaBan < 0)
+                    return BadRequest("Giá bán không được là số âm.");
+                
+                if (dto.GiaBan == 0)
+                    return BadRequest("Giá bán phải lớn hơn 0.");
+
+
                 // Cập nhật các trường cần thiết
                 entity.IDSanPham = dto.IdSanPham;
                 entity.IDKichCo = dto.IdKichCo;
@@ -332,8 +358,6 @@ namespace QuanApi.Controllers
             }
         }
 
-
-
         // DELETE: api/sanphamchitiets/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
@@ -343,6 +367,7 @@ namespace QuanApi.Controllers
                 var ct = await _context.SanPhamChiTiets.FindAsync(id);
                 if (ct == null)
                     return NotFound("Không tìm thấy sản phẩm chi tiết.");
+
 
                 _context.SanPhamChiTiets.Remove(ct);
                 await _context.SaveChangesAsync();
@@ -364,13 +389,24 @@ namespace QuanApi.Controllers
                 WriteIndented = true
             }));
 
-
             if (dtos == null || !dtos.Any())
                 return BadRequest("Không có dữ liệu cập nhật.");
+
 
             foreach (var dto in dtos)
             {
                 _logger.LogInformation("✅ DTO nhận được - ID: {Id}, GiaBan: {GiaBan}, SoLuong: {SoLuong}", dto.IdSanPhamChiTiet, dto.GiaBan, dto.SoLuong);
+
+                // Validate each item in bulk update
+                if (dto.SoLuong < 0)
+                    return BadRequest($"Số lượng không được là số âm cho sản phẩm ID: {dto.IdSanPhamChiTiet}");
+                
+                if (dto.GiaBan < 0)
+                    return BadRequest($"Giá bán không được là số âm cho sản phẩm ID: {dto.IdSanPhamChiTiet}");
+                
+                if (dto.GiaBan == 0)
+                    return BadRequest($"Giá bán phải lớn hơn 0 cho sản phẩm ID: {dto.IdSanPhamChiTiet}");
+
 
                 var ct = await _context.SanPhamChiTiets.FindAsync(dto.IdSanPhamChiTiet);
                 if (ct == null)
@@ -385,6 +421,5 @@ namespace QuanApi.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
     }
 }

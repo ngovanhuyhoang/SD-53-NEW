@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanApi.Services;
 using System.IO;
 
 
@@ -18,10 +19,12 @@ namespace QuanApi.Controllers
     public class SanPhamsController : ControllerBase
     {
         private readonly BanQuanAu1DbContext _context;
+        private readonly SanPhamValidationService _validationService;
 
         public SanPhamsController(BanQuanAu1DbContext context)
         {
             _context = context;
+            _validationService = new SanPhamValidationService();
         }
 
         // GET: api/SanPhams
@@ -138,6 +141,33 @@ namespace QuanApi.Controllers
                 return BadRequest();
             }
 
+            // Validate the product and its details
+            var validationErrors = _validationService.ValidateSanPham(sanPham);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { errors = validationErrors });
+            }
+
+            // Additional validation for product details
+            if (sanPham.SanPhamChiTiets != null && sanPham.SanPhamChiTiets.Any())
+            {
+                foreach (var chiTiet in sanPham.SanPhamChiTiets)
+                {
+                    if (chiTiet.SoLuong < 0)
+                    {
+                        return BadRequest(new { error = "Số lượng không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan < 0)
+                    {
+                        return BadRequest(new { error = "Giá bán không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan == 0)
+                    {
+                        return BadRequest(new { error = "Giá bán phải lớn hơn 0." });
+                    }
+                }
+            }
+
             _context.Entry(sanPham).State = EntityState.Modified;
 
             try
@@ -164,6 +194,33 @@ namespace QuanApi.Controllers
         [HttpPost]
         public async Task<ActionResult<SanPham>> PostSanPham(SanPham sanPham)
         {
+            // Validate the product and its details
+            var validationErrors = _validationService.ValidateSanPham(sanPham);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { errors = validationErrors });
+            }
+
+            // Additional validation for product details
+            if (sanPham.SanPhamChiTiets != null && sanPham.SanPhamChiTiets.Any())
+            {
+                foreach (var chiTiet in sanPham.SanPhamChiTiets)
+                {
+                    if (chiTiet.SoLuong < 0)
+                    {
+                        return BadRequest(new { error = "Số lượng không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan < 0)
+                    {
+                        return BadRequest(new { error = "Giá bán không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan == 0)
+                    {
+                        return BadRequest(new { error = "Giá bán phải lớn hơn 0." });
+                    }
+                }
+            }
+
             if (sanPham.IDSanPham == Guid.Empty)
                 sanPham.IDSanPham = Guid.NewGuid();
 
