@@ -16,7 +16,7 @@ using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    //[Authorize(Policy = "AdminPolicy")]
+    [Authorize(Policy = "AdminPolicy")]
     public class DotGiamGiaController : Controller
     {
         private readonly HttpClient _httpClient;

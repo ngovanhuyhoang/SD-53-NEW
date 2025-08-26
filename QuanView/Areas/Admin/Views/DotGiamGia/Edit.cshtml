@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.DotGiamGia
+@model QuanApi.Data.DotGiamGia
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
@@ -96,8 +96,9 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label asp-for="MaDot" class="form-label fw-semibold">Mã khuyến mãi</label>
-                <input asp-for="MaDot" class="form-control border-primary" placeholder="KM2025" />
+                <input asp-for="MaDot" class="form-control border-primary" readonly style="background-color: #f8f9fa;" />
                 <span asp-validation-for="MaDot" class="text-danger small"></span>
+                <small class="form-text text-muted">Mã này không thể chỉnh sửa</small>
             </div>
             <div class="col-md-6">
                 <label asp-for="TenDot" class="form-label fw-semibold">Tên đợt giảm giá</label>

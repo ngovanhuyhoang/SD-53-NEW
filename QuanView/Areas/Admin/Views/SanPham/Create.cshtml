@@ -148,9 +148,8 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Họa tiết: <small class="text-muted">(Có thể bỏ qua)</small></label>
+                <label>Họa tiết:</label>
                 <select id="hoaTietSelect" multiple class="form-control">
-                    <option value="">Không có họa tiết</option>
                     @if (ViewBag.HoaTiets != null)
                     {
                         foreach (var item in ViewBag.HoaTiets as List<SelectListItem>)
