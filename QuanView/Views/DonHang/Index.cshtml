@@ -287,7 +287,7 @@
                                     <span class="badge bg-secondary">Tại quầy</span>
                                 }
                             </td>
-                            <td>@hoaDon.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
                                 <div class="d-flex gap-2">
                                     @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
