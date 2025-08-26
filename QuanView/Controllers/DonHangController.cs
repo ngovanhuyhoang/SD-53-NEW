@@ -283,7 +283,7 @@ namespace QuanView.Controllers
                                 <h6>Thông tin đơn hàng</h6>
                                 <table class='table table-sm'>
                                     <tr><td><strong>Mã đơn hàng:</strong></td><td>{hoaDon.MaHoaDon}</td></tr>
-                                    <tr><td><strong>Ngày đặt:</strong></td><td>{hoaDon.NgayTao:dd/MM/yyyy HH:mm}</td></tr>
+                                    <tr><td><strong>Ngày đặt:</strong></td><td>{hoaDon.NgayTao.AddHours(7):dd/MM/yyyy HH:mm}</td></tr>
                                     <tr><td><strong>Trạng thái:</strong></td><td>{hoaDon.TrangThai}</td></tr>
                                     <tr><td><strong>Tổng tiền:</strong></td><td>{hoaDon.TongTien:N0} ₫</td></tr>
                                     <tr><td><strong>Tiền giảm:</strong></td><td>{(hoaDon.TienGiam?.ToString("N0") ?? "0")} ₫</td></tr>

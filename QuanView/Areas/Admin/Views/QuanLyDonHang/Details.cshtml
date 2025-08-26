@@ -492,7 +492,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Ngày tạo:</span>
-                        <span class="info-value">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="info-value">@Model.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
                     </div>
                 </div>
             </div>
