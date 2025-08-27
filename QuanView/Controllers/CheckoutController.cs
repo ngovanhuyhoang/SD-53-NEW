@@ -246,8 +246,44 @@ namespace QuanView.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
+                    // Lấy thông tin hóa đơn từ response
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"API Response: {responseContent}");
+                    
+                    string maHoaDon = $"HD_{DateTime.Now:yyyyMMddHHmmss}"; // Fallback
+                    
+                    try
+                    {
+                        // Thử parse response như một object thông thường
+                        var responseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                        
+                        // Kiểm tra xem có property "maHoaDon" không
+                        if (responseData.TryGetProperty("maHoaDon", out var maHoaDonElement))
+                        {
+                            maHoaDon = maHoaDonElement.GetString();
+                        }
+                        else if (responseData.TryGetProperty("MaHoaDon", out var MaHoaDonElement))
+                        {
+                            maHoaDon = MaHoaDonElement.GetString();
+                        }
+                        else
+                        {
+                            // Thử parse như HoaDon object
+                            var hoaDonResponse = JsonSerializer.Deserialize<HoaDon>(responseContent);
+                            maHoaDon = hoaDonResponse?.MaHoaDon ?? maHoaDon;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error parsing response: {ex.Message}");
+                        // Sử dụng fallback
+                    }
+                    
                     HttpContext.Session.Remove("Cart"); 
-                    return Json(new { success = true, message = "Đặt hàng thành công!" });
+                    return Json(new { 
+                        success = true, 
+                        message = $"Đặt hàng thành công! Mã đơn hàng của bạn là: {maHoaDon}" 
+                    });
                 }
                 else
                 {
@@ -304,6 +340,25 @@ namespace QuanView.Controllers
         {
             HttpContext.Session.Remove("Cart");
             return Json(new { success = true });
+        }
+
+        // GET: Trang thành công
+        public IActionResult Success(string orderCode)
+        {
+            ViewBag.OrderCode = orderCode;
+            return View();
+        }
+
+        // GET: Test endpoint để kiểm tra
+        [HttpGet]
+        public IActionResult TestOrderCode()
+        {
+            var testOrderCode = $"HD_{DateTime.Now:yyyyMMddHHmmss}";
+            return Json(new { 
+                success = true, 
+                message = $"Đặt hàng thành công! Mã đơn hàng của bạn là: {testOrderCode}",
+                orderCode = testOrderCode
+            });
         }
 
         [HttpGet]

@@ -21,7 +21,7 @@ namespace QuanView.Controllers
         }
 
         // GET: DonHang/Index
-        public async Task<IActionResult> Index(string search = "", string phoneNumber = "", string fromDate = "", string toDate = "", int page = 1)
+        public async Task<IActionResult> Index(string search = "", string fromDate = "", string toDate = "", int page = 1)
         {
             try
             {
@@ -90,7 +90,6 @@ namespace QuanView.Controllers
                         };
                         
                         ViewBag.Search = search;
-                        ViewBag.PhoneNumber = phoneNumber;
                         ViewBag.FromDate = fromDate;
                         ViewBag.ToDate = toDate;
                         ViewBag.IsAuthenticated = true;
@@ -98,35 +97,9 @@ namespace QuanView.Controllers
                     }
                 }
                 
-                if (string.IsNullOrEmpty(phoneNumber))
+                if (string.IsNullOrEmpty(search))
                 {
                     ViewBag.Search = search;
-                    ViewBag.PhoneNumber = phoneNumber;
-                    ViewBag.FromDate = fromDate;
-                    ViewBag.ToDate = toDate;
-                    ViewBag.IsAuthenticated = isAuthenticated;
-                    
-                    var emptyViewModel = new
-                    {
-                        HoaDons = new List<HoaDon>(),
-                        Pagination = new
-                        {
-                            CurrentPage = page,
-                            TotalPages = 0,
-                            TotalCount = 0,
-                            PageSize = 10,
-                            HasPreviousPage = false,
-                            HasNextPage = false
-                        }
-                    };
-                    return View(emptyViewModel);
-                }
-                
-                if (phoneNumber.Length < 10 || phoneNumber.Length > 11)
-                {
-                    ModelState.AddModelError("PhoneNumber", "Số điện thoại phải có 10-11 số");
-                    ViewBag.Search = search;
-                    ViewBag.PhoneNumber = phoneNumber;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
                     ViewBag.IsAuthenticated = isAuthenticated;
@@ -153,11 +126,6 @@ namespace QuanView.Controllers
                 if (!string.IsNullOrEmpty(search))
                 {
                     parameters.Add($"search={Uri.EscapeDataString(search)}");
-                }
-                
-                if (!string.IsNullOrEmpty(phoneNumber))
-                {
-                    parameters.Add($"phoneNumber={Uri.EscapeDataString(phoneNumber)}");
                 }
                 
                 parameters.Add($"page={page}");
@@ -200,7 +168,6 @@ namespace QuanView.Controllers
                     };
                     
                     ViewBag.Search = search;
-                    ViewBag.PhoneNumber = phoneNumber;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
                     ViewBag.IsAuthenticated = isAuthenticated;
@@ -213,11 +180,10 @@ namespace QuanView.Controllers
                     
                     if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
                     {
-                        ModelState.AddModelError("PhoneNumber", errorMessage);
+                        ModelState.AddModelError("Search", errorMessage);
                     }
                     
                     ViewBag.Search = search;
-                    ViewBag.PhoneNumber = phoneNumber;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
                     ViewBag.IsAuthenticated = isAuthenticated;
@@ -243,7 +209,6 @@ namespace QuanView.Controllers
                 _logger.LogError($"Exception in Index: {ex.Message}");
                 
                 ViewBag.Search = search;
-                ViewBag.PhoneNumber = phoneNumber;
                 ViewBag.FromDate = fromDate;
                 ViewBag.ToDate = toDate;
                 ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;

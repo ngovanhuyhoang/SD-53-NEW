@@ -470,18 +470,13 @@ namespace QuanApi.Controllers
         // GET: api/HoaDons/guest 
         [HttpGet("guest")]
         public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDonsByGuest(
-            string? phoneNumber = null, string? search = null, int page = 1, int pageSize = 10)
+            string? search = null, int page = 1, int pageSize = 10)
         {
             try
             {
-                if (string.IsNullOrEmpty(phoneNumber))
+                if (string.IsNullOrEmpty(search))
                 {
-                    return BadRequest("Số điện thoại là bắt buộc để tìm đơn hàng");
-                }
-
-                if (phoneNumber.Length < 10 || phoneNumber.Length > 11)
-                {
-                    return BadRequest("Số điện thoại phải có 10-11 số");
+                    return BadRequest("Mã đơn hàng là bắt buộc để tìm đơn hàng");
                 }
 
                 var query = _context.HoaDons
@@ -494,12 +489,7 @@ namespace QuanApi.Controllers
                             .ThenInclude(spct => spct.SanPham)
                     .Where(h => h.TrangThaiHoaDon);
 
-                query = query.Where(h => h.SoDienThoaiNguoiNhan == phoneNumber);
-
-                if (!string.IsNullOrEmpty(search))
-                {
-                    query = query.Where(h => h.MaHoaDon.Contains(search));
-                }
+                query = query.Where(h => h.MaHoaDon.Contains(search));
 
                 query = query.OrderByDescending(h => h.NgayTao);
 
@@ -519,7 +509,7 @@ namespace QuanApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi tìm đơn hàng cho khách vãng lai với số điện thoại {PhoneNumber}", phoneNumber);
+                _logger.LogError(ex, "Lỗi khi tìm đơn hàng cho khách vãng lai với mã đơn hàng {Search}", search);
                 return StatusCode(500, "Lỗi nội bộ server");
             }
         }

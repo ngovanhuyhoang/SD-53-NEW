@@ -101,9 +101,18 @@ namespace QuanView.Areas.Admin.Controllers
 
             if (response.IsSuccessStatusCode)
             {
-                TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                
+                if (responseData.TryGetProperty("Message", out var messageElement))
+                {
+                    TempData["SuccessMessage"] = messageElement.GetString();
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
+                }
                 return RedirectToAction(nameof(Index));
-
             }
 
             var errorMessage = await response.Content.ReadAsStringAsync();

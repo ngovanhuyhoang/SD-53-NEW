@@ -787,13 +787,27 @@
             const result = await response.json();
 
             if (result.success) {
-                showNotification('Đặt hàng thành công!', 'success');
+                showNotification(result.message || 'Đặt hàng thành công!', 'success');
                 // Xóa giỏ hàng session và thông tin giảm giá
                 await fetch('/Checkout/ClearCart', { method: 'POST' });
                 sessionStorage.removeItem('appliedDiscount');
+                
+                // Trích xuất mã đơn hàng từ message
+                let orderCode = '';
+                if (result.message && result.message.includes('Mã đơn hàng')) {
+                    const match = result.message.match(/Mã đơn hàng của bạn là: ([A-Z0-9_]+)/);
+                    if (match) {
+                        orderCode = match[1];
+                    }
+                }
+                
                 setTimeout(() => {
-                window.location.href = '/Home/Index';
-                }, 2000);
+                    if (orderCode) {
+                        window.location.href = `/Checkout/Success?orderCode=${encodeURIComponent(orderCode)}`;
+                    } else {
+                        window.location.href = '/Home/Index';
+                    }
+                }, 3000); // Tăng thời gian hiển thị để người dùng có thể đọc mã đơn hàng
             } else {
                 showNotification(result.message || 'Có lỗi xảy ra khi đặt hàng', 'danger');
             }
@@ -887,20 +901,48 @@
         // Tạo thông báo toast
         const toast = document.createElement('div');
         toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        toast.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;';
+        
+        // Kiểm tra xem có chứa mã đơn hàng không
+        if (message.includes('Mã đơn hàng')) {
+            // Tạo thông báo đặc biệt cho mã đơn hàng
+            const parts = message.split('Mã đơn hàng');
+            const orderCode = parts[1]?.trim();
+            
+            toast.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <div class="flex-grow-1">
+                        <strong>${parts[0]}</strong>
+                        <div class="mt-2">
+                            <span class="badge bg-primary fs-6">${orderCode}</span>
+                        </div>
+                        <small class="text-muted d-block mt-1">Vui lòng lưu lại mã này để theo dõi đơn hàng</small>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Tăng thời gian hiển thị cho thông báo có mã đơn hàng
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 5000);
+        } else {
+            // Thông báo thông thường
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 3000);
+        }
         
         document.body.appendChild(toast);
-        
-        // Tự động ẩn sau 3 giây
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 3000);
     }
 
     // Mở modal chọn địa chỉ

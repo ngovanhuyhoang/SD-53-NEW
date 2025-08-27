@@ -69,6 +69,64 @@ namespace QuanApi.Repository
             if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.Today)
                 return false;
 
+            // Kiểm tra xem các sản phẩm đã có đợt giảm giá đang hoạt động hay chưa
+            if (chiTietIds?.Count > 0)
+            {
+                var existingActiveDiscounts = await _context.SanPhamDotGiams
+                    .Include(spdg => spdg.DotGiamGia)
+                    .Where(spdg => chiTietIds.Contains(spdg.IDSanPhamChiTiet) && 
+                                   spdg.DotGiamGia.TrangThai == true &&
+                                   spdg.DotGiamGia.NgayBatDau <= DateTime.Now &&
+                                   spdg.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                    .ToListAsync();
+
+                if (existingActiveDiscounts.Any())
+                {
+                    // Nếu có sản phẩm đã có đợt giảm giá đang hoạt động, cập nhật thay vì tạo mới
+                    foreach (var existingDiscount in existingActiveDiscounts)
+                    {
+                        // Cập nhật thông tin đợt giảm giá hiện tại
+                        existingDiscount.DotGiamGia.TenDot = dot.TenDot;
+                        existingDiscount.DotGiamGia.PhanTramGiam = dot.PhanTramGiam;
+                        existingDiscount.DotGiamGia.NgayBatDau = dot.NgayBatDau;
+                        existingDiscount.DotGiamGia.NgayKetThuc = dot.NgayKetThuc;
+                        existingDiscount.DotGiamGia.LanCapNhatCuoi = DateTime.Now;
+                        existingDiscount.DotGiamGia.NguoiCapNhat = dot.NguoiTao;
+                    }
+
+                    // Thêm các sản phẩm mới vào đợt giảm giá hiện tại (nếu có)
+                    var existingDotId = existingActiveDiscounts.First().IDDotGiamGia;
+                    var existingProductIds = existingActiveDiscounts.Select(spdg => spdg.IDSanPhamChiTiet).ToList();
+                    var newProductIds = chiTietIds.Except(existingProductIds).ToList();
+
+                    if (newProductIds.Any())
+                    {
+                        var newChiTiets = await _context.SanPhamChiTiets
+                            .Where(x => newProductIds.Contains(x.IDSanPhamChiTiet))
+                            .ToListAsync();
+
+                        foreach (var ct in newChiTiets)
+                        {
+                            _context.SanPhamDotGiams.Add(new SanPhamDotGiam
+                            {
+                                IDSanPhamDotGiam = Guid.NewGuid(),
+                                IDDotGiamGia = existingDotId,
+                                IDSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                                MaSanPhamDotGiam = "SPDG_" + Guid.NewGuid().ToString("N").Substring(0, 8),
+                                GiaGoc = ct.GiaBan,
+                                NgayTao = DateTime.Now,
+                                TrangThai = true
+                            });
+                            ct.IDDotGiamGia = existingDotId;
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+            }
+
+            // Nếu không có đợt giảm giá đang hoạt động, tạo mới
             dot.IDDotGiamGia = Guid.NewGuid();
             dot.NgayTao = DateTime.Now;
             dot.TrangThai = true;
@@ -253,6 +311,22 @@ namespace QuanApi.Repository
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<Guid>> GetProductsWithActiveDiscounts(List<Guid> productIds)
+        {
+            if (productIds == null || !productIds.Any())
+                return new List<Guid>();
+
+            return await _context.SanPhamDotGiams
+                .Include(spdg => spdg.DotGiamGia)
+                .Where(spdg => productIds.Contains(spdg.IDSanPhamChiTiet) && 
+                               spdg.DotGiamGia.TrangThai == true &&
+                               spdg.DotGiamGia.NgayBatDau <= DateTime.Now &&
+                               spdg.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                .Select(spdg => spdg.IDSanPhamChiTiet)
+                .Distinct()
+                .ToListAsync();
         }
 
     }
