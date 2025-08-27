@@ -1,0 +1,220 @@
+@{
+    ViewData["Title"] = "Đặt hàng thành công";
+    var orderCode = ViewBag.OrderCode as string;
+}
+
+<style>
+    .success-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .success-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        padding: 40px;
+        text-align: center;
+        max-width: 600px;
+        width: 100%;
+    }
+
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        background: #28a745;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 30px;
+        color: white;
+        font-size: 40px;
+    }
+
+    .order-code {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        font-family: 'Courier New', monospace;
+        font-size: 18px;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .action-buttons {
+        margin-top: 30px;
+    }
+
+    .btn-custom {
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary-custom {
+        background: #007bff;
+        color: white;
+        border: 2px solid #007bff;
+    }
+
+    .btn-primary-custom:hover {
+        background: #0056b3;
+        border-color: #0056b3;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-outline-custom {
+        background: transparent;
+        color: #6c757d;
+        border: 2px solid #6c757d;
+    }
+
+    .btn-outline-custom:hover {
+        background: #6c757d;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .info-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: left;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .info-value {
+        color: #6c757d;
+    }
+</style>
+
+<div class="success-page">
+    <div class="success-card">
+        <div class="success-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        
+        <h1 class="mb-4" style="color: #28a745; font-weight: 700;">Đặt hàng thành công!</h1>
+        
+        <p class="lead mb-4">Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.</p>
+        
+        @if (!string.IsNullOrEmpty(orderCode))
+        {
+            <div class="order-code">
+                <i class="fas fa-receipt me-2"></i>
+                Mã đơn hàng: @orderCode
+            </div>
+        }
+        
+        <div class="info-section">
+            <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Thông tin đơn hàng</h5>
+            
+            <div class="info-item">
+                <span class="info-label">Trạng thái:</span>
+                <span class="info-value"><span class="badge bg-warning">Chờ xác nhận</span></span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Thời gian đặt:</span>
+                <span class="info-value">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Phương thức thanh toán:</span>
+                <span class="info-value">Thanh toán khi nhận hàng</span>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h5 class="mb-3"><i class="fas fa-shipping-fast me-2"></i>Thông tin giao hàng</h5>
+            
+            <div class="info-item">
+                <span class="info-label">Thời gian giao hàng:</span>
+                <span class="info-value">2-5 ngày làm việc</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Phí vận chuyển:</span>
+                <span class="info-value">50,000 VNĐ</span>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="/Home/Index" class="btn-custom btn-primary-custom">
+                <i class="fas fa-home me-2"></i>Về trang chủ
+            </a>
+            
+            <a href="/GioHang/Index" class="btn-custom btn-outline-custom">
+                <i class="fas fa-shopping-cart me-2"></i>Tiếp tục mua sắm
+            </a>
+        </div>
+        
+        <div class="mt-4">
+            <small class="text-muted">
+                <i class="fas fa-phone me-1"></i>Hỗ trợ: 1900-xxxx | 
+                <i class="fas fa-envelope me-1"></i>Email: support@example.com
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tự động copy mã đơn hàng khi click
+    document.addEventListener('DOMContentLoaded', function() {
+        const orderCodeElement = document.querySelector('.order-code');
+        if (orderCodeElement) {
+            orderCodeElement.style.cursor = 'pointer';
+            orderCodeElement.title = 'Click để copy mã đơn hàng';
+            
+            orderCodeElement.addEventListener('click', function() {
+                const orderCode = '@orderCode';
+                if (orderCode) {
+                    navigator.clipboard.writeText(orderCode).then(function() {
+                        // Hiển thị thông báo copy thành công
+                        const originalText = orderCodeElement.innerHTML;
+                        orderCodeElement.innerHTML = '<i class="fas fa-check me-2"></i>Đã copy mã đơn hàng!';
+                        orderCodeElement.style.background = '#d4edda';
+                        orderCodeElement.style.borderColor = '#c3e6cb';
+                        orderCodeElement.style.color = '#155724';
+                        
+                        setTimeout(function() {
+                            orderCodeElement.innerHTML = originalText;
+                            orderCodeElement.style.background = '#f8f9fa';
+                            orderCodeElement.style.borderColor = '#dee2e6';
+                            orderCodeElement.style.color = '#495057';
+                        }, 2000);
+                    });
+                }
+            });
+        }
+    });
+</script>

@@ -19,5 +19,7 @@ namespace QuanApi.Repository.IRepository
         Task<bool> DeleteAsync(Guid id);
 
         Task<bool> UpdateTrangThaiAsync(Guid id, bool trangThai);
+        
+        Task<List<Guid>> GetProductsWithActiveDiscounts(List<Guid> productIds);
     }
 }

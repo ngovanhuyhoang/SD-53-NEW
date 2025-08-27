@@ -13,7 +13,6 @@ namespace QuanApi.Data
 
         [Required]
         [MaxLength(50)]
-        [RegularExpression("^(2[8-9]|3[0-8])$", ErrorMessage = "Kích cỡ chỉ cho phép từ 28 đến 38")] // Thêm validate
         public string TenKichCo { get; set; }
 
         public DateTime NgayTao { get; set; } = DateTime.Now;
