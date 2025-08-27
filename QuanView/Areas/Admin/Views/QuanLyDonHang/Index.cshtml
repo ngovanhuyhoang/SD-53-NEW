@@ -43,6 +43,7 @@
     .status-delivered { background: #cce5ff; color: #004085; }
     .status-success { background: #d4edda; color: #155724; }
     .status-completed { background: #d1e7dd; color: #0f5132; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
     
     .btn-action {
         padding: 6px 12px;
@@ -112,6 +113,7 @@
                                 <option value="Đang giao hàng">Đang giao hàng</option>
                                 <option value="Đã giao">Đã giao</option>
                                 <option value="Giao hàng thành công">Giao hàng thành công</option>
+                                <option value="Đã hủy">Đã hủy</option>
                             </select>
                         </div>
                     </div>
@@ -248,6 +250,7 @@
                                                 "Đang giao hàng" => "status-shipping",
                                                 "Đã giao" => "status-delivered",
                                                 "Giao hàng thành công" => "status-success",
+                                                "Đã hủy" => "status-cancelled",
                                                 _ => "status-pending"
                                             };
                                         }

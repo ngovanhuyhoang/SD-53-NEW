@@ -215,35 +215,57 @@
             const hoaTiets = [...document.getElementById("hoaTietSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
 
             const tbody = document.querySelector("#variantTable tbody");
+            
+            // Store existing variants to merge with new ones
+            const existingVariants = [];
+            const existingRows = tbody.querySelectorAll('tr');
+            existingRows.forEach(row => {
+                const kichCoInput = row.querySelector('input[name*=".IdKichCo"]');
+                const mauSacInput = row.querySelector('input[name*=".IdMauSac"]');
+                const hoaTietInput = row.querySelector('input[name*=".IdHoaTiet"]');
+                const soLuongInput = row.querySelector('input[name*=".SoLuong"]');
+                const giaBanInput = row.querySelector('input[name*=".GiaBan"]');
+                
+                if (kichCoInput && mauSacInput && hoaTietInput && soLuongInput && giaBanInput) {
+                    existingVariants.push({
+                        kichCo: kichCoInput.value,
+                        mauSac: mauSacInput.value,
+                        hoaTiet: hoaTietInput.value,
+                        soLuong: parseInt(soLuongInput.value) || 0,
+                        giaBan: parseFloat(giaBanInput.value) || 0
+                    });
+                }
+            });
+
             tbody.innerHTML = "";
+            
+            // Create a map to track variants and merge duplicates
+            const variantMap = new Map();
+            
+            // Add existing variants to map
+            existingVariants.forEach(variant => {
+                const key = `${variant.kichCo}-${variant.mauSac}-${variant.hoaTiet}`;
+                variantMap.set(key, variant);
+            });
 
             let index = 0;
             kichCos.forEach(kc => {
                 mauSacs.forEach(ms => {
                     const hoaTietData = hoaTiets.length > 0 ? hoaTiets : [{ id: "", text: "Không" }];
                     hoaTietData.forEach(ht => {
-                        const row = `<tr>
-                                    <td>
-                                        <input type="hidden" name="ChiTietSanPhams[${index}].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
-                                        <input type="hidden" name="ChiTietSanPhams[${index}].IdKichCo" value="${kc.id}" />
-                                        ${kc.text}
-                                    </td>
-                                    <td>
-                                        <input type="hidden" name="ChiTietSanPhams[${index}].IdMauSac" value="${ms.id}" />
-                                        ${ms.text}
-                                    </td>
-                                    <td>
-                                        <input type="hidden" name="ChiTietSanPhams[${index}].IdHoaTiet" value="${ht.id}" />
-                                        ${ht.text}
-                                    </td>
-                                    <td>
-                                        <input name="ChiTietSanPhams[${index}].SoLuong" type="number" class="form-control quantity-input" min="0" step="1" value="0" />
-                                    </td>
-                                    <td>
-                                        <input name="ChiTietSanPhams[${index}].GiaBan" type="number" class="form-control price-input" min="0.01" step="0.01" value="0" />
-                                    </td>
-                                </tr>`;
-                        tbody.insertAdjacentHTML("beforeend", row);
+                        const key = `${kc.id}-${ms.id}-${ht.id}`;
+                        
+                        // Check if variant already exists
+                        if (variantMap.has(key)) {
+                            // Use existing variant data
+                            const existing = variantMap.get(key);
+                            const row = createVariantRow(index, kc, ms, ht, existing.soLuong, existing.giaBan, true);
+                            tbody.insertAdjacentHTML("beforeend", row);
+                        } else {
+                            // Create new variant
+                            const row = createVariantRow(index, kc, ms, ht, 0, 0, false);
+                            tbody.insertAdjacentHTML("beforeend", row);
+                        }
                         
                         // Apply validation to newly created inputs
                         setTimeout(() => {
@@ -257,6 +279,54 @@
                     });
                 });
             });
+            
+            // Show warning if duplicates were found
+            const duplicateCount = existingVariants.length;
+            if (duplicateCount > 0) {
+                showWarning(`Đã tìm thấy ${duplicateCount} biến thể trùng lặp. Số lượng sẽ được cộng dồn khi lưu.`);
+            }
+        }
+        
+        function createVariantRow(index, kichCo, mauSac, hoaTiet, soLuong, giaBan, isDuplicate) {
+            const duplicateClass = isDuplicate ? 'table-warning' : '';
+            const duplicateIcon = isDuplicate ? '<i class="fas fa-exclamation-triangle text-warning" title="Biến thể trùng lặp"></i> ' : '';
+            
+            return `<tr class="${duplicateClass}">
+                        <td>
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdKichCo" value="${kichCo.id}" />
+                            ${duplicateIcon}${kichCo.text}
+                        </td>
+                        <td>
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdMauSac" value="${mauSac.id}" />
+                            ${mauSac.text}
+                        </td>
+                        <td>
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdHoaTiet" value="${hoaTiet.id}" />
+                            ${hoaTiet.text}
+                        </td>
+                        <td>
+                            <input name="ChiTietSanPhams[${index}].SoLuong" type="number" class="form-control quantity-input" min="0" step="1" value="${soLuong}" />
+                        </td>
+                        <td>
+                            <input name="ChiTietSanPhams[${index}].GiaBan" type="number" class="form-control price-input" min="0.01" step="0.01" value="${giaBan}" />
+                        </td>
+                    </tr>`;
+        }
+        
+        function showWarning(message) {
+            // Remove existing warnings
+            const existingWarning = document.querySelector('.duplicate-warning');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+            
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning duplicate-warning mt-2';
+            warningDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            
+            const variantTable = document.getElementById('variantTable');
+            variantTable.parentNode.insertBefore(warningDiv, variantTable);
         }
         
         // Validation functions

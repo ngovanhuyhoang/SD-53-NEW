@@ -255,7 +255,6 @@ namespace QuanApi.Controllers
                 if (dto.IdSanPham == Guid.Empty || dto.IdKichCo == Guid.Empty || dto.IdMauSac == Guid.Empty)
                     return BadRequest("ID sản phẩm, kích cỡ hoặc màu sắc không hợp lệ.");
 
-
                 // Validate quantity and price
                 if (dto.SoLuong < 0)
                     return BadRequest("Số lượng không được là số âm.");
@@ -266,6 +265,31 @@ namespace QuanApi.Controllers
                 if (dto.GiaBan == 0)
                     return BadRequest("Giá bán phải lớn hơn 0.");
 
+                // ✅ Check for existing variant with same combination
+                var existingVariant = await _context.SanPhamChiTiets
+                    .FirstOrDefaultAsync(ct => 
+                        ct.IDSanPham == dto.IdSanPham &&
+                        ct.IDKichCo == dto.IdKichCo &&
+                        ct.IDMauSac == dto.IdMauSac &&
+                        ct.IDHoaTiet == (dto.IdHoaTiet == Guid.Empty ? null : dto.IdHoaTiet));
+
+                if (existingVariant != null)
+                {
+                    // Merge quantities for existing variant
+                    existingVariant.SoLuong += dto.SoLuong;
+                    existingVariant.GiaBan = dto.GiaBan; // Update price
+                    _context.Entry(existingVariant).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Merged duplicate variant: ID={Id}, NewQuantity={Quantity}", 
+                        existingVariant.IDSanPhamChiTiet, existingVariant.SoLuong);
+
+                    return Ok(new { 
+                        message = "Biến thể đã tồn tại. Số lượng đã được cộng dồn.",
+                        id = existingVariant.IDSanPhamChiTiet,
+                        totalQuantity = existingVariant.SoLuong
+                    });
+                }
 
                 var entity = new SanPhamChiTiet
                 {

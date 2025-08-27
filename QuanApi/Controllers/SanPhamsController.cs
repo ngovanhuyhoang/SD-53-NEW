@@ -219,6 +219,10 @@ namespace QuanApi.Controllers
                         return BadRequest(new { error = "Giá bán phải lớn hơn 0." });
                     }
                 }
+
+                // ✅ Check for duplicate variants and merge quantities
+                var mergedVariants = MergeDuplicateVariants(sanPham.SanPhamChiTiets.ToList());
+                sanPham.SanPhamChiTiets = mergedVariants;
             }
 
             if (sanPham.IDSanPham == Guid.Empty)
@@ -235,13 +239,41 @@ namespace QuanApi.Controllers
             // ✅ Thêm biến thể sau
             if (chiTietList != null && chiTietList.Any())
             {
-                foreach (var ct in chiTietList)
+                // Check for existing variants in database
+                var existingVariants = await _context.SanPhamChiTiets
+                    .Where(ct => ct.IDSanPham == sanPham.IDSanPham)
+                    .ToListAsync();
+
+                var finalVariants = new List<SanPhamChiTiet>();
+
+                foreach (var newVariant in chiTietList)
                 {
-                    ct.IDSanPhamChiTiet = Guid.NewGuid();
-                    ct.IDSanPham = sanPham.IDSanPham;
+                    var existingVariant = existingVariants.FirstOrDefault(ev => 
+                        ev.IDKichCo == newVariant.IDKichCo && 
+                        ev.IDMauSac == newVariant.IDMauSac && 
+                        ev.IDHoaTiet == newVariant.IDHoaTiet);
+
+                    if (existingVariant != null)
+                    {
+                        // Merge quantities for existing variant
+                        existingVariant.SoLuong += newVariant.SoLuong;
+                        existingVariant.GiaBan = newVariant.GiaBan; // Update price
+                        _context.Entry(existingVariant).State = EntityState.Modified;
+                    }
+                    else
+                    {
+                        // Add new variant
+                        newVariant.IDSanPhamChiTiet = Guid.NewGuid();
+                        newVariant.IDSanPham = sanPham.IDSanPham;
+                        finalVariants.Add(newVariant);
+                    }
                 }
 
-                await _context.SanPhamChiTiets.AddRangeAsync(chiTietList);
+                if (finalVariants.Any())
+                {
+                    await _context.SanPhamChiTiets.AddRangeAsync(finalVariants);
+                }
+                
                 await _context.SaveChangesAsync();
             }
 
@@ -271,6 +303,35 @@ namespace QuanApi.Controllers
         private bool SanPhamExists(Guid id)
         {
             return _context.SanPhams.Any(e => e.IDSanPham == id);
+        }
+
+        // Helper method to merge duplicate variants
+        private List<SanPhamChiTiet> MergeDuplicateVariants(List<SanPhamChiTiet> variants)
+        {
+            var mergedVariants = new List<SanPhamChiTiet>();
+            var variantGroups = variants.GroupBy(v => new { v.IDKichCo, v.IDMauSac, v.IDHoaTiet });
+
+            foreach (var group in variantGroups)
+            {
+                var firstVariant = group.First();
+                var totalQuantity = group.Sum(v => v.SoLuong);
+                var maxPrice = group.Max(v => v.GiaBan); // Use highest price when merging
+
+                var mergedVariant = new SanPhamChiTiet
+                {
+                    IDSanPhamChiTiet = firstVariant.IDSanPhamChiTiet,
+                    IDSanPham = firstVariant.IDSanPham,
+                    IDKichCo = firstVariant.IDKichCo,
+                    IDMauSac = firstVariant.IDMauSac,
+                    IDHoaTiet = firstVariant.IDHoaTiet,
+                    SoLuong = totalQuantity,
+                    GiaBan = maxPrice
+                };
+
+                mergedVariants.Add(mergedVariant);
+            }
+
+            return mergedVariants;
         }
 
         // Thêm ảnh cho sản phẩm chi tiết

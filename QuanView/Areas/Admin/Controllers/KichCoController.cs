@@ -59,6 +59,13 @@ namespace QuanView.Areas.Admin.Controllers
             Console.WriteLine("📥 MVC nhận Create từ View:");
             Console.WriteLine($"MaKichCo: {model.MaKichCo}, TenKichCo: {model.TenKichCo}, TrangThai: {model.TrangThai}");
 
+            // Validate size values
+            var allowedSizes = new[] { "S", "M", "L", "XL", "XXL" };
+            if (!allowedSizes.Contains(model.TenKichCo))
+            {
+                return Json(new { success = false, message = "Tên kích cỡ chỉ được phép là: S, M, L, XL, XXL" });
+            }
+
             model.NgayTao = DateTime.Now;
             model.NguoiTao = User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
@@ -87,6 +94,13 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(KichCo model)
         {
+            // Validate size values
+            var allowedSizes = new[] { "S", "M", "L", "XL", "XXL" };
+            if (!allowedSizes.Contains(model.TenKichCo))
+            {
+                return Json(new { success = false, message = "Tên kích cỡ chỉ được phép là: S, M, L, XL, XXL" });
+            }
+
             model.LanCapNhatCuoi = DateTime.Now;
             model.NguoiCapNhat = User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 

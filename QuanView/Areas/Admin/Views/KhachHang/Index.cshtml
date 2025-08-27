@@ -57,8 +57,8 @@
                             <th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
                             <th>@Html.DisplayNameFor(model => model.NgayTao)</th>
                             <th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
-                            <th>@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</th>
-                            <th>@Html.DisplayNameFor(model => model.NguoiCapNhat)</th>
+@*                             <th>@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</th>
+                            <th>@Html.DisplayNameFor(model => model.NguoiCapNhat)</th> *@
                             <th>@Html.DisplayNameFor(model => model.TrangThai)</th>
                             <th class="text-end">Thao tác</th>
                         </tr>
@@ -73,8 +73,8 @@
                                 <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
                                 <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                                 <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
-                                <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td>
+@*                                 <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td> *@
                                 <td>
                                     @if (item.TrangThai)
                                     {

@@ -26,7 +26,15 @@ namespace QuanApi.Controllers
 
         // GET: api/HoaDons - Cho admin (hiển thị tất cả đơn hàng)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetHoaDons(int page = 1, int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<object>>> GetHoaDons(
+            int page = 1, 
+            int pageSize = 10,
+            string? trangThai = null,
+            string? tuNgay = null,
+            string? denNgay = null,
+            string? loaiDonHang = null,
+            string? khachHang = null,
+            string? maDonHang = null)
         {
             try
             {
@@ -38,7 +46,49 @@ namespace QuanApi.Controllers
                     .Include(h => h.ChiTietHoaDons) // Thêm include này để tránh lỗi
                     .AsQueryable();
 
-                // Tính tổng số bản ghi
+                // Áp dụng các bộ lọc
+                if (!string.IsNullOrEmpty(trangThai))
+                {
+                    query = query.Where(h => h.TrangThai == trangThai);
+                }
+
+                if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
+                {
+                    query = query.Where(h => h.NgayTao.Date >= tuNgayDate.Date);
+                }
+
+                if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
+                {
+                    query = query.Where(h => h.NgayTao.Date <= denNgayDate.Date);
+                }
+
+                if (!string.IsNullOrEmpty(loaiDonHang))
+                {
+                    if (loaiDonHang == "online")
+                    {
+                        query = query.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
+                    }
+                    else if (loaiDonHang == "taiquay")
+                    {
+                        query = query.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(khachHang))
+                {
+                    query = query.Where(h => 
+                        (h.KhachHang != null && h.KhachHang.TenKhachHang.Contains(khachHang)) ||
+                        (h.TenNguoiNhan != null && h.TenNguoiNhan.Contains(khachHang)) ||
+                        (h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHang))
+                    );
+                }
+
+                if (!string.IsNullOrEmpty(maDonHang))
+                {
+                    query = query.Where(h => h.MaHoaDon.Contains(maDonHang));
+                }
+
+                // Tính tổng số bản ghi sau khi lọc
                 var totalCount = await query.CountAsync();
                 var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 

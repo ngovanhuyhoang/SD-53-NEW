@@ -14,7 +14,14 @@
     </div>
     <div class="mb-3">
         <label asp-for="TenKichCo" class="form-label">Tên kích cỡ</label>
-        <input asp-for="TenKichCo" class="form-control" required />
+        <select asp-for="TenKichCo" class="form-control" required>
+            <option value="">-- Chọn kích cỡ --</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+        </select>
         <span asp-validation-for="TenKichCo" class="text-danger"></span>
     </div>
     <div class="mb-3 form-check">

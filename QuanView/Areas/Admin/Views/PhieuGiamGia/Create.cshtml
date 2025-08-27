@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.PhieuGiamGia
+@model QuanApi.Data.PhieuGiamGia
 
 @{
     ViewData["Title"] = "Tạo phiếu giảm giá";
@@ -84,7 +84,10 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label asp-for="MaCode" class="form-label">Mã Code <span class="text-danger">*</span></label>
-                        <input asp-for="MaCode" class="form-control" placeholder="Nhập mã code..." />
+                        <div class="input-group">
+                            <input asp-for="MaCode" class="form-control" readonly style="background-color: #f8f9fa;" />
+                            <button type="button" class="btn btn-outline-primary" onclick="generateMaCode()">Tạo mã</button>
+                        </div>
                         <span asp-validation-for="MaCode" class="text-danger"></span>
                         <small class="text-muted">Mã code duy nhất cho phiếu giảm giá</small>
                     </div>
@@ -165,7 +168,24 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     
     <script>
+        function generateMaCode() {
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            
+            const maCode = `PGG${year}${month}${day}${hours}${minutes}${seconds}${random}`;
+            document.getElementById('MaCode').value = maCode;
+        }
+
         $(document).ready(function() {
+            // Generate code on page load
+            generateMaCode();
+            
             // Set default dates
             var now = new Date();
             var tomorrow = new Date(now);

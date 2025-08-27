@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.PhieuGiamGia
+@model QuanApi.Data.PhieuGiamGia
 
 @{
     ViewData["Title"] = "Sửa phiếu giảm giá";
@@ -85,9 +85,9 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label asp-for="MaCode" class="form-label">Mã Code <span class="text-danger">*</span></label>
-                        <input asp-for="MaCode" class="form-control" placeholder="Nhập mã code..." />
+                        <input asp-for="MaCode" class="form-control" readonly style="background-color: #f8f9fa;" />
                         <span asp-validation-for="MaCode" class="text-danger"></span>
-                        <small class="text-muted">Mã code duy nhất cho phiếu giảm giá</small>
+                        <small class="text-muted">Mã này không thể chỉnh sửa</small>
                     </div>
                 </div>
                 <div class="col-md-6">
