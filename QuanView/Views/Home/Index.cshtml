@@ -10,6 +10,7 @@
     .text-shadow {
         text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
+
     html {
         scroll-behavior: smooth;
     }
@@ -22,8 +23,8 @@
         .section-title h2 {
             font-size: 28px;
             font-weight: 700;
-            position: relative;
             display: inline-block;
+            position: relative;
         }
 
             .section-title h2::after {
@@ -53,6 +54,7 @@
 
         .product-card img {
             width: 100%;
+            aspect-ratio: 4/3;
             object-fit: cover;
         }
 
@@ -75,6 +77,7 @@
             margin-bottom: 10px;
         }
 </style>
+
 <!-- Hero Section -->
 <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
          style="background: url('/img/hero/hero-1.jpg') center/cover no-repeat; height: 70vh;">
@@ -84,15 +87,13 @@
     </div>
 </section>
 
-
-
 <!-- Banner Section -->
 <section class="py-5">
     <div class="container">
         <div class="row g-4">
             @foreach (var b in Model)
             {
-                <div class="col-md-4 d-flex">
+                <div class="col-12 col-sm-6 col-md-4 d-flex">
                     <div class="product-card h-100 w-100">
                         <img src="@b.ImageUrl" alt="@b.Title" />
                         <div class="product-card-body text-center">
@@ -122,7 +123,7 @@
                 var anhDaiDien = !string.IsNullOrEmpty(product.UrlAnh) ? product.UrlAnh : "/img/default-product.jpg";
                 var soLuongTon = firstBienThe?.SoLuong ?? 0;
 
-                <div class="col-lg-3 col-md-4 col-sm-6 d-flex">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
                     <div class="product-card h-100 w-100">
                         <img src="@anhDaiDien" alt="@product.TenSanPham" />
                         <div class="product-card-body">
