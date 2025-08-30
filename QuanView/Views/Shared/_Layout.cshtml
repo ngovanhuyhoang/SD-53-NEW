@@ -1,166 +1,119 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    string IsActive(string ctrl, string act = "Index") =>
+        (currentController == ctrl && currentAction == act) ? "active text-danger fw-bold" : "text-dark";
+}
+<!DOCTYPE html>
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - QuanView</title>
- <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
-    rel="stylesheet">
 
-    <!-- Css Styles -->
-    <link rel="stylesheet" href="~/css/bootstrap.min.css" type="text/css">
-    <link rel="stylesheet" href="~/css/font-awesome.min.css" type="text/css">
-    <link rel="stylesheet" href="~/css/elegant-icons.css" type="text/css">
-    <link rel="stylesheet" href="~/css/magnific-popup.css" type="text/css">
-    <link rel="stylesheet" href="~/css/nice-select.css" type="text/css">
-    <link rel="stylesheet" href="~/css/owl.carousel.min.css" type="text/css">
-    <link rel="stylesheet" href="~/css/slicknav.min.css" type="text/css">
-    <link rel="stylesheet" href="~/css/style.css" type="text/css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" />
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap & FontAwesome -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/font-awesome.min.css" />
+
+    <!-- Custom -->
+    <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
 </head>
-<body>
-    <!-- Header Section Begin -->
-    <header class="header">
-        <div class="header__top">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-6 col-md-7">
-                    </div>
-                    <div class="col-lg-6 col-md-5">
-                        <div class="header__top__right">
-                            <div class="header__top__links">
-                                @if (User.Identity.IsAuthenticated)
-                                {
-                                    <span style="color: lightblue; font-weight: lighter;">Xin chào, @User.Identity.Name!</span>
-                                    <a asp-controller="Login" asp-action="Logout" style="color: lightblue;">Đăng xuất</a>
-                                }
-                                else
-                                {
-                                    <a asp-controller="Login" asp-action="Index">Đăng nhập</a>
-                                    <a asp-controller="Login" asp-action="Register">Đăng ký</a>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<body class="d-flex flex-column min-vh-100" style="font-family:'Nunito Sans', sans-serif">
+
+    <!-- Header -->
+    <header class="border-bottom shadow-sm bg-white">
+        <div class="container d-flex justify-content-between align-items-center py-3">
+            <!-- Logo -->
+            <a asp-controller="Home" asp-action="Index" class="fw-bold fs-4 text-dark text-decoration-none">
+                DAZIO<span class="text-danger">.</span>
+            </a>
+
+            <!-- Nav -->
+            <nav>
+                <ul class="nav">
+                    <li class="nav-item">
+                        <a asp-controller="Home" asp-action="Index" class="nav-link @(IsActive("Home"))">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="SanPhamNguoiDung" asp-action="Index" class="nav-link @(IsActive("SanPhamNguoiDung"))">Sản phẩm</a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="GioHang" asp-action="Index" class="nav-link @(IsActive("GioHang"))">Giỏ hàng</a>
+                    </li>
+                    <li class="nav-item">
+                        <a asp-controller="DonHang" asp-action="Index" class="nav-link @(IsActive("DonHang"))">Đơn mua của tôi</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- User & Cart -->
+            <div class="d-flex align-items-center gap-3">
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <span class="text-muted">Xin chào, <b>@User.Identity.Name</b></span>
+                    <a asp-controller="Login" asp-action="Logout" class="btn btn-sm btn-outline-secondary">Đăng xuất</a>
+                }
+                else
+                {
+                    <a asp-controller="Login" asp-action="Index" class="btn btn-sm btn-outline-dark">Đăng nhập</a>
+                    <a asp-controller="Login" asp-action="Register" class="btn btn-sm btn-dark text-white">Đăng ký</a>
+                }
+
+                <a asp-controller="GioHang" asp-action="Index" class="position-relative text-dark ms-2">
+                    <i class="fa fa-shopping-cart fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"></span>
+                </a>
             </div>
-        </div>
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__logo">
-                        <a href="./index.html"><img src="img/logo2.png" alt=""></a>
-                    </div>
-                </div>
-                <div class="col-lg-6 col-md-6">
-                    <nav class="header__menu mobile-menu">
-                        <ul>
-                            <li><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-                            <li><a asp-controller="SanPhamNguoiDung" asp-action="Index">Sản phẩm</a></li>
-                            <li>
-                                <a href="#">Trang</a>
-                                <ul class="dropdown">
-                                    <li><a asp-controller="GioHang" asp-action="Index">Giỏ Hàng</a></li>
-                                    <li><a asp-controller="DonHang" asp-action="Index">Đơn Mua Của Tôi</a></li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__nav__option">
-                        <a href="#" class="search-switch"><img src="img/icon/search.png" alt=""></a>
-                        <a href="#"><img src="img/icon/heart.png" alt=""></a>
-                        <a href="#"><img src="img/icon/cart.png" alt=""> <span>0</span></a>
-                        <div class="price">$0.00</div>
-                    </div>
-                </div>
-            </div>
-            <div class="canvas__open"><i class="fa fa-bars"></i></div>
         </div>
     </header>
-    <!-- Header Section End -->
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <!-- Footer Section Begin -->
-    <footer class="footer">
+    <!-- Main -->
+    <main class="flex-fill">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-auto pt-5 pb-3">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer__about">
-                        <div class="footer__logo">
-                            <a href="#"><img src="img/logofooter.png" alt=""></a>
-                        </div>
-                        <p>Khách hàng là trọng tâm trong mô hình kinh doanh độc đáo của chúng tôi, bao gồm cả thiết kế.</p>
-                        <a href="#"><img src="img/payment.png" alt=""></a>
-                    </div>
+            <div class="row g-4">
+                <!-- About -->
+                <div class="col-md-4">
+                    <h5 class="fw-bold">DAZIO</h5>
+                    <p class="small text-secondary">
+                        Thời trang quần âu hiện đại – lịch lãm – đẳng cấp. Khách hàng là trọng tâm trong hành trình của chúng tôi.
+                    </p>
                 </div>
-                <div class="col-lg-2 offset-lg-1 col-md-3 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>Mua sắm</h6>
-                        <ul>
-                            <li><a href="#">Giảm giá</a></li>
-                        </ul>
-                    </div>
+                <!-- Links -->
+                <div class="col-md-4">
+                    <h6 class="fw-bold">Liên kết</h6>
+                    <ul class="list-unstyled small">
+                        <li><a asp-controller="SanPhamNguoiDung" asp-action="Index" class="text-decoration-none text-light">Sản phẩm</a></li>
+                        <li><a asp-controller="GioHang" asp-action="Index" class="text-decoration-none text-light">Giỏ hàng</a></li>
+                        <li><a asp-controller="DonHang" asp-action="Index" class="text-decoration-none text-light">Đơn mua của tôi</a></li>
+                    </ul>
                 </div>
-                <div class="col-lg-2 col-md-3 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>Mua sắm</h6>
-                        <ul>
-                            <p>Hãy liên hệ với chúng tôi: 0379954110</p>
-                            <li><a href="#">Phương thức thanh toán</a></li>
-                            <li><a href="#">Vận chuyển</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-3 offset-lg-1 col-md-6 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>NewLetter</h6>
-                        <div class="footer__newslatter">
-                            <p>Hãy là người đầu tiên biết về hàng mới về, danh mục sản phẩm, chương trình khuyến mãi và giảm giá!</p>
-                            <form action="#">
-                                <input type="text" placeholder="Email của bạn">
-                                <button type="submit"><span class="icon_mail_alt"></span></button>
-                            </form>
-                        </div>
-                    </div>
+                <!-- Newsletter -->
+                <div class="col-md-4">
+                    <h6 class="fw-bold">Nhận tin mới</h6>
+                    <form class="d-flex mt-2">
+                        <input type="email" class="form-control form-control-sm me-2" placeholder="Email của bạn">
+                        <button class="btn btn-sm btn-danger" type="submit">Gửi</button>
+                    </form>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <div class="footer__copyright__text">
-                        <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-                        <p>
-                            Copyright ©
-                            <script>
-                                document.write(new Date().getFullYear());
-                            </script>2020
-                            All rights reserved | This template is made with <i class="fa fa-heart-o"
-                                                                                aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
-                        </p>
-                        <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-                    </div>
-                </div>
+            <hr class="border-secondary my-4" />
+            <div class="text-center small text-secondary">
+                &copy; @DateTime.Now.Year DAZIO. All rights reserved.
             </div>
         </div>
     </footer>
-    <!-- Footer Section End -->
-    <!-- Js Plugins -->
-    <script src="~/js/jquery-3.3.1.min.js"></script>
-    <script src="~/js/bootstrap.min.js"></script>
-    <script src="~/js/jquery.nice-select.min.js"></script>
-    <script src="~/js/jquery.nicescroll.min.js"></script>
-    <script src="~/js/jquery.magnific-popup.min.js"></script>
-    <script src="~/js/jquery.countdown.min.js"></script>
-    <script src="~/js/jquery.slicknav.js"></script>
-    <script src="~/js/mixitup.min.js"></script>
-    <script src="~/js/owl.carousel.min.js"></script>
-    <script src="~/js/main.js"></script>
+
+    <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

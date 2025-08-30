@@ -2,207 +2,117 @@
 
 @{
     ViewData["Title"] = "Home Page";
-    var featuredProducts = ViewBag.FeaturedProducts as List<QuanApi.Dtos.SanPhamKhachHangViewModel> ?? new List<QuanApi.Dtos.SanPhamKhachHangViewModel>();
+    var featuredProducts = ViewBag.FeaturedProducts as List<QuanApi.Dtos.SanPhamKhachHangViewModel>
+                           ?? new List<QuanApi.Dtos.SanPhamKhachHangViewModel>();
 }
 
 <style>
-    .product__item {
-        border: 1px solid #e1e1e1;
-        border-radius: 10px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        background: white;
-        margin-bottom: 20px;
+    .text-shadow {
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
-    
-    .product__item:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
+    html {
+        scroll-behavior: smooth;
     }
-    
-    .product__item__pic {
-        height: 250px;
-        background-size: cover;
-        background-position: center;
-        position: relative;
-    }
-    
-    .product__item__text {
-        padding: 15px;
-    }
-    
-    .product__item__text h6 {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #333;
-    }
-    
-    .product__item__text p {
-        font-size: 14px;
-        margin-bottom: 10px;
-    }
-    
-    .price-section h5 {
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    
-    .stock-info {
-        margin: 10px 0;
-        font-size: 14px;
-    }
-    
-    .stock-info i {
-        margin-right: 5px;
-    }
-    
-    .btn-outline-danger {
-        border-color: #dc3545;
-        color: #dc3545;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-outline-danger:hover {
-        background-color: #dc3545;
-        color: white;
-    }
-    
+
     .section-title {
         text-align: center;
         margin-bottom: 40px;
     }
-    
-    .section-title span {
-        color: #dc3545;
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    .section-title h2 {
-        color: #333;
-        font-size: 32px;
-        font-weight: 600;
-        margin-top: 5px;
-    }
-</style>
 
-<!-- Hero Section Begin -->
-<section class="hero">
-    <div class="hero__slider owl-carousel">
-        <div class="hero__items set-bg" data-setbg="img/hero/hero-1.jpg">
-            <div class="container">
-                <div class="row">
-                    <div class="col-xl-5 col-lg-7 col-md-8">
-                        <div class="hero__text">
-                            <h2>Bộ sưu tập Thu Đông 2025</h2>
-                            <a href="#" class="primary-btn">Mua ngay <span class="arrow_right"></span></a>
-                            <div class="hero__social">
-                                <a href="#"><i class="fa fa-facebook"></i></a>
-                                <a href="#"><i class="fa fa-twitter"></i></a>
-                                <a href="#"><i class="fa fa-pinterest"></i></a>
-                                <a href="#"><i class="fa fa-instagram"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="hero__items set-bg" data-setbg="img/hero/hero-2.jpg">
-            <div class="container">
-                <div class="row">
-                    <div class="col-xl-5 col-lg-7 col-md-8">
-                        <div class="hero__text">
-                            <h6>Summer Collection</h6>
-                            <h2>Fall - Winter Collections 2030</h2>
-                            <a href="#" class="primary-btn">Shop now <span class="arrow_right"></span></a>
-                            <div class="hero__social">
-                                <a href="#"><i class="fa fa-facebook"></i></a>
-                                <a href="#"><i class="fa fa-twitter"></i></a>
-                                <a href="#"><i class="fa fa-pinterest"></i></a>
-                                <a href="#"><i class="fa fa-instagram"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        .section-title h2 {
+            font-size: 28px;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+        }
+
+            .section-title h2::after {
+                content: "";
+                display: block;
+                height: 3px;
+                width: 60px;
+                background: #dc3545;
+                margin: 8px auto 0;
+                border-radius: 3px;
+            }
+
+    .product-card {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #eee;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        transition: all .3s ease;
+    }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+
+        .product-card img {
+            width: 100%;
+            object-fit: cover;
+        }
+
+    .product-card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+    }
+
+        .product-card-body h6 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .product-card-body p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+</style>
+<!-- Hero Section -->
+<section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
+         style="background: url('/img/hero/hero-1.jpg') center/cover no-repeat; height: 70vh;">
+    <div>
+        <h1 class="display-4 fw-bold text-shadow">Bộ sưu tập Thu Đông 2025</h1>
+        <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Mua ngay</a>
     </div>
 </section>
-<!-- Hero Section End -->
-<!-- Banner Section Begin -->
-<section class="banner spad">
-    <div class="container">
-        <div class="row">
-            @for (int i = 0; i < Model.Count(); i++)
-            {
-                var b = Model.ElementAt(i);
 
-                if (i == 0)
-                {
-                    <!-- Banner lớn bên phải -->
-                    <div class="col-lg-7 offset-lg-4">
-                        <div class="banner__item">
-                            <div class="banner__item__pic">
-                                <img src="@b.ImageUrl" alt="">
-                            </div>
-                            <div class="banner__item__text">
-                                <h2>@b.Title</h2>
-                                <a href="@b.Link">Shop now</a>
-                            </div>
+
+
+<!-- Banner Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            @foreach (var b in Model)
+            {
+                <div class="col-md-4 d-flex">
+                    <div class="product-card h-100 w-100">
+                        <img src="@b.ImageUrl" alt="@b.Title" />
+                        <div class="product-card-body text-center">
+                            <h5>@b.Title</h5>
+                            <a href="@b.Link" class="btn btn-outline-danger btn-sm mt-auto">Xem ngay</a>
                         </div>
                     </div>
-                }
-                else if (i == 1)
-                {
-                    <!-- Banner giữa -->
-                    <div class="col-lg-5">
-                        <div class="banner__item banner__item--middle">
-                            <div class="banner__item__pic">
-                                <img src="@b.ImageUrl" alt="">
-                            </div>
-                            <div class="banner__item__text">
-                                <h2>@b.Title</h2>
-                                <a href="@b.Link">Mua ngay</a>
-                            </div>
-                        </div>
-                    </div>
-                }
-                else if (i == 2)
-                {
-                    <!-- Banner cuối -->
-                    <div class="col-lg-7">
-                        <div class="banner__item banner__item--last">
-                            <div class="banner__item__pic">
-                                <img src="@b.ImageUrl" alt="">
-                            </div>
-                            <div class="banner__item__text">
-                                <h2>@b.Title</h2>
-                                <a href="@b.Link">Mua ngay</a>
-                            </div>
-                        </div>
-                    </div>
-                }
+                </div>
             }
         </div>
     </div>
 </section>
 
-<!-- Banner Section End -->
-<!-- Product Section Begin -->
-<section class="product spad">
+<!-- Product Section -->
+<section id="featured-products" class="py-5 bg-light">
     <div class="container">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="section-title">
-                    <span>Sản phẩm nổi bật</span>
-                    <h2>Sản phẩm của chúng tôi</h2>
-                </div>
-            </div>
+        <div class="section-title">
+            <h2>Sản phẩm nổi bật</h2>
         </div>
-        <div class="row">
+        <div class="row g-4">
             @foreach (var product in featuredProducts)
             {
                 var firstBienThe = product.BienThes?.FirstOrDefault();
@@ -211,39 +121,27 @@
                 var coGiamGia = giaSauGiam < giaGoc;
                 var anhDaiDien = !string.IsNullOrEmpty(product.UrlAnh) ? product.UrlAnh : "/img/default-product.jpg";
                 var soLuongTon = firstBienThe?.SoLuong ?? 0;
-                
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="product__item">
-                        <div class="product__item__pic set-bg" data-setbg="@anhDaiDien">
-                            @if (coGiamGia)
-                            {
-                                <span class="label">Sale</span>
-                            }
-                            <ul class="product__hover">
-                                <li><a href="#"><img src="img/icon/heart.png" alt=""></a></li>
-                                <li><a href="#"><img src="img/icon/compare.png" alt=""> <span>Compare</span></a></li>
-                                <li><a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })"><img src="img/icon/search.png" alt=""></a></li>
-                            </ul>
-                        </div>
-                        <div class="product__item__text">
+
+                <div class="col-lg-3 col-md-4 col-sm-6 d-flex">
+                    <div class="product-card h-100 w-100">
+                        <img src="@anhDaiDien" alt="@product.TenSanPham" />
+                        <div class="product-card-body">
                             <h6>@product.TenSanPham</h6>
-                            <p class="text-muted">@product.DanhMuc</p>
-                            <div class="price-section">
+                            <p>@product.DanhMuc</p>
+                            <div>
                                 @if (coGiamGia)
                                 {
-                                    <h5 class="text-danger">@giaSauGiam.ToString("N0") đ</h5>
-                                    <span class="text-decoration-line-through text-muted">@giaGoc.ToString("N0") đ</span>
+                                    <span class="text-danger fw-bold">@giaSauGiam.ToString("N0") đ</span>
+                                    <small class="text-muted text-decoration-line-through ms-2">@giaGoc.ToString("N0") đ</small>
                                 }
                                 else
                                 {
-                                    <h5 class="text-danger">@giaGoc.ToString("N0") đ</h5>
+                                    <span class="text-danger fw-bold">@giaGoc.ToString("N0") đ</span>
                                 }
                             </div>
-                            <div class="stock-info">
-                                <i class="fa fa-box text-success"></i>
-                                <span class="text-success">Còn @soLuongTon sản phẩm</span>
-                            </div>
-                            <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })" class="btn btn-outline-danger btn-sm w-100 mt-2">
+                            <small class="d-block text-success mt-1">Còn @soLuongTon sp</small>
+                            <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })"
+                               class="btn btn-danger btn-sm w-100 mt-auto">
                                 Xem chi tiết
                             </a>
                         </div>
@@ -253,121 +151,3 @@
         </div>
     </div>
 </section>
-<!-- Product Section End -->
-<!-- Categories Section Begin -->
-<section class="categories spad">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-3">
-                <div class="categories__text">
-                    <h2>Clothings Hot <br /> <span>Shoe Collection</span> <br /> Accessories</h2>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="categories__hot__deal">
-                    <img src="img/product-sale.png" alt="">
-                    <div class="hot__deal__sticker">
-                        <span>Sale Of</span>
-                        <h5>$29.99</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 offset-lg-1">
-                <div class="categories__deal__countdown">
-                    <span>Deal Of The Week</span>
-                    <h2>Multi-pocket Chest Bag Black</h2>
-                    <div class="categories__deal__countdown__timer" id="countdown">
-                        <div class="cd-item">
-                            <span>3</span>
-                            <p>Days</p>
-                        </div>
-                        <div class="cd-item">
-                            <span>1</span>
-                            <p>Hours</p>
-                        </div>
-                        <div class="cd-item">
-                            <span>50</span>
-                            <p>Minutes</p>
-                        </div>
-                        <div class="cd-item">
-                            <span>18</span>
-                            <p>Seconds</p>
-                        </div>
-                    </div>
-                    <a href="#" class="primary-btn">Shop now</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-<!-- Categories Section End -->
-<!-- Instagram Section Begin -->
-<section class="instagram spad">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="instagram__pic">
-                    <div class="instagram__pic__item set-bg" data-setbg="img/instagram/instagram-1.jpg"></div>
-                    <div class="instagram__pic__item set-bg" data-setbg="img/instagram/instagram-2.jpg"></div>
-                    <div class="instagram__pic__item set-bg" data-setbg="img/instagram/instagram-3.jpg"></div>
-                    <div class="instagram__pic__item set-bg" data-setbg="img/instagram/instagram-4.jpg"></div>
-                    <div class="instagram__pic__item set-bg" data-setbg="img/instagram/instagram-5.jpg"></div>
-                    <div class="instagram__pic__item set-bg" data-setbg="img/instagram/instagram-6.jpg"></div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="instagram__text">
-                    <h2>Instagram</h2>
-                    <p>
-                        liên hệ hỗ trợ và cập nhật những xu hướng mới nhất từ chúng tôi trên Instagram. Chúng tôi thường xuyên đăng tải các bộ sưu tập mới, chương trình khuyến mãi và nhiều hơn nữa.
-                    </p>
-                    <h3>#Dazio_Fashion</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-<!-- Instagram Section End -->
-<!-- Latest Blog Section Begin -->
-<section class="latest spad">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="section-title">
-                    <span>Bản tin mới</span>
-                    <h2>Xu hướng thời trang mới</h2>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-4 col-md-6 col-sm-6">
-                <div class="blog__item">
-                    <div class="blog__item__pic set-bg" data-setbg="img/blog/blog-1.jpg"></div>
-                    <div class="blog__item__text">
-                        <span><img src="img/icon/calendar.png" alt=""> 16 tháng 8 năm 2025</span>
-                        <h5>What Curling Irons Are The Best Ones</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6 col-sm-6">
-                <div class="blog__item">
-                    <div class="blog__item__pic set-bg" data-setbg="img/blog/blog-2.jpg"></div>
-                    <div class="blog__item__text">
-                        <span><img src="img/icon/calendar.png" alt=""> 21 tháng 8 năm 2025</span>
-                        <h5>Eternity Bands Do Last Forever</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6 col-sm-6">
-                <div class="blog__item">
-                    <div class="blog__item__pic set-bg" data-setbg="img/blog/blog-3.jpg"></div>
-                    <div class="blog__item__text">
-                        <span><img src="img/icon/calendar.png" alt=""> 28 tháng 8 năm 2025</span>
-                        <h5>The Health Benefits Of Sunglasses</h5>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-<!-- Latest Blog Section End -->
