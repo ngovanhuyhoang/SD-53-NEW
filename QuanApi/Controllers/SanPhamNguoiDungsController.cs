@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Repository.IRepository;
 using QuanApi.Dtos;
 
@@ -19,7 +19,8 @@ namespace QuanApi.Controllers
         [HttpGet]
         public IActionResult GetSanPhamChiTiets(
             int pageNumber = 1, int pageSize = 10,
-            string search = null, int? priceFrom = null, int? priceTo = null)
+            string search = null, int? priceFrom = null, int? priceTo = null,
+            string category = null, string size = null, string color = null)
         {
             try
             {
@@ -33,6 +34,15 @@ namespace QuanApi.Controllers
 
                 if (priceTo.HasValue)
                     query = query.Where(x => x.BienThes.Any(b => b.GiaSauGiam <= priceTo.Value)).ToList();
+
+                if (!string.IsNullOrEmpty(category))
+                    query = query.Where(x => x.DanhMuc.Contains(category, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                if (!string.IsNullOrEmpty(size))
+                    query = query.Where(x => x.BienThes.Any(b => b.Size.Contains(size, StringComparison.OrdinalIgnoreCase))).ToList();
+
+                if (!string.IsNullOrEmpty(color))
+                    query = query.Where(x => x.BienThes.Any(b => b.Mau.Contains(color, StringComparison.OrdinalIgnoreCase))).ToList();
 
                 // Đảm bảo mỗi sản phẩm có ảnh
                 foreach (var sp in query)
@@ -59,6 +69,21 @@ namespace QuanApi.Controllers
                 return NotFound(new { message = "Không tìm thấy sản phẩm." });
 
             return Ok(result);
+        }
+
+        // GET: api/SanPhamNguoiDungs/filter-options
+        [HttpGet("filter-options")]
+        public IActionResult GetFilterOptions()
+        {
+            try
+            {
+                var filterOptions = _gioHangRepo.GetFilterOptions();
+                return Ok(filterOptions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+            }
         }
 
     }

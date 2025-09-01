@@ -448,7 +448,7 @@
                         </div>
                         <div class="order-item">
                             <strong>Tổng cộng:</strong>
-                            <strong style="color:#d32f2f;" id="tongCong">@ViewBag.TongTien.ToString("N0") VND</strong>
+                            <strong style="color:#d32f2f;" id="tongCong">@(((decimal)ViewBag.TongTien + 50000).ToString("N0")) VND</strong>
                         </div>
                     </div>
 
@@ -547,7 +547,8 @@
     
     // KHÔNG gọi hienThiDonHang() vì HTML đã được render từ server
     // Chỉ cập nhật thông tin thanh toán nếu cần
-    updatePaymentInfo(tongTien);
+    // Gọi updatePaymentInfo để tính toán đúng tổng cộng bao gồm phí vận chuyển
+    updatePaymentInfo();
     
     // Kiểm tra trạng thái đăng nhập và hiển thị section phiếu giảm giá phù hợp
     checkLoginStatusAndShowCouponSection();
@@ -1123,7 +1124,7 @@
         if (discountInfo) {
             try {
                 const discount = JSON.parse(discountInfo);
-                $('#maGiamGia').val(discount.maCode);
+                $('#maGiamGia').val(`${discount.maCode} - Giảm ${discount.phanTramGiam}% (tối đa ${discount.giaTriToiDa.toLocaleString()} VND)`);
                 discountValue = parseFloat(discount.tienGiam) || 0;
                 
                 // Debug log
@@ -1307,7 +1308,7 @@
         }
         
         // Cập nhật giao diện
-        $('#maGiamGia').val(code);
+        $('#maGiamGia').val(`${code} - Giảm ${giaTriGiam}% (tối đa ${giaTriGiamToiDa.toLocaleString()} VND)`);
         discountValue = parseFloat(discountAmount) || 0;
         
         // Debug log
@@ -1334,8 +1335,9 @@
         };
         sessionStorage.setItem('appliedDiscount', JSON.stringify(discountInfo));
         
-        // Cập nhật UI trực tiếp
-        const tongCong = Math.max(0, total - discountAmount);
+        // Cập nhật UI trực tiếp (bao gồm phí vận chuyển)
+        const phiVanChuyen = 50000;
+        const tongCong = Math.max(0, total - discountAmount + phiVanChuyen);
         document.getElementById('giamGia').textContent = discountAmount.toLocaleString() + ' VND';
         document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
         
@@ -1369,8 +1371,10 @@
             }
         }
         
+        const phiVanChuyen = 50000;
+        const tongCongCleared = tamTinh + phiVanChuyen;
         document.getElementById('giamGia').textContent = '0 VND';
-        document.getElementById('tongCong').textContent = tamTinh.toLocaleString() + ' VND';
+        document.getElementById('tongCong').textContent = tongCongCleared.toLocaleString() + ' VND';
         
         console.log('UI cleared directly:', {
             tamTinh: tamTinh,
@@ -1406,12 +1410,14 @@
             const tamTinhElement = document.getElementById('tamTinh');
             if (tamTinhElement) {
                 const tamTinhText = tamTinhElement.textContent;
-                const match = tamTinhText.match(/(\d+(?:,\d+)*)/);
+                const match = tamTinhText.match(/(\d+(?:[\.,]\d+)*)/);
                 if (match) {
-                    tamTinh = parseFloat(match[1].replace(/,/g, '')) || 0;
+                    tamTinh = parseFloat(match[1].replace(/[\.,]/g, '')) || 0;
                 }
             }
         }
+
+        console.log('Final tamTinh value:', tamTinh);
 
         // Đảm bảo tamTinh là số
         tamTinh = parseFloat(tamTinh) || 0;
@@ -1490,7 +1496,7 @@
         // Cập nhật giao diện
         document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
         document.getElementById('giamGia').textContent = discountValue.toLocaleString() + ' VND';
-        document.getElementById('phiVanChuyen').textContent = phiVanChuyen.toLocaleString() + ' VNĐ';
+        document.getElementById('phiVanChuyen').textContent = phiVanChuyen.toLocaleString() + ' VND';
         document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
     }
 

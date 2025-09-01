@@ -1,4 +1,4 @@
-﻿@model List<QuanApi.Dtos.SanPhamKhachHangViewModel>
+@model List<QuanApi.Dtos.SanPhamKhachHangViewModel>
 @{
     ViewData["Title"] = "Sản phẩm";
     var page = ViewBag.Page ?? 1;
@@ -6,6 +6,9 @@
     var total = ViewBag.Total ?? 0;
     var priceFrom = Context.Request.Query["priceFrom"].ToString();
     var priceTo = Context.Request.Query["priceTo"].ToString();
+    var category = Context.Request.Query["category"].ToString();
+    var size = Context.Request.Query["size"].ToString();
+    var color = Context.Request.Query["color"].ToString();
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
@@ -102,6 +105,33 @@
                         <label class="form-label">Đến</label>
                         <input type="number" class="form-control" name="priceTo" min="0" placeholder="Đến..." value="@priceTo">
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Danh mục</label>
+                        <input type="text" class="form-control" name="category" placeholder="Nhập tên danh mục..." value="@category">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Kích cỡ</label>
+                        <select class="form-select" name="size">
+                            <option value="">Tất cả size</option>
+                            @foreach (var s in ViewBag.Sizes as List<string> ?? new List<string>())
+                            {
+                                <option value="@s" @(size == s ? "selected" : "")>@s</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Màu sắc</label>
+                        <select class="form-select" name="color">
+                            <option value="">Tất cả màu</option>
+                            @foreach (var c in ViewBag.Colors as List<string> ?? new List<string>())
+                            {
+                                <option value="@c" @(color == c ? "selected" : "")>@c</option>
+                            }
+                        </select>
+                    </div>
                    
                     <button type="submit" class="btn btn-outline-primary w-100">Lọc</button>
                 </form>
@@ -115,6 +145,9 @@
                     <input type="hidden" name="search" value="@Context.Request.Query["search"]" />
                     <input type="hidden" name="priceFrom" value="@priceFrom" />
                     <input type="hidden" name="priceTo" value="@priceTo" />
+                    <input type="hidden" name="category" value="@category" />
+                    <input type="hidden" name="size" value="@size" />
+                    <input type="hidden" name="color" value="@color" />
                     <select class="form-select w-auto" name="sortOrder" onchange="document.getElementById('sortForm').submit()">
                         <option value="asc" @(Context.Request.Query["sortOrder"]=="asc" ? "selected" : "")>Sắp xếp theo giá tăng dần</option>
                         <option value="desc" @(Context.Request.Query["sortOrder"]=="desc" ? "selected" : "")>Sắp xếp theo giá giảm dần</option>
