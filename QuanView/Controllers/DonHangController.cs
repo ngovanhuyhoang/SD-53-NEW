@@ -241,6 +241,33 @@ namespace QuanView.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                    return View(hoaDon);
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Không thể tải thông tin đơn hàng";
+                    return RedirectToAction("Index");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception in ChiTiet: {ex.Message}");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải thông tin đơn hàng";
+                return RedirectToAction("Index");
+            }
+        }
+
+        // GET: DonHang/ChiTietModal/{id} - For modal display
+        public async Task<IActionResult> ChiTietModal(Guid id)
+        {
+            try
+            {
+                var baseUrl = _configuration["ApiSettings:KhachHangApiBaseUrl"];
+                var response = await _httpClient.GetAsync($"{baseUrl}/HoaDons/{id}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
                     
                     var html = $@"
                         <div class='row'>

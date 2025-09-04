@@ -266,7 +266,12 @@
                             </td>
                             <td>@hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <!-- Nút xem chi tiết - luôn hiển thị -->
+                                    <a href="@Url.Action("ChiTiet", new { id = hoaDon.IDHoaDon })" class="action-btn btn-view" title="Xem chi tiết đơn hàng">
+                                        <i class="bi bi-eye"></i> Chi tiết
+                                    </a>
+                                    
                                     @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
                                     {
                                         <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')" title="Hủy đơn">
