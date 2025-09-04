@@ -27,59 +27,42 @@ namespace QuanView.Areas.Admin.Controllers
             _http = factory.CreateClient("MyApi");
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 5,
+            decimal? priceFrom = null,
+            decimal? priceTo = null,
+            int? qtyFrom = null,
+            int? qtyTo = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null)
         {
-            var response = await _http.GetAsync("sanphams");
+            var query = new List<string> { $"page={page}", $"pageSize={pageSize}" };
+            if (priceFrom.HasValue) query.Add($"priceFrom={priceFrom.Value}");
+            if (priceTo.HasValue) query.Add($"priceTo={priceTo.Value}");
+            if (qtyFrom.HasValue) query.Add($"qtyFrom={qtyFrom.Value}");
+            if (qtyTo.HasValue) query.Add($"qtyTo={qtyTo.Value}");
+            if (dateFrom.HasValue) query.Add($"dateFrom={dateFrom:yyyy-MM-dd}");
+            if (dateTo.HasValue) query.Add($"dateTo={dateTo:yyyy-MM-dd}");
+
+            var response = await _http.GetAsync($"sanphams/paged?{string.Join("&", query)}");
             if (!response.IsSuccessStatusCode) return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 
             var json = await response.Content.ReadAsStringAsync();
-            var products = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<PagedResult<QuanView.Areas.Admin.Models.SanPhamDto>>(json, options);
 
-            foreach (var sp in products)
-            {
-                // ✅ Đảm bảo gọi đúng endpoint GET api/sanphamchitiets?idsanpham=...
-                var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={sp.IDSanPham}");
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalItems = result?.Total ?? 0;
+            ViewBag.PriceFrom = priceFrom;
+            ViewBag.PriceTo = priceTo;
+            ViewBag.QtyFrom = qtyFrom;
+            ViewBag.QtyTo = qtyTo;
+            ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
+            ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
 
-                if (res.IsSuccessStatusCode)
-                {
-                    var ctJson = await res.Content.ReadAsStringAsync();
-                    sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    
-                    // ✅ Cập nhật ảnh chính từ SanPhamChiTiet đầu tiên có ảnh
-                    if (sp.ChiTietSanPhams != null && sp.ChiTietSanPhams.Any())
-                    {
-                        var firstWithImage = sp.ChiTietSanPhams.FirstOrDefault(ct => !string.IsNullOrEmpty(ct.AnhDaiDien));
-                        if (firstWithImage != null)
-                        {
-                            sp.AnhChinh = firstWithImage.AnhDaiDien;
-                        }
-                    }
-
-                    // ✅ Load danh sách ảnh cho từng sản phẩm chi tiết
-                    if (sp.ChiTietSanPhams != null)
-                    {
-                        foreach (var ct in sp.ChiTietSanPhams)
-                        {
-                            var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
-                            if (imagesRes.IsSuccessStatusCode)
-                            {
-                                var imagesJson = await imagesRes.Content.ReadAsStringAsync();
-                                var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                                ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages);
-                                
-                                // ✅ Cập nhật ảnh đại diện từ danh sách ảnh
-                                var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
-                                if (mainImage != null)
-                                {
-                                    ct.AnhDaiDien = mainImage.UrlAnh;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return View(products);
+            return View(result?.Data ?? new List<QuanView.Areas.Admin.Models.SanPhamDto>());
         }
 
         public async Task<IActionResult> Create()

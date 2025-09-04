@@ -32,7 +32,7 @@ public class ChartsApiController : ControllerBase
                 {
                     Year = g.Key.Year,
                     Month = g.Key.Month,
-                    Revenue = g.Sum(h => h.TongTien - (h.TienGiam ?? 0)),
+                    Revenue = g.Sum(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)),
                     OrderCount = g.Count()
                 })
                 .OrderBy(x => x.Year).ThenBy(x => x.Month)
@@ -394,20 +394,20 @@ public class ChartsApiController : ControllerBase
         return Ok(sanPhamHetHang);
     }
 
-    // API cho doanh số hôm nay
-    [HttpGet("today-sales")]
-    public async Task<IActionResult> GetTodaySales()
+    // API cho doanh thu hôm nay (không bao gồm phí vận chuyển)
+    [HttpGet("today-revenue")]
+    public async Task<IActionResult> GetTodayRevenue()
     {
         try
         {
             var today = DateTime.Today;
-            var todaySales = await _context.HoaDons
-                .Where(h => h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công" &&
-                           h.TrangThaiHoaDon == true &&
-                           h.NgayTao.Date == today)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0));
+            var todayRevenue = await _context.HoaDons
+                .Where(h => (h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công") &&
+                            h.TrangThaiHoaDon == true &&
+                            h.NgayTao.Date == today)
+                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
 
-            return Ok(todaySales);
+            return Ok(todayRevenue);
         }
         catch (Exception ex)
         {
@@ -415,9 +415,9 @@ public class ChartsApiController : ControllerBase
         }
     }
 
-    // API cho doanh số tháng này
-    [HttpGet("month-sales")]
-    public async Task<IActionResult> GetMonthSales()
+    // API cho doanh thu tháng này (không bao gồm phí vận chuyển)
+    [HttpGet("month-revenue")]
+    public async Task<IActionResult> GetMonthRevenue()
     {
         try
         {
@@ -425,13 +425,13 @@ public class ChartsApiController : ControllerBase
             var firstDay = new DateTime(now.Year, now.Month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
-            var monthSales = await _context.HoaDons
+            var monthRevenue = await _context.HoaDons
                 .Where(h => h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công" &&
                            h.TrangThaiHoaDon == true &&
                            h.NgayTao >= firstDay && h.NgayTao <= lastDay)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0));
+                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
 
-            return Ok(monthSales);
+            return Ok(monthRevenue);
         }
         catch (Exception ex)
         {
@@ -500,7 +500,7 @@ public class ChartsApiController : ControllerBase
         var monthlyData = await _context.HoaDons
             .Where(h => h.TrangThai == "Hoàn thành" && h.TrangThaiHoaDon == true && h.NgayTao >= startDate)
             .GroupBy(h => new { h.NgayTao.Year, h.NgayTao.Month })
-            .Select(g => new { Year = g.Key.Year, Month = g.Key.Month, Revenue = g.Sum(h => h.TongTien - (h.TienGiam ?? 0)) })
+            .Select(g => new { Year = g.Key.Year, Month = g.Key.Month, Revenue = g.Sum(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) })
             .OrderBy(x => x.Year).ThenBy(x => x.Month)
             .ToListAsync();
 
@@ -568,7 +568,7 @@ public class ChartsApiController : ControllerBase
                            h.TrangThaiHoaDon == true &&
                            h.NgayTao.Month == currentMonth &&
                            h.NgayTao.Year == currentYear)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0));
+                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
 
             var todayOrders = await _context.HoaDons
                 .Where(h => h.NgayTao.Date == today && h.TrangThaiHoaDon == true)

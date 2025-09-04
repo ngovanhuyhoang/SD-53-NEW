@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("quockhanh"), 
         sqlServerOptionsAction: sqlOptions =>
         {
             sqlOptions.CommandTimeout(120); // 2 phút timeout
