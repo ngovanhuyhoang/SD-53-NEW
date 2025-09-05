@@ -788,27 +788,37 @@
             const result = await response.json();
 
             if (result.success) {
-                showNotification(result.message || 'Đặt hàng thành công!', 'success');
-                // Xóa giỏ hàng session và thông tin giảm giá
-                await fetch('/Checkout/ClearCart', { method: 'POST' });
-                sessionStorage.removeItem('appliedDiscount');
-                
-                // Trích xuất mã đơn hàng từ message
-                let orderCode = '';
-                if (result.message && result.message.includes('Mã đơn hàng')) {
-                    const match = result.message.match(/Mã đơn hàng của bạn là: ([A-Z0-9_]+)/);
-                    if (match) {
-                        orderCode = match[1];
+                // Kiểm tra xem có cần chuyển hướng đến VNPay không
+                if (result.redirectToVnPay && result.paymentUrl) {
+                    showNotification('Chuyển hướng đến VNPay để thanh toán...', 'info');
+                    // Chuyển hướng đến VNPay sau 2 giây
+                    setTimeout(() => {
+                        window.location.href = result.paymentUrl;
+                    }, 2000);
+                } else {
+                    // Thanh toán thường (tiền mặt, COD)
+                    showNotification(result.message || 'Đặt hàng thành công!', 'success');
+                    // Xóa giỏ hàng session và thông tin giảm giá
+                    await fetch('/Checkout/ClearCart', { method: 'POST' });
+                    sessionStorage.removeItem('appliedDiscount');
+                    
+                    // Trích xuất mã đơn hàng từ message
+                    let orderCode = '';
+                    if (result.message && result.message.includes('Mã đơn hàng')) {
+                        const match = result.message.match(/Mã đơn hàng của bạn là: ([A-Z0-9_]+)/);
+                        if (match) {
+                            orderCode = match[1];
+                        }
                     }
+                    
+                    setTimeout(() => {
+                        if (orderCode) {
+                            window.location.href = `/Checkout/Success?orderCode=${encodeURIComponent(orderCode)}`;
+                        } else {
+                            window.location.href = '/Home/Index';
+                        }
+                    }, 3000);
                 }
-                
-                setTimeout(() => {
-                    if (orderCode) {
-                        window.location.href = `/Checkout/Success?orderCode=${encodeURIComponent(orderCode)}`;
-                    } else {
-                        window.location.href = '/Home/Index';
-                    }
-                }, 3000); // Tăng thời gian hiển thị để người dùng có thể đọc mã đơn hàng
             } else {
                 showNotification(result.message || 'Có lỗi xảy ra khi đặt hàng', 'danger');
             }
