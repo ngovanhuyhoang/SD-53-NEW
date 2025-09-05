@@ -137,7 +137,7 @@ namespace QuanApi.Controllers
             // Cập nhật tổng tiền hóa đơn
             hoaDon.TongTien = await _context.ChiTietHoaDons.Where(x => x.IDHoaDon == dto.IDHoaDon).SumAsync(x => x.ThanhTien);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { message = "Thêm sản phẩm vào giỏ hàng thành công!" });
         }
 
         // 3. Cập nhật/xóa sản phẩm trong đơn
@@ -153,6 +153,10 @@ namespace QuanApi.Controllers
             if (dto.SoLuongMoi <= 0)
             {
                 _context.ChiTietHoaDons.Remove(cthd);
+                // Cập nhật tổng tiền hóa đơn
+                hoaDon.TongTien = await _context.ChiTietHoaDons.Where(x => x.IDHoaDon == dto.IDHoaDon).SumAsync(x => x.ThanhTien);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã xóa sản phẩm khỏi giỏ hàng!" });
             }
             else
             {
@@ -175,7 +179,7 @@ namespace QuanApi.Controllers
             // Cập nhật tổng tiền hóa đơn
             hoaDon.TongTien = await _context.ChiTietHoaDons.Where(x => x.IDHoaDon == dto.IDHoaDon).SumAsync(x => x.ThanhTien);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { message = "Cập nhật số lượng sản phẩm thành công!" });
         }
 
         // 4. Chọn khách hàng (tìm theo SĐT)
