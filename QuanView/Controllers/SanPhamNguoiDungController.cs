@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace QuanView.Controllers
 {
@@ -16,7 +17,7 @@ namespace QuanView.Controllers
         }
 
         // GET: /SanPhamNguoiDung/Index
-        public async Task<IActionResult> Index(string search, int? priceFrom, int? priceTo, string sortOrder, int page = 1)
+        public async Task<IActionResult> Index(string search, int? priceFrom, int? priceTo, string category, string size, string color, string sortOrder, int page = 1)
         {
             var pageSize = 9;
             var query = $"SanPhamNguoiDungs?pageNumber={page}&pageSize={pageSize}";
@@ -26,6 +27,12 @@ namespace QuanView.Controllers
                 query += $"&priceFrom={priceFrom.Value}";
             if (priceTo.HasValue)
                 query += $"&priceTo={priceTo.Value}";
+            if (!string.IsNullOrEmpty(category))
+                query += $"&category={Uri.EscapeDataString(category)}";
+            if (!string.IsNullOrEmpty(size))
+                query += $"&size={Uri.EscapeDataString(size)}";
+            if (!string.IsNullOrEmpty(color))
+                query += $"&color={Uri.EscapeDataString(color)}";
 
             var response = await _http.GetAsync(query);
             if (!response.IsSuccessStatusCode)
@@ -45,6 +52,22 @@ namespace QuanView.Controllers
                     list = list.OrderByDescending(sp => sp.BienThes != null && sp.BienThes.Any() ? sp.BienThes.Min(b => b.GiaSauGiam) : decimal.MinValue).ToList();
                 }
             }
+            // Fetch filter options
+            var filterResponse = await _http.GetAsync("SanPhamNguoiDungs/filter-options");
+            if (filterResponse.IsSuccessStatusCode)
+            {
+                var filterOptions = await filterResponse.Content.ReadFromJsonAsync<FilterOptionsDto>();
+                ViewBag.Categories = filterOptions?.Categories ?? new List<string>();
+                ViewBag.Sizes = filterOptions?.Sizes ?? new List<string>();
+                ViewBag.Colors = filterOptions?.Colors ?? new List<string>();
+            }
+            else
+            {
+                ViewBag.Categories = new List<string>();
+                ViewBag.Sizes = new List<string>();
+                ViewBag.Colors = new List<string>();
+            }
+
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
             ViewBag.Total = list?.Count ?? 0;

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -46,6 +46,8 @@ namespace QuanView.Controllers
                                 },
                                 GiaBan = spct.price,
                                 SoLuong = spct.SoLuong,
+                                KichCo = new KichCo { TenKichCo = spct.TenKichCo },
+                                MauSac = new MauSac { TenMauSac = spct.TenMauSac },
                                 AnhSanPhams = new List<AnhSanPham>
                                 {
                                     new AnhSanPham
@@ -88,6 +90,8 @@ namespace QuanView.Controllers
                         }
                         item.SanPhamChiTiet.SoLuong = spct.SoLuong;
                         item.SanPhamChiTiet.SanPham = new SanPham { TenSanPham = spct.TenSanPham };
+                        item.SanPhamChiTiet.KichCo = new KichCo { TenKichCo = spct.TenKichCo };
+                        item.SanPhamChiTiet.MauSac = new MauSac { TenMauSac = spct.TenMauSac };
                         item.SanPhamChiTiet.AnhSanPhams = new List<AnhSanPham>
                         {
                             new AnhSanPham

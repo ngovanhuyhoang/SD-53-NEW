@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
@@ -189,6 +189,37 @@ namespace QuanApi.Repository
             ghct.GiaBan = TinhGiaSauGiam(ghct.SanPhamChiTiet);
 
             _db.SaveChanges();
+        }
+
+        public FilterOptionsDto GetFilterOptions()
+        {
+            var categories = _db.DanhMucs
+                .Where(dm => dm.TrangThai)
+                .Select(dm => dm.TenDanhMuc)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            var sizes = _db.KichCos
+                .Where(kc => kc.TrangThai)
+                .Select(kc => kc.TenKichCo)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            var colors = _db.MauSacs
+                .Where(ms => ms.TrangThai)
+                .Select(ms => ms.TenMauSac)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            return new FilterOptionsDto
+            {
+                Categories = categories,
+                Sizes = sizes,
+                Colors = colors
+            };
         }
 
     }

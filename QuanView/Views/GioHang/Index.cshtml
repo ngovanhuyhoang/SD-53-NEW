@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.GioHang
+@model QuanApi.Data.GioHang
 @if (Model == null || Model.ChiTietGioHangs == null || !Model.ChiTietGioHangs.Any())
 {
     <div class="container py-4"><h3>Giỏ hàng của bạn đang trống.</h3></div>
@@ -53,6 +53,10 @@
                             </td>
                             <td>
                                 <div class="cart-product-title">@sp?.TenSanPham</div>
+                                <div class="text-muted mb-1" style="font-size: 0.9rem;">
+                                    <span class="me-2">Màu: <strong>@(spct?.MauSac?.TenMauSac ?? "N/A")</strong></span>
+                                    <span>Size: <strong>@(spct?.KichCo?.TenKichCo ?? "N/A")</strong></span>
+                                </div>
                                 <div class="cart-price">@item.GiaBan.ToString("N0") VND</div>
                             </td>
                             <td>

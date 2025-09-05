@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using QuanView.Models;
+using QuanView.Services;
 
 namespace QuanView.Controllers
 {
@@ -37,10 +38,14 @@ namespace QuanView.Controllers
     public class CheckoutController : Controller
     {
         private readonly HttpClient _httpClient;
+        private readonly IVnPayService _vnPayService;
+        private readonly ILogger<CheckoutController> _logger;
 
-        public CheckoutController(IHttpClientFactory httpClientFactory)
+        public CheckoutController(IHttpClientFactory httpClientFactory, IVnPayService vnPayService, ILogger<CheckoutController> logger)
         {
             _httpClient = httpClientFactory.CreateClient("MyApi");
+            _vnPayService = vnPayService;
+            _logger = logger;
         }
 
         private bool ValidateVietnamesePhoneNumber(string phoneNumber)
@@ -224,7 +229,54 @@ namespace QuanView.Controllers
                 Console.WriteLine($"PhieuGiamGiaId: {phieuGiamGiaId}");
                 Console.WriteLine($"MaGiamGia: {checkoutData.MaGiamGia}");
                 
-                // Tạo dữ liệu hóa đơn
+                // Kiểm tra phương thức thanh toán - nếu là "chuyển khoản" thì chuyển hướng đến VNPay
+                var paymentMethodResponse = await _httpClient.GetAsync($"PhuongThucThanhToans/{checkoutData.PhuongThucThanhToanId}");
+                if (paymentMethodResponse.IsSuccessStatusCode)
+                {
+                    var paymentMethod = await paymentMethodResponse.Content.ReadFromJsonAsync<PhuongThucThanhToan>();
+                    if (paymentMethod != null && paymentMethod.TenPhuongThuc.ToLower().Contains("chuyển khoản"))
+                    {
+                        // Lưu thông tin đơn hàng vào session để xử lý sau khi thanh toán thành công
+                        var orderInfo = new
+                        {
+                            khachHangId = khachHangId,
+                            nhanVienId = (Guid?)null,
+                            phieuGiamGiaId = phieuGiamGiaId,
+                            phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
+                            tongTien = checkoutData.TongTien,
+                            tienGiam = checkoutData.TienGiam,
+                            phiVanChuyen = checkoutData.PhiVanChuyen,
+                            tenNguoiNhan = checkoutData.TenNguoiNhan,
+                            soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
+                            diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
+                            ghiChu = checkoutData.GhiChu,
+                            chiTietHoaDons = chiTietHoaDons
+                        };
+                        
+                        HttpContext.Session.SetObjectAsJson("PendingOrder", orderInfo);
+
+                        // Tạo thông tin thanh toán VNPay
+                        var paymentInfo = new PaymentInformationModel
+                        {
+                            OrderType = "billpayment",
+                            Amount = (double)checkoutData.TongTien,
+                            OrderDescription = $"Thanh toan don hang {checkoutData.TenNguoiNhan}",
+                            Name = checkoutData.TenNguoiNhan
+                        };
+
+                        // Tạo URL thanh toán VNPay
+                        var paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, HttpContext);
+                        
+                        return Json(new { 
+                            success = true, 
+                            redirectToVnPay = true,
+                            paymentUrl = paymentUrl,
+                            message = "Chuyển hướng đến VNPay để thanh toán" 
+                        });
+                    }
+                }
+
+                // Tạo dữ liệu hóa đơn cho thanh toán thường (tiền mặt, COD)
                 var hoaDonData = new
                 {
                     khachHangId = khachHangId, // Sử dụng từ claims thay vì checkoutData
@@ -673,6 +725,90 @@ namespace QuanView.Controllers
                 return StatusCode(500, new { success = false, message = $"Lỗi: {ex.Message}" });
             }
         }
+
+        // VNPay callback handler
+        [HttpGet]
+        public async Task<IActionResult> PaymentCallbackVnpay()
+        {
+            try
+            {
+                // Xử lý response từ VNPay
+                var response = _vnPayService.PaymentExecute(Request.Query);
+
+                if (response.Success && response.VnPayResponseCode == "00")
+                {
+                    // Thanh toán thành công, lấy thông tin đơn hàng từ session
+                    var orderInfoJson = HttpContext.Session.GetString("PendingOrder");
+                    if (!string.IsNullOrEmpty(orderInfoJson))
+                    {
+                        // Tạo đơn hàng trong database với raw JSON
+                        var content = new StringContent(orderInfoJson, Encoding.UTF8, "application/json");
+                        var hoaDonResponse = await _httpClient.PostAsync("HoaDons", content);
+                        
+                        if (hoaDonResponse.IsSuccessStatusCode)
+                        {
+                            // Xóa giỏ hàng và thông tin đơn hàng tạm
+                            HttpContext.Session.Remove("Cart");
+                            HttpContext.Session.Remove("PendingOrder");
+
+                            // Lấy mã hóa đơn từ response
+                            var responseContent = await hoaDonResponse.Content.ReadAsStringAsync();
+                            using (var doc = JsonDocument.Parse(responseContent))
+                            {
+                                var maHoaDon = doc.RootElement.GetProperty("maHoaDon").GetString();
+                                
+                                // Chuyển hướng đến trang thành công
+                                TempData["SuccessMessage"] = "Thanh toán thành công! Mã đơn hàng: " + maHoaDon;
+                                return RedirectToAction("Index", "DonHang");
+                            }
+                        }
+                        else
+                        {
+                            var errorContent = await hoaDonResponse.Content.ReadAsStringAsync();
+                            _logger.LogError($"API Error: {errorContent}");
+                            TempData["ErrorMessage"] = "Có lỗi xảy ra khi tạo đơn hàng.";
+                            return RedirectToAction("Index");
+                        }
+                    }
+                    else
+                    {
+                        // Không tìm thấy thông tin đơn hàng
+                        TempData["ErrorMessage"] = "Không tìm thấy thông tin đơn hàng. Vui lòng thử lại.";
+                        return RedirectToAction("Index", "GioHang");
+                    }
+                }
+                else
+                {
+                    // Thanh toán thất bại
+                    string errorMessage = "Thanh toán thất bại.";
+                    switch (response.VnPayResponseCode)
+                    {
+                        case "24":
+                            errorMessage = "Giao dịch bị hủy bởi khách hàng.";
+                            break;
+                        case "51":
+                            errorMessage = "Tài khoản không đủ số dư.";
+                            break;
+                        case "65":
+                            errorMessage = "Tài khoản đã vượt quá hạn mức giao dịch trong ngày.";
+                            break;
+                        default:
+                            errorMessage = $"Thanh toán thất bại. Mã lỗi: {response.VnPayResponseCode}";
+                            break;
+                    }
+                    
+                    TempData["ErrorMessage"] = errorMessage;
+                    return RedirectToAction("Index", "GioHang");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in PaymentCallbackVnpay");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra trong quá trình xử lý thanh toán.";
+                return RedirectToAction("Index");
+            }
+        }
+
     }
 
     public class CheckoutDto

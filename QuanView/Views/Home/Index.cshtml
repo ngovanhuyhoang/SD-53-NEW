@@ -1,4 +1,4 @@
-﻿@model List<QuanApi.Data.Banner>
+@model List<QuanApi.Data.Banner>
 
 @{
     ViewData["Title"] = "Home Page";
@@ -121,7 +121,7 @@
                 var giaSauGiam = firstBienThe?.GiaSauGiam ?? 0;
                 var coGiamGia = giaSauGiam < giaGoc;
                 var anhDaiDien = !string.IsNullOrEmpty(product.UrlAnh) ? product.UrlAnh : "/img/default-product.jpg";
-                var soLuongTon = firstBienThe?.SoLuong ?? 0;
+                var soLuongTon = product.BienThes?.Sum(b => b.SoLuong) ?? 0;
 
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
                     <div class="product-card h-100 w-100">
@@ -140,7 +140,7 @@
                                     <span class="text-danger fw-bold">@giaGoc.ToString("N0") đ</span>
                                 }
                             </div>
-                            <small class="d-block text-success mt-1">Còn @soLuongTon sp</small>
+                            <small class="d-block text-success mt-1">Còn @soLuongTon sản phẩm</small>
                             <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })"
                                class="btn btn-danger btn-sm w-100 mt-auto">
                                 Xem chi tiết

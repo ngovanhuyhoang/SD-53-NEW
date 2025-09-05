@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Repository.IRepository;
@@ -227,7 +227,7 @@ namespace QuanApi.Repository
                 .Select(x => x.IDSanPhamChiTiet)
                 .ToListAsync();
 
-            return await _context.SanPhamChiTiets
+            var allProducts = await _context.SanPhamChiTiets
                 .Include(x => x.SanPham)
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
@@ -239,6 +239,12 @@ namespace QuanApi.Repository
                     Selected = selectedIds.Contains(x.IDSanPhamChiTiet)
                 })
                 .ToListAsync();
+
+            // Sort selected products first, then unselected products
+            return allProducts
+                .OrderByDescending(x => x.Selected)
+                .ThenBy(x => x.Text)
+                .ToList();
         }
 
 
