@@ -1,127 +1,375 @@
 ﻿@model IEnumerable<QuanView.Areas.Admin.Models.SanPhamDto>
-
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/admin-product-images.css" />
-}
+<style>
+    .filter-card {
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 12px;
+    }
+    
+    .filter-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .table-card {
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .table-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .product-image {
+        width: 45px;
+        height: 45px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+    }
+    
+    .variant-image {
+        width: 35px;
+        height: 35px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .badge-clean {
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.8rem;
+    }
+    
+    .badge-attribute {
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.8rem;
+        background: transparent;
+        border: 1px solid #dee2e6;
+        color: #495057;
+    }
+    
+    .btn-action {
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .pagination-clean .page-link {
+        border-radius: 6px;
+        margin: 0 2px;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+    }
+    
+    .pagination-clean .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+    
+    .variant-section {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+    }
+    
+    .variant-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #dee2e6;
+    }
+    
+    .variant-table th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .variant-table td {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+    }
+    
+    .variant-table tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+    
+    .product-row {
+        transition: all 0.2s ease;
+    }
+    
+    .product-row:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .product-row:hover .product-image {
+        border-color: #007bff;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .modal-content {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #e9ecef;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    
+    .btn-close:focus {
+        box-shadow: none;
+    }
+</style>
 
-<h2 class="mb-4">Danh sách sản phẩm</h2>
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-1 text-dark fw-bold">
+                <i class="fas fa-boxes me-2 text-primary"></i>
+                Danh sách sản phẩm
+            </h3>
+            <p class="text-muted mb-0">Quản lý và theo dõi tất cả sản phẩm trong hệ thống</p>
+        </div>
+        <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>Thêm sản phẩm mới
+        </a>
+    </div>
 
-<p>
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success mb-3">+ Thêm sản phẩm mới</a>
-</p>
+    <!-- Compact Filter Section -->
+    <div class="card filter-card mb-4">
+        <div class="card-header filter-header py-3">
+            <h6 class="mb-0 text-dark fw-semibold">
+                <i class="fas fa-filter me-2 text-primary"></i>Bộ lọc tìm kiếm
+            </h6>
+        </div>
+        <div class="card-body py-3">
+            <form method="get" class="row g-3">
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-medium text-muted mb-1">Giá từ (VNĐ)</label>
+                    <input type="text" name="priceFrom" value="@ViewBag.PriceFrom" 
+                           placeholder="0" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-medium text-muted mb-1">Giá đến (VNĐ)</label>
+                    <input type="text" name="priceTo" value="@ViewBag.PriceTo" 
+                           placeholder="1000000" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-medium text-muted mb-1">Số lượng từ</label>
+                    <input type="text" name="qtyFrom" value="@ViewBag.QtyFrom" 
+                           placeholder="0" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-medium text-muted mb-1">Số lượng đến</label>
+                    <input type="number" step="1" min="0" name="qtyTo" value="@ViewBag.QtyTo" 
+                           placeholder="1000" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-medium text-muted mb-1">Ngày tạo từ</label>
+                    <input type="date" name="dateFrom" value="@ViewBag.DateFrom" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-medium text-muted mb-1">Ngày tạo đến</label>
+                    <input type="date" name="dateTo" value="@ViewBag.DateTo" class="form-control form-control-sm" />
+                </div>
+                <div class="col-12">
+                    <div class="d-flex gap-2 pt-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3">
+                            <i class="fas fa-search me-1"></i>Lọc
+                        </button>
+                        <a href="@Url.Action("Index", new { page = 1, pageSize = ViewBag.PageSize })" 
+                           class="btn btn-outline-secondary btn-sm px-3">
+                            <i class="fas fa-times me-1"></i>Xóa lọc
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<form asp-area="Admin" asp-controller="SanPham" asp-action="TaiBienThe" method="post">
-
+    <!-- Products Table -->
+    <div class="card table-card">
+        <div class="card-header table-header py-3">
+            <h6 class="mb-0 text-dark fw-semibold">
+                <i class="fas fa-table me-2 text-primary"></i>Danh sách sản phẩm
+            </h6>
+        </div>
+        <div class="card-body p-0">
     @if (!Model.Any())
     {
-        <div class="alert alert-info">
-            Không có sản phẩm nào được tìm thấy.
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Không có sản phẩm nào được tìm thấy</h5>
+                    <p class="text-muted">Hãy thử điều chỉnh bộ lọc hoặc thêm sản phẩm mới.</p>
         </div>
     }
     else
     {
-        <table class="table table-bordered table-hover">
-            <thead class="thead-dark">
-                <tr>
-                    <th><input type="checkbox" id="select-all" /></th>
-                    <th>Ảnh</th>
-                    <th>Mã SP</th>
-                    <th>Tên SP</th>
-                    <th>Chất liệu</th>
-                    <th>Danh mục</th>
-                    <th>Thương hiệu</th>
-                    <th>Loại ống</th>
-                    <th>Kiểu dáng</th>
-                    <th>Lưng quần</th>
-                    <th>Xếp ly</th>
-                    <th>Co giãn</th>
-                    <th>Trạng thái</th>
-                    <th style="width: 150px;">Thao tác</th>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;" class="text-center">Ảnh</th>
+                                <th style="width: 120px;">Mã SP</th>
+                                <th style="width: 150px;">Tên SP</th>
+                                <th style="width: 100px;">Chất liệu</th>
+                                <th style="width: 100px;">Danh mục</th>
+                                <th style="width: 100px;">Thương hiệu</th>
+                                <th style="width: 100px;">Loại ống</th>
+                                <th style="width: 100px;">Kiểu dáng</th>
+                                <th style="width: 100px;">Lưng quần</th>
+                                <th style="width: 80px;" class="text-center">Xếp ly</th>
+                                <th style="width: 80px;" class="text-center">Co giãn</th>
+                                <th style="width: 100px;" class="text-center">Trạng thái</th>
+                                <th style="width: 120px;" class="text-center">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in Model)
                 {
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="selectedIds" value="@item.IDSanPham" class="select-checkbox" />
+                                <tr class="align-middle product-row">
+                                    <td class="text-center">
+                                        <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" 
+                                             class="product-image" alt="Ảnh sản phẩm" />
                         </td>
-                        <td>
-                            <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
-                        </td>
-                        <td>@item.MaSanPham</td>
-                        <td>@item.TenSanPham</td>
+                                    <td><span class="fw-semibold text-primary">@item.MaSanPham</span></td>
+                                    <td><span class="fw-medium">@item.TenSanPham</span></td>
                         <td>@item.TenChatLieu</td>
                         <td>@item.TenDanhMuc</td>
                         <td>@item.TenThuongHieu</td>
                         <td>@item.TenLoaiOng</td>
                         <td>@item.TenKieuDang</td>
                         <td>@item.TenLungQuan</td>
-                        <td>@(item.CoXepLy ? "Có" : "Không")</td>
-                        <td>@(item.CoGian ? "Có" : "Không")</td>
-                        <td>
-                            <span class="badge @(item.TrangThai ? "bg-success" : "bg-secondary")">
+                                    <td class="text-center">
+                                        <span class="badge badge-clean @(item.CoXepLy ? "bg-success" : "bg-secondary")">
+                                            @(item.CoXepLy ? "Có" : "Không")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-clean @(item.CoGian ? "bg-success" : "bg-secondary")">
+                                            @(item.CoGian ? "Có" : "Không")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-clean @(item.TrangThai ? "bg-success" : "bg-secondary")">
                                 @(item.TrangThai ? "Hoạt động" : "Ngưng")
                             </span>
                         </td>
-                        <td>
-                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-primary me-1">Sửa</a>
-                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Delete" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-danger">Xóa</a>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" 
+                                               asp-route-id="@item.IDSanPham" class="btn btn-outline-primary btn-action btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Delete" 
+                                               asp-route-id="@item.IDSanPham" class="btn btn-outline-danger btn-action btn-sm"
+                                               onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
                         </td>
                     </tr>
 
                     @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
                     {
-                        <tr>
-                            <td colspan="14" class="p-0">
-                                <div class="table-responsive px-3 py-2">
-                                    <table class="table table-sm table-bordered mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Kích cỡ</th>
-                                                <th>Màu sắc</th>
-                                                <th>Họa tiết</th>
-                                                <th>Số lượng</th>
-                                                <th>Giá bán</th>
-                                                <th>Ảnh sản phẩm</th>
-                                                <th>Thao tác ảnh</th>
+                                    <tr class="variant-section">
+                                        <td colspan="13" class="p-0">
+                                            <div class="px-3 py-3">
+                                                <h6 class="text-primary fw-semibold mb-3">
+                                                    <i class="fas fa-list me-2"></i>Biến thể sản phẩm
+                                                </h6>
+                                                <div class="variant-table">
+                                                    <table class="table table-sm mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="text-center" style="width: 100px;">Kích cỡ</th>
+                                                                <th class="text-center" style="width: 100px;">Màu sắc</th>
+                                                                <th class="text-center" style="width: 100px;">Họa tiết</th>
+                                                                <th class="text-center" style="width: 80px;">Số lượng</th>
+                                                                <th class="text-center" style="width: 120px;">Giá bán</th>
+                                                                <th class="text-center" style="width: 100px;">Ảnh sản phẩm</th>
+                                                                <th class="text-center" style="width: 120px;">Thao tác ảnh</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach (var ct in item.ChiTietSanPhams)
                                             {
                                                 <tr>
-                                                    <td>@ct.TenKichCo</td>
-                                                    <td>@ct.TenMauSac</td>
-                                                    <td>@ct.TenHoaTiet</td>
-                                                    <td>@ct.SoLuong</td>
-                                                    <td>
-                                                        @if (ct.originalPrice > ct.price)
-                                                        {
-                                                            <span style="color:#888;text-decoration:line-through;font-size:0.95em;margin-right:6px">
-                                                                @ct.originalPrice.ToString("N0") đ
-                                                            </span>
-                                                            <span style="color:#d32f2f;font-weight:bold;font-size:1.1em">
-                                                                @ct.price.ToString("N0") đ
+                                                                    <td class="text-center">
+                                                                        <span class="badge badge-attribute">@ct.TenKichCo</span>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <span class="badge badge-attribute">@ct.TenMauSac</span>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <span class="badge badge-attribute">@ct.TenHoaTiet</span>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <span class="badge badge-attribute">@ct.SoLuong</span>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        @if (ct.GiaBan > 0)
+                                                                        {
+                                                                            <span class="fw-bold text-success">
+                                                                                @ct.GiaBan.ToString("N0") đ
                                                             </span>
                                                         }
                                                         else
                                                         {
-                                                            <span style="font-weight:bold">
-                                                                @ct.price.ToString("N0") đ
+                                                                            <span class="text-muted small">
+                                                                                Chưa có giá
                                                             </span>
                                                         }
                                                     </td>
-                                                    <td>
+                                                                    <td class="text-center">
                                                         <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
                                                             <div class="images-preview">
                                                                 @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
                                                                 {
-                                                                    <img src="@ct.AnhDaiDien" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
+                                                                                    <img src="@ct.AnhDaiDien" class="variant-image" alt="Ảnh chính" />
                                                                 }
                                                                 else
                                                                 {
@@ -133,20 +381,17 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td>
-                                                      @*   <button type="button" class="btn btn-sm btn-outline-info" 
-                                                                onclick="loadImages('@ct.IdSanPhamChiTiet')">
-                                                            <i class="fas fa-images"></i> Xem ảnh
-                                                        </button> *@
-                                                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                                                    <td class="text-center">
+                                                                        <button type="button" class="btn btn-sm btn-outline-success btn-action" 
                                                                 onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
-                                                            <i class="fas fa-plus"></i> Thêm ảnh
+                                                                            <i class="fas fa-plus me-1"></i>Thêm ảnh
                                                         </button>
                                                     </td>
                                                 </tr>
                                             }
                                         </tbody>
                                     </table>
+                                                </div>
                                 </div>
                             </td>
                         </tr>
@@ -154,36 +399,97 @@
                 }
             </tbody>
         </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @{
+        int totalItems = ViewBag.TotalItems ?? Model.Count();
+        int pageSize = ViewBag.PageSize ?? 5;
+        int currentPage = ViewBag.Page ?? 1;
+        int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
     }
-</form>
+    
+    @if (totalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="text-muted small">
+                <i class="fas fa-info-circle me-1"></i>
+                Hiển thị @((currentPage - 1) * pageSize + 1) - @Math.Min(currentPage * pageSize, totalItems) 
+                trong tổng số @totalItems sản phẩm
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm pagination-clean mb-0">
+                    @if (currentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, pageSize = pageSize, priceFrom = ViewBag.PriceFrom, priceTo = ViewBag.PriceTo, qtyFrom = ViewBag.QtyFrom, qtyTo = ViewBag.QtyTo, dateFrom = ViewBag.DateFrom, dateTo = ViewBag.DateTo })">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    }
+                    
+                    @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                    {
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = pageSize, priceFrom = ViewBag.PriceFrom, priceTo = ViewBag.PriceTo, qtyFrom = ViewBag.QtyFrom, qtyTo = ViewBag.QtyTo, dateFrom = ViewBag.DateFrom, dateTo = ViewBag.DateTo })">@i</a>
+                        </li>
+                    }
+                    
+                    @if (currentPage < totalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, pageSize = pageSize, priceFrom = ViewBag.PriceFrom, priceTo = ViewBag.PriceTo, qtyFrom = ViewBag.QtyFrom, qtyTo = ViewBag.QtyTo, dateFrom = ViewBag.DateFrom, dateTo = ViewBag.DateTo })">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
 
 <!-- Modal thêm ảnh -->
 <div class="modal fade" id="addImageModal" tabindex="-1" aria-labelledby="addImageModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addImageModalLabel">Thêm ảnh sản phẩm</h5>
+                <h5 class="modal-title" id="addImageModalLabel">
+                    <i class="fas fa-image me-2 text-primary"></i>Thêm ảnh sản phẩm
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="addImageForm" enctype="multipart/form-data">
-                    <input type="hidden" id="sanPhamChiTietId" />
+                <form id="addImageForm">
                     <div class="mb-3">
-                        <label for="imageFile" class="form-label">Chọn ảnh từ máy</label>
-                        <input type="file" class="form-control" id="imageFile" accept="image/*" required onchange="previewImageFile()">
-                        <div id="imagePreview" class="image-upload-preview" style="display:none;">
-                            <img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
+                        <label for="imageUrl" class="form-label fw-medium">URL ảnh</label>
+                        <input type="url" class="form-control" id="imageUrl" name="imageUrl" required 
+                               placeholder="https://example.com/image.jpg" onchange="previewImage(this.value)">
+                    </div>
+                    <div class="mb-3" id="imagePreview" style="display: none;">
+                        <label class="form-label fw-medium">Xem trước ảnh</label>
+                        <div class="text-center">
+                            <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                         </div>
                     </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="isMainImage">
-                        <label class="form-check-label" for="isMainImage">Đặt làm ảnh chính</label>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isMainImage" name="isMainImage">
+                            <label class="form-check-label fw-medium" for="isMainImage">
+                                Đặt làm ảnh chính
+                            </label>
+                        </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="addImage()">Thêm ảnh</button>
+                <button type="button" class="btn btn-primary" onclick="addImage()">
+                    <i class="fas fa-plus me-1"></i>Thêm ảnh
+                </button>
             </div>
         </div>
     </div>
@@ -191,98 +497,166 @@
 
 @section Scripts {
     <script>
-        document.getElementById('select-all')?.addEventListener('change', function () {
-            var checked = this.checked;
-            document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = checked);
-        });
+        let currentSanPhamChiTietId = null;
 
-        // Hiển thị modal thêm ảnh
         function showAddImageModal(sanPhamChiTietId) {
-            document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
-            document.getElementById('imageFile').value = ''; // Clear file input
+            currentSanPhamChiTietId = sanPhamChiTietId;
+            // Reset form
+            document.getElementById('imageUrl').value = '';
             document.getElementById('isMainImage').checked = false;
             document.getElementById('imagePreview').style.display = 'none';
-            
-            const modalElement = document.getElementById('addImageModal');
-            if (modalElement) {
-                // Bootstrap 4
-                $(modalElement).modal('show');
-            }
+            $('#addImageModal').modal('show');
         }
 
-        // Preview ảnh khi chọn file
-        function previewImageFile() {
-            const fileInput = document.getElementById('imageFile');
+        function previewImage(imageUrl) {
             const previewDiv = document.getElementById('imagePreview');
             const previewImg = document.getElementById('previewImg');
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
+            
+            if (imageUrl && imageUrl.trim() !== '') {
+                // Hiển thị loading
                     previewDiv.style.display = 'block';
+                previewImg.style.display = 'none';
+                previewDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><br><small class="text-muted">Đang tải ảnh...</small></div>';
+                
+                // Tạo ảnh mới để tránh cache
+                const newImg = new Image();
+                newImg.crossOrigin = 'anonymous'; // Xử lý CORS
+                
+                newImg.onload = function() {
+                    previewDiv.innerHTML = `
+                        <label class="form-label fw-medium">Xem trước ảnh</label>
+                        <div class="text-center">
+                            <img src="${imageUrl}" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                        </div>
+                    `;
                 };
-                reader.readAsDataURL(fileInput.files[0]);
+                
+                newImg.onerror = function() {
+                    previewDiv.innerHTML = `
+                        <div class="alert alert-warning alert-sm">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Không thể load ảnh!</strong><br>
+                            <small>Nguyên nhân có thể là:</small>
+                            <ul class="mb-0 mt-1 small">
+                                <li>URL không hợp lệ hoặc ảnh không tồn tại</li>
+                                <li>Vấn đề CORS (Cross-Origin Resource Sharing)</li>
+                                <li>Ảnh quá lớn hoặc định dạng không hỗ trợ</li>
+                                <li>Server ảnh yêu cầu authentication</li>
+                            </ul>
+                            <small class="text-muted">Bạn vẫn có thể thêm ảnh nếu chắc chắn URL đúng.</small>
+                        </div>
+                    `;
+                };
+                
+                // Thử load ảnh
+                newImg.src = imageUrl;
+                
+                // Timeout sau 10 giây nếu ảnh quá lớn
+                setTimeout(() => {
+                    if (newImg.complete === false) {
+                        newImg.onerror();
+                    }
+                }, 10000);
+                
             } else {
                 previewDiv.style.display = 'none';
             }
         }
 
-        // Thêm ảnh mới
         function addImage() {
-            const sanPhamChiTietId = document.getElementById('sanPhamChiTietId').value;
-            const fileInput = document.getElementById('imageFile');
+            const imageUrl = document.getElementById('imageUrl').value;
             const isMainImage = document.getElementById('isMainImage').checked;
-            const addButton = document.querySelector('#addImageModal .btn-primary');
 
-            if (!fileInput.files || !fileInput.files[0]) {
-                alert('Vui lòng chọn ảnh!');
+            if (!imageUrl) {
+                alert('Vui lòng nhập URL ảnh');
                 return;
             }
 
             // Hiển thị loading
+            const addButton = document.querySelector('#addImageModal .btn-primary');
             const originalText = addButton.innerHTML;
-            addButton.innerHTML = '<span class="loading-spinner"></span> Đang thêm...';
+            addButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang thêm...';
             addButton.disabled = true;
 
-            // Tạo FormData để upload file
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('sanPhamChiTietId', sanPhamChiTietId);
-            formData.append('laAnhChinh', isMainImage);
+            const data = {
+                urlAnh: imageUrl,
+                laAnhChinh: isMainImage
+            };
 
-            fetch('/Admin/AnhSanPham/UploadImage', {
+            fetch(`/api/SanPhams/chitiet/${currentSanPhamChiTietId}/images`, {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.success) {
+                if (data.message) {
+                    // Hiển thị thông báo thành công
                     showNotification('Thêm ảnh thành công!', 'success');
+                    
+                    // Đóng modal
                     $('#addImageModal').modal('hide');
-                    updateProductImageDisplay(sanPhamChiTietId, data.urlAnh, isMainImage);
+                    
+                    // Cập nhật giao diện ngay lập tức
+                    updateProductImage(currentSanPhamChiTietId, imageUrl, isMainImage);
+                    
+                    // Reset form
+                    document.getElementById('imageUrl').value = '';
+                    document.getElementById('isMainImage').checked = false;
                 } else {
-                    showNotification('Lỗi: ' + (data.message || 'Không thể thêm ảnh'), 'error');
+                    showNotification('Có lỗi xảy ra khi thêm ảnh', 'error');
                 }
             })
             .catch(error => {
+                console.error('Error:', error);
                 showNotification('Có lỗi xảy ra khi thêm ảnh: ' + error.message, 'error');
             })
             .finally(() => {
+                // Khôi phục button
                 addButton.innerHTML = originalText;
                 addButton.disabled = false;
             });
         }
 
-        // Hiển thị thông báo
+        function updateProductImage(sanPhamChiTietId, imageUrl, isMainImage) {
+            // Tìm container ảnh sản phẩm
+            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
+            if (container) {
+                const previewDiv = container.querySelector('.images-preview');
+                if (previewDiv) {
+                    // Cập nhật ảnh
+                    previewDiv.innerHTML = `<img src="${imageUrl}" class="variant-image" alt="Ảnh chính" />`;
+                    
+                    // Nếu là ảnh chính, cập nhật ảnh sản phẩm chính
+                    if (isMainImage) {
+                        // Tìm ảnh sản phẩm chính trong bảng
+                        const productRow = container.closest('tr').previousElementSibling;
+                        if (productRow) {
+                            const productImageCell = productRow.querySelector('.product-image');
+                            if (productImageCell) {
+                                productImageCell.src = imageUrl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         function showNotification(message, type) {
-            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-            const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-            
+            // Tạo notification
             const notification = document.createElement('div');
-            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;';
             notification.innerHTML = `
-                <i class="${icon}"></i> ${message}
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             
@@ -294,134 +668,6 @@
                     notification.remove();
                 }
             }, 5000);
-        }
-
-        // Đặt ảnh làm ảnh chính
-        function setMainImage(imageId) {
-            if (!confirm('Bạn có chắc muốn đặt ảnh này làm ảnh chính?')) {
-                return;
-            }
-
-            fetch(`/Admin/AnhSanPham/SetMainImage?imageId=${imageId}`, {
-                method: 'PUT'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text().then(text => {
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error('Invalid JSON response:', text);
-                        throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
-                    }
-                });
-            })
-            .then(data => {
-                if (data.success) {
-                    showNotification('Đã đặt ảnh làm ảnh chính!', 'success');
-                    // Reload danh sách ảnh
-                    const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-                    const sanPhamChiTietId = container.dataset.sanPhamChiTietId;
-                    
-                    // Cập nhật giao diện chính - cần lấy URL của ảnh vừa đặt làm chính
-                    // Tạm thời reload lại toàn bộ để đảm bảo hiển thị đúng
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    showNotification('Lỗi: ' + (data.message || 'Không thể đặt ảnh chính'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Có lỗi xảy ra khi đặt ảnh chính: ' + error.message, 'error');
-            });
-        }
-
-        // Xóa ảnh
-        function deleteImage(imageId) {
-            if (!confirm('Bạn có chắc muốn xóa ảnh này?')) {
-                return;
-            }
-
-            fetch(`/Admin/AnhSanPham/DeleteImage?imageId=${imageId}`, {
-                method: 'DELETE'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text().then(text => {
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error('Invalid JSON response:', text);
-                        throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
-                    }
-                });
-            })
-            .then(data => {
-                if (data.success) {
-                    showNotification('Đã xóa ảnh thành công!', 'success');
-                    // Reload danh sách ảnh
-                    const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-                    const sanPhamChiTietId = container.dataset.sanPhamChiTietId;
-                    
-                    // Cập nhật giao diện chính nếu xóa ảnh chính
-                    // Tạm thời reload lại toàn bộ để đảm bảo hiển thị đúng
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    showNotification('Lỗi: ' + (data.message || 'Không thể xóa ảnh'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Có lỗi xảy ra khi xóa ảnh: ' + error.message, 'error');
-            });
-        }
-
-        // Cập nhật hiển thị ảnh trong bảng chính
-        function updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage) {
-            // Tìm container ảnh sản phẩm trong bảng
-            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-            if (!container) {
-                console.warn('Không tìm thấy container cho sanPhamChiTietId:', sanPhamChiTietId);
-                return;
-            }
-
-            const previewDiv = container.querySelector('.images-preview');
-            if (!previewDiv) {
-                console.warn('Không tìm thấy preview div');
-                return;
-            }
-
-            // Nếu là ảnh chính hoặc chưa có ảnh nào, cập nhật hiển thị
-            if (isMainImage || previewDiv.querySelector('span.text-muted')) {
-                previewDiv.innerHTML = `
-                    <img src="${imageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
-                `;
-            }
-        }
-
-        // Cập nhật hiển thị ảnh sau khi đặt ảnh chính
-        function updateMainImageDisplay(sanPhamChiTietId, mainImageUrl) {
-            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-            if (!container) return;
-
-            const previewDiv = container.querySelector('.images-preview');
-            if (!previewDiv) return;
-
-            if (mainImageUrl) {
-                previewDiv.innerHTML = `
-                    <img src="${mainImageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
-                `;
-            } else {
-                previewDiv.innerHTML = '<span class="text-muted small">Chưa có ảnh</span>';
-            }
         }
     </script>
 }

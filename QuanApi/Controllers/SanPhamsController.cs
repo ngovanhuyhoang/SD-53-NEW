@@ -116,6 +116,161 @@ namespace QuanApi.Controllers
         }
 
 
+        // GET: api/SanPhams/paged
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged(
+            int page = 1,
+            int pageSize = 10,
+            string? keyword = null,
+            string? trangThai = null,
+            decimal? priceFrom = null,
+            decimal? priceTo = null,
+            int? qtyFrom = null,
+            int? qtyTo = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null)
+        {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            var baseQuery = _context.SanPhams.AsQueryable();
+
+            // Optional filtering
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                baseQuery = baseQuery.Where(s => s.TenSanPham.Contains(keyword) || s.MaSanPham.Contains(keyword));
+            }
+            if (!string.IsNullOrWhiteSpace(trangThai))
+            {
+                if (trangThai == "active")
+                {
+                    baseQuery = baseQuery.Where(s => s.TrangThai == true);
+                }
+                else if (trangThai == "inactive")
+                {
+                    baseQuery = baseQuery.Where(s => s.TrangThai == false);
+                }
+            }
+
+            // Filter by created date
+            if (dateFrom.HasValue)
+            {
+                baseQuery = baseQuery.Where(s => s.NgayTao >= dateFrom.Value);
+            }
+            if (dateTo.HasValue)
+            {
+                // dateTo inclusive to end of day
+                var end = dateTo.Value.Date.AddDays(1).AddTicks(-1);
+                baseQuery = baseQuery.Where(s => s.NgayTao <= end);
+            }
+
+            // Filter by variant price range
+            if (priceFrom.HasValue)
+            {
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.GiaBan >= priceFrom.Value));
+            }
+            if (priceTo.HasValue)
+            {
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.GiaBan <= priceTo.Value));
+            }
+
+            // Filter by variant quantity range
+            if (qtyFrom.HasValue)
+            {
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong >= qtyFrom.Value));
+            }
+            if (qtyTo.HasValue)
+            {
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong <= qtyTo.Value));
+            }
+
+            var total = await baseQuery.CountAsync();
+
+            var data = await baseQuery
+                .Include(s => s.ChatLieu)
+                .Include(s => s.DanhMuc)
+                .Include(s => s.ThuongHieu)
+                .Include(s => s.LoaiOng)
+                .Include(s => s.KieuDang)
+                .Include(s => s.LungQuan)
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.KichCo)
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.MauSac)
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.HoaTiet)
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
+                .OrderBy(s => s.TenSanPham)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new SanPhamDto
+                {
+                    IDSanPham = s.IDSanPham,
+                    MaSanPham = s.MaSanPham,
+                    TenSanPham = s.TenSanPham,
+                    IDChatLieu = s.IDChatLieu,
+                    IDDanhMuc = s.IDDanhMuc,
+                    IDThuongHieu = s.IDThuongHieu,
+                    IDLoaiOng = s.IDLoaiOng,
+                    IDKieuDang = s.IDKieuDang,
+                    IDLungQuan = s.IDLungQuan,
+                    CoXepLy = s.CoXepLy,
+                    CoGian = s.CoGian,
+                    TrangThai = s.TrangThai,
+                    TenChatLieu = s.ChatLieu.TenChatLieu,
+                    TenDanhMuc = s.DanhMuc.TenDanhMuc,
+                    TenThuongHieu = s.ThuongHieu.TenThuongHieu,
+                    TenLoaiOng = s.LoaiOng.TenLoaiOng,
+                    TenKieuDang = s.KieuDang.TenKieuDang,
+                    TenLungQuan = s.LungQuan.TenLungQuan,
+                    AnhChinh = s.SanPhamChiTiets
+                        .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
+                        .SelectMany(ct => ct.AnhSanPhams)
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault(),
+                    DanhSachAnh = s.SanPhamChiTiets
+                        .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
+                        .SelectMany(ct => ct.AnhSanPhams)
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => new AnhSanPhamDto
+                        {
+                            IDAnhSanPham = a.IDAnhSanPham,
+                            MaAnh = a.MaAnh,
+                            UrlAnh = a.UrlAnh,
+                            LaAnhChinh = a.LaAnhChinh,
+                            NgayTao = a.NgayTao
+                        }).ToList(),
+                    ChiTietSanPhams = s.SanPhamChiTiets.Select(ct => new SanPhamChiTietDto
+                    {
+                        IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                        IdSanPham = ct.IDSanPham,
+                        IdKichCo = ct.IDKichCo,
+                        IdMauSac = ct.IDMauSac,
+                        IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
+                        SoLuong = ct.SoLuong,
+                        GiaBan = ct.GiaBan,
+                        price = ct.GiaBan,
+                        originalPrice = ct.GiaBan,
+                        TenKichCo = ct.KichCo.TenKichCo,
+                        TenMauSac = ct.MauSac.TenMauSac,
+                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
+                        AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ?
+                            ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ??
+                            ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(new { total, data });
+        }
+
+
 
         // GET: api/SanPhams/5
         [HttpGet("{id}")]

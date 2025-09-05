@@ -11,16 +11,16 @@
         <div class="col-md-4 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
-                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Doanh số hôm nay</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhSoHomNay">0 đ</div>
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Doanh thu hôm nay</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuHomNay">0 đ</div>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
-                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Doanh số tháng này</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhSoThang">0 đ</div>
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Doanh thu tháng này</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuThang">0 đ</div>
                 </div>
             </div>
         </div>
@@ -160,12 +160,12 @@
             }, 100);
 
             // Thống kê nhanh
-            $.get('/api/ChartsApi/today-sales', function (data) {
-                $('#doanhSoHomNay').text(data.toLocaleString('vi-VN') + ' đ');
+            $.get('/api/ChartsApi/today-revenue', function (data) {
+                $('#doanhThuHomNay').text(data.toLocaleString('vi-VN') + ' đ');
             });
 
-            $.get('/api/ChartsApi/month-sales', function (data) {
-                $('#doanhSoThang').text(data.toLocaleString('vi-VN') + ' đ');
+            $.get('/api/ChartsApi/month-revenue', function (data) {
+                $('#doanhThuThang').text(data.toLocaleString('vi-VN') + ' đ');
             });
 
             $.get('/api/ChartsApi/month-product-quantity', function (data) {

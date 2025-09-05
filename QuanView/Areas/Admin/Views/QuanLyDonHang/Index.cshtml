@@ -280,10 +280,11 @@
                     <div class="page-size-selector">
                         <label for="pageSize">Hiển thị:</label>
                         <select id="pageSize" class="form-control form-control-sm d-inline-block w-auto ml-2">
-                            <option value="5" @@(pageSize == 5 ? "selected" : "")>5</option>
-                            <option value="10" @@(pageSize == 10 ? "selected" : "")>10</option>
-                            <option value="20" @@(pageSize == 20 ? "selected" : "")>20</option>
-                            <option value="50" @@(pageSize == 50 ? "selected" : "")>50</option>
+                            <option value="5" selected="@(pageSize == 5)">5</option>
+                            <option value="10" selected="@(pageSize == 10)">10</option>
+                            <option value="20" selected="@(pageSize == 20)">20</option>
+                            <option value="50" selected="@(pageSize == 50)">50</option>
+
                         </select>
                     </div>
 
