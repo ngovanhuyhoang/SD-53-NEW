@@ -247,6 +247,19 @@
                                 }
                             </span>
                         </div>
+                        <div class="info-row">
+                            <span class="info-label">Phương thức thanh toán:</span>
+                            <span class="info-value">
+                                @if (Model.PhuongThucThanhToan != null)
+                                {
+                                    @Model.PhuongThucThanhToan.TenPhuongThuc
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa xác định</span>
+                                }
+                            </span>
+                        </div>
                         @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
                         {
                             <div class="info-row">

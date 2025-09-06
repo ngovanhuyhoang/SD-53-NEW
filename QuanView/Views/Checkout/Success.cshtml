@@ -1,6 +1,12 @@
 @{
     ViewData["Title"] = "Đặt hàng thành công";
     var orderCode = ViewBag.OrderCode as string;
+    var orderTotal = ViewBag.OrderTotal as decimal? ?? 0;
+    var paymentMethod = ViewBag.PaymentMethod as string ?? "Thanh toán khi nhận hàng";
+    var orderDate = ViewBag.OrderDate as DateTime? ?? DateTime.Now;
+    var customerName = ViewBag.CustomerName as string;
+    var customerPhone = ViewBag.CustomerPhone as string;
+    var customerAddress = ViewBag.CustomerAddress as string;
 }
 
 <style>
@@ -140,19 +146,67 @@
             
             <div class="info-item">
                 <span class="info-label">Trạng thái:</span>
-                <span class="info-value"><span class="badge bg-warning">Chờ xác nhận</span></span>
+                <span class="info-value">
+                    @if (paymentMethod.Contains("VNPay") || paymentMethod.Contains("chuyển khoản"))
+                    {
+                        <span class="badge bg-success">Đã thanh toán</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">Chờ xác nhận</span>
+                    }
+                </span>
             </div>
             
             <div class="info-item">
                 <span class="info-label">Thời gian đặt:</span>
-                <span class="info-value">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                <span class="info-value">@orderDate.ToString("dd/MM/yyyy HH:mm")</span>
             </div>
             
             <div class="info-item">
                 <span class="info-label">Phương thức thanh toán:</span>
-                <span class="info-value">Thanh toán khi nhận hàng</span>
+                <span class="info-value">@paymentMethod</span>
             </div>
+            
+            @if (orderTotal > 0)
+            {
+                <div class="info-item">
+                    <span class="info-label">Tổng tiền:</span>
+                    <span class="info-value" style="font-weight: bold; color: #28a745;">@orderTotal.ToString("N0") VNĐ</span>
+                </div>
+            }
         </div>
+        
+        @if (!string.IsNullOrEmpty(customerName) || !string.IsNullOrEmpty(customerAddress))
+        {
+            <div class="info-section">
+                <h5 class="mb-3"><i class="fas fa-user me-2"></i>Thông tin khách hàng</h5>
+                
+                @if (!string.IsNullOrEmpty(customerName))
+                {
+                    <div class="info-item">
+                        <span class="info-label">Họ tên:</span>
+                        <span class="info-value">@customerName</span>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrEmpty(customerPhone))
+                {
+                    <div class="info-item">
+                        <span class="info-label">Số điện thoại:</span>
+                        <span class="info-value">@customerPhone</span>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrEmpty(customerAddress))
+                {
+                    <div class="info-item">
+                        <span class="info-label">Địa chỉ giao hàng:</span>
+                        <span class="info-value">@customerAddress</span>
+                    </div>
+                }
+            </div>
+        }
         
         <div class="info-section">
             <h5 class="mb-3"><i class="fas fa-shipping-fast me-2"></i>Thông tin giao hàng</h5>
@@ -169,11 +223,11 @@
         </div>
         
         <div class="action-buttons">
-            <a href="/Home/Index" class="btn-custom btn-primary-custom">
-                <i class="fas fa-home me-2"></i>Về trang chủ
+            <a href="/DonHang/Index" class="btn-custom btn-primary-custom">
+                <i class="fas fa-list-alt me-2"></i>Xem đơn hàng
             </a>
             
-            <a href="/GioHang/Index" class="btn-custom btn-outline-custom">
+            <a href="/SanPhamNguoiDung/Index" class="btn-custom btn-outline-custom">
                 <i class="fas fa-shopping-cart me-2"></i>Tiếp tục mua sắm
             </a>
         </div>

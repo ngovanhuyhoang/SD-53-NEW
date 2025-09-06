@@ -310,8 +310,15 @@ function themGioHang() {
         return;
     }
     
+    // Hàm decode HTML entities
+    function decodeHtmlEntities(text) {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = text;
+        return textarea.value;
+    }
+    
     // Thông báo xác nhận trước khi thêm vào giỏ hàng
-    const tenSanPham = '@Model.TenSanPham';
+    const tenSanPham = decodeHtmlEntities('@Model.TenSanPham');
     const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
     
     if (!confirm(confirmMessage)) {
