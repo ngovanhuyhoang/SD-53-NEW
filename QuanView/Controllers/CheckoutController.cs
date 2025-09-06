@@ -264,6 +264,9 @@ namespace QuanView.Controllers
                             Name = checkoutData.TenNguoiNhan
                         };
 
+                        // Debug: Log số tiền trước khi gửi VNPay
+                        _logger.LogInformation($"VNPay Payment - Amount: {paymentInfo.Amount}, TongTien: {checkoutData.TongTien}");
+
                         // Tạo URL thanh toán VNPay
                         var paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, HttpContext);
                         
@@ -747,19 +750,30 @@ namespace QuanView.Controllers
                         
                         if (hoaDonResponse.IsSuccessStatusCode)
                         {
-                            // Xóa giỏ hàng và thông tin đơn hàng tạm
-                            HttpContext.Session.Remove("Cart");
-                            HttpContext.Session.Remove("PendingOrder");
-
                             // Lấy mã hóa đơn từ response
                             var responseContent = await hoaDonResponse.Content.ReadAsStringAsync();
                             using (var doc = JsonDocument.Parse(responseContent))
                             {
                                 var maHoaDon = doc.RootElement.GetProperty("maHoaDon").GetString();
                                 
-                                // Chuyển hướng đến trang thành công
-                                TempData["SuccessMessage"] = "Thanh toán thành công! Mã đơn hàng: " + maHoaDon;
-                                return RedirectToAction("Index", "DonHang");
+                                // Parse order info để lấy thông tin chi tiết
+                                var orderInfo = JsonSerializer.Deserialize<CheckoutDto>(orderInfoJson);
+                                
+                                // Chuẩn bị dữ liệu cho trang Success
+                                ViewBag.OrderCode = maHoaDon;
+                                ViewBag.OrderTotal = orderInfo.TongTien;
+                                ViewBag.PaymentMethod = "Thanh toán VNPay";
+                                ViewBag.OrderDate = DateTime.Now;
+                                ViewBag.CustomerName = orderInfo.TenNguoiNhan;
+                                ViewBag.CustomerPhone = orderInfo.SoDienThoaiNguoiNhan;
+                                ViewBag.CustomerAddress = orderInfo.DiaChiGiaoHang;
+                                
+                                // Xóa giỏ hàng và thông tin đơn hàng tạm
+                                HttpContext.Session.Remove("Cart");
+                                HttpContext.Session.Remove("PendingOrder");
+                                
+                                // Chuyển hướng đến trang Success
+                                return View("Success");
                             }
                         }
                         else
@@ -779,15 +793,18 @@ namespace QuanView.Controllers
                 }
                 else
                 {
-                    // Thanh toán thất bại
+                    // Thanh toán thất bại hoặc bị hủy
                     string errorMessage = "Thanh toán thất bại.";
+                    bool isUserCancelled = false;
+                    
                     switch (response.VnPayResponseCode)
                     {
                         case "24":
-                            errorMessage = "Giao dịch bị hủy bởi khách hàng.";
+                            errorMessage = "Bạn đã hủy giao dịch thanh toán.";
+                            isUserCancelled = true;
                             break;
                         case "51":
-                            errorMessage = "Tài khoản không đủ số dư.";
+                            errorMessage = "Tài khoản không đủ số dư để thực hiện giao dịch.";
                             break;
                         case "65":
                             errorMessage = "Tài khoản đã vượt quá hạn mức giao dịch trong ngày.";
@@ -797,7 +814,22 @@ namespace QuanView.Controllers
                             break;
                     }
                     
-                    TempData["ErrorMessage"] = errorMessage;
+                    // Nếu user hủy giao dịch, chỉ hiển thị thông báo nhẹ nhàng
+                    if (isUserCancelled)
+                    {
+                        TempData["InfoMessage"] = errorMessage;
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = errorMessage;
+                    }
+                    
+                    // Xóa thông tin đơn hàng tạm nếu user hủy
+                    if (isUserCancelled)
+                    {
+                        HttpContext.Session.Remove("PendingOrder");
+                    }
+                    
                     return RedirectToAction("Index", "GioHang");
                 }
             }
