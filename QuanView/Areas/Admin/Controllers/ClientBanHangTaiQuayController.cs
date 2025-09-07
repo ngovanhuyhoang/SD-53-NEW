@@ -72,6 +72,16 @@ namespace QuanView.Areas.Admin.Controllers
             return Content(result, "application/json");
         }
 
+        // Tính phí vận chuyển
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/tinh-phi-van-chuyen")]
+        public async Task<IActionResult> CalculateShippingFee([FromBody] object shippingData)
+        {
+            var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
         // Thanh toán hóa đơn
         [HttpPost]
         [Route("Admin/ClientBanHangTaiQuay/thanh-toan")]

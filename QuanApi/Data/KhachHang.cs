@@ -1,4 +1,4 @@
-﻿using QuanApi.Data;
+using QuanApi.Data;
 using System.ComponentModel.DataAnnotations;
 
 public class KhachHang

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using BanQuanAu1.Web.Data;
 
@@ -22,6 +22,9 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
+
+// Đăng ký Shipping Service
+builder.Services.AddScoped<IShippingService, ShippingService>();
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
