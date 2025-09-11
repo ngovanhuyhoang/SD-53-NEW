@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanApi.Services;
+using System.IO;
 
 
 namespace QuanApi.Controllers
@@ -17,10 +19,12 @@ namespace QuanApi.Controllers
     public class SanPhamsController : ControllerBase
     {
         private readonly BanQuanAu1DbContext _context;
+        private readonly SanPhamValidationService _validationService;
 
         public SanPhamsController(BanQuanAu1DbContext context)
         {
             _context = context;
+            _validationService = new SanPhamValidationService();
         }
 
         // GET: api/SanPhams
@@ -42,6 +46,8 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.HoaTiet)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(s => s.SanPhamChiTiets)
+                    .ThenInclude(ct => ct.SanPham) // Thêm include này để tránh lỗi
 
                 .Select(s => new SanPhamDto
                 {
@@ -65,7 +71,7 @@ namespace QuanApi.Controllers
                     TenLungQuan = s.LungQuan.TenLungQuan,
                     // Lấy ảnh chính hoặc ảnh đầu tiên từ SanPhamChiTiet đầu tiên
                     AnhChinh = s.SanPhamChiTiets
-                        .Where(ct => ct.AnhSanPhams != null)
+                        .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
                         .SelectMany(ct => ct.AnhSanPhams)
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
@@ -74,7 +80,7 @@ namespace QuanApi.Controllers
                         .FirstOrDefault(),
                     // Lấy tất cả ảnh sản phẩm từ tất cả SanPhamChiTiet
                     DanhSachAnh = s.SanPhamChiTiets
-                        .Where(ct => ct.AnhSanPhams != null)
+                        .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
                         .SelectMany(ct => ct.AnhSanPhams)
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
@@ -99,7 +105,9 @@ namespace QuanApi.Controllers
                         TenKichCo = ct.KichCo.TenKichCo,
                         TenMauSac = ct.MauSac.TenMauSac,
                         TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
-                        AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
+                        AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ? 
+                            ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? 
+                            ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
                     }).ToList()
                 })
                 .ToListAsync();
@@ -133,6 +141,33 @@ namespace QuanApi.Controllers
                 return BadRequest();
             }
 
+            // Validate the product and its details
+            var validationErrors = _validationService.ValidateSanPham(sanPham);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { errors = validationErrors });
+            }
+
+            // Additional validation for product details
+            if (sanPham.SanPhamChiTiets != null && sanPham.SanPhamChiTiets.Any())
+            {
+                foreach (var chiTiet in sanPham.SanPhamChiTiets)
+                {
+                    if (chiTiet.SoLuong < 0)
+                    {
+                        return BadRequest(new { error = "Số lượng không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan < 0)
+                    {
+                        return BadRequest(new { error = "Giá bán không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan == 0)
+                    {
+                        return BadRequest(new { error = "Giá bán phải lớn hơn 0." });
+                    }
+                }
+            }
+
             _context.Entry(sanPham).State = EntityState.Modified;
 
             try
@@ -159,6 +194,37 @@ namespace QuanApi.Controllers
         [HttpPost]
         public async Task<ActionResult<SanPham>> PostSanPham(SanPham sanPham)
         {
+            // Validate the product and its details
+            var validationErrors = _validationService.ValidateSanPham(sanPham);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { errors = validationErrors });
+            }
+
+            // Additional validation for product details
+            if (sanPham.SanPhamChiTiets != null && sanPham.SanPhamChiTiets.Any())
+            {
+                foreach (var chiTiet in sanPham.SanPhamChiTiets)
+                {
+                    if (chiTiet.SoLuong < 0)
+                    {
+                        return BadRequest(new { error = "Số lượng không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan < 0)
+                    {
+                        return BadRequest(new { error = "Giá bán không được là số âm." });
+                    }
+                    if (chiTiet.GiaBan == 0)
+                    {
+                        return BadRequest(new { error = "Giá bán phải lớn hơn 0." });
+                    }
+                }
+
+                // ✅ Check for duplicate variants and merge quantities
+                var mergedVariants = MergeDuplicateVariants(sanPham.SanPhamChiTiets.ToList());
+                sanPham.SanPhamChiTiets = mergedVariants;
+            }
+
             if (sanPham.IDSanPham == Guid.Empty)
                 sanPham.IDSanPham = Guid.NewGuid();
 
@@ -173,13 +239,41 @@ namespace QuanApi.Controllers
             // ✅ Thêm biến thể sau
             if (chiTietList != null && chiTietList.Any())
             {
-                foreach (var ct in chiTietList)
+                // Check for existing variants in database
+                var existingVariants = await _context.SanPhamChiTiets
+                    .Where(ct => ct.IDSanPham == sanPham.IDSanPham)
+                    .ToListAsync();
+
+                var finalVariants = new List<SanPhamChiTiet>();
+
+                foreach (var newVariant in chiTietList)
                 {
-                    ct.IDSanPhamChiTiet = Guid.NewGuid();
-                    ct.IDSanPham = sanPham.IDSanPham;
+                    var existingVariant = existingVariants.FirstOrDefault(ev => 
+                        ev.IDKichCo == newVariant.IDKichCo && 
+                        ev.IDMauSac == newVariant.IDMauSac && 
+                        ev.IDHoaTiet == newVariant.IDHoaTiet);
+
+                    if (existingVariant != null)
+                    {
+                        // Merge quantities for existing variant
+                        existingVariant.SoLuong += newVariant.SoLuong;
+                        existingVariant.GiaBan = newVariant.GiaBan; // Update price
+                        _context.Entry(existingVariant).State = EntityState.Modified;
+                    }
+                    else
+                    {
+                        // Add new variant
+                        newVariant.IDSanPhamChiTiet = Guid.NewGuid();
+                        newVariant.IDSanPham = sanPham.IDSanPham;
+                        finalVariants.Add(newVariant);
+                    }
                 }
 
-                await _context.SanPhamChiTiets.AddRangeAsync(chiTietList);
+                if (finalVariants.Any())
+                {
+                    await _context.SanPhamChiTiets.AddRangeAsync(finalVariants);
+                }
+                
                 await _context.SaveChangesAsync();
             }
 
@@ -209,6 +303,35 @@ namespace QuanApi.Controllers
         private bool SanPhamExists(Guid id)
         {
             return _context.SanPhams.Any(e => e.IDSanPham == id);
+        }
+
+        // Helper method to merge duplicate variants
+        private List<SanPhamChiTiet> MergeDuplicateVariants(List<SanPhamChiTiet> variants)
+        {
+            var mergedVariants = new List<SanPhamChiTiet>();
+            var variantGroups = variants.GroupBy(v => new { v.IDKichCo, v.IDMauSac, v.IDHoaTiet });
+
+            foreach (var group in variantGroups)
+            {
+                var firstVariant = group.First();
+                var totalQuantity = group.Sum(v => v.SoLuong);
+                var maxPrice = group.Max(v => v.GiaBan); // Use highest price when merging
+
+                var mergedVariant = new SanPhamChiTiet
+                {
+                    IDSanPhamChiTiet = firstVariant.IDSanPhamChiTiet,
+                    IDSanPham = firstVariant.IDSanPham,
+                    IDKichCo = firstVariant.IDKichCo,
+                    IDMauSac = firstVariant.IDMauSac,
+                    IDHoaTiet = firstVariant.IDHoaTiet,
+                    SoLuong = totalQuantity,
+                    GiaBan = maxPrice
+                };
+
+                mergedVariants.Add(mergedVariant);
+            }
+
+            return mergedVariants;
         }
 
         // Thêm ảnh cho sản phẩm chi tiết
@@ -341,6 +464,65 @@ namespace QuanApi.Controllers
                 .ToListAsync();
 
             return Ok(images);
+        }
+
+        [HttpPost("chitiet/{sanPhamChiTietId}/upload-image")]
+        public async Task<IActionResult> UploadProductImage(Guid sanPhamChiTietId, IFormFile file, bool laAnhChinh = false)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Không có file ảnh.");
+
+            // Tạo tên file duy nhất
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(uploadPath));
+            using (var stream = new FileStream(uploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var urlAnh = $"/uploads/{fileName}";
+
+            // Tạo bản ghi ảnh sản phẩm như logic cũ
+            var anhSanPham = new AnhSanPham
+            {
+                IDAnhSanPham = Guid.NewGuid(),
+                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+                IDSanPhamChiTiet = sanPhamChiTietId,
+                UrlAnh = urlAnh,
+                LaAnhChinh = laAnhChinh,
+                NgayTao = DateTime.UtcNow,
+                NguoiTao = User?.Identity?.Name ?? "System",
+                TrangThai = true
+            };
+
+            // Nếu đặt làm ảnh chính, bỏ ảnh chính cũ
+            if (laAnhChinh)
+            {
+                var anhChinhCu = await _context.AnhSanPhams
+                    .Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.LaAnhChinh && a.TrangThai)
+                    .FirstOrDefaultAsync();
+
+                if (anhChinhCu != null)
+                {
+                    anhChinhCu.LaAnhChinh = false;
+                    anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
+                    anhChinhCu.NguoiCapNhat = User?.Identity?.Name ?? "System";
+                }
+            }
+
+            _context.AnhSanPhams.Add(anhSanPham);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Upload ảnh thành công.",
+                urlAnh,
+                anhSanPham.IDAnhSanPham,
+                anhSanPham.MaAnh,
+                anhSanPham.LaAnhChinh
+            });
         }
     }
 }

@@ -1,11 +1,11 @@
-﻿@model QuanApi.Data.LoaiOng
+@model QuanApi.Data.LoaiOng
 
 <form id="editForm" asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="IDLoaiOng" />
     <div class="form-group">
-        <label asp-for="MaLoaiOng" class="control-label"></label>
-        <input asp-for="MaLoaiOng" class="form-control" />
+        <label asp-for="MaLoaiOng" class="control-label">Mã loại ống <small class="text-muted">(Không thể chỉnh sửa)</small></label>
+        <input asp-for="MaLoaiOng" class="form-control" readonly style="background-color: #f8f9fa;" />
         <span asp-validation-for="MaLoaiOng" class="text-danger"></span>
     </div>
     <div class="form-group">

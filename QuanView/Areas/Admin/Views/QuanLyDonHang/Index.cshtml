@@ -2,6 +2,12 @@
 @using QuanApi.Data
 @{
     ViewData["Title"] = "Quản lý đơn hàng";
+    var currentPage = ViewBag.CurrentPage ?? 1;
+    var pageSize = ViewBag.PageSize ?? 10;
+    var totalPages = ViewBag.TotalPages ?? 1;
+    var totalCount = ViewBag.TotalCount ?? 0;
+    var hasPreviousPage = ViewBag.HasPreviousPage ?? false;
+    var hasNextPage = ViewBag.HasNextPage ?? false;
 }
 
 <style>
@@ -37,6 +43,7 @@
     .status-delivered { background: #cce5ff; color: #004085; }
     .status-success { background: #d4edda; color: #155724; }
     .status-completed { background: #d1e7dd; color: #0f5132; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
     
     .btn-action {
         padding: 6px 12px;
@@ -57,6 +64,26 @@
         background: #0056b3;
         color: white;
     }
+
+    .pagination-info {
+        background: #f8f9fa;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .pagination-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .page-size-selector {
+        margin-right: 20px;
+    }
 </style>
 
 <div class="container-fluid">
@@ -71,6 +98,7 @@
         </div>
         <div class="card-body">
             <form method="get" action="@Url.Action("Index")" id="filterForm">
+                <input type="hidden" name="page" value="1" />
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
@@ -85,6 +113,7 @@
                                 <option value="Đang giao hàng">Đang giao hàng</option>
                                 <option value="Đã giao">Đã giao</option>
                                 <option value="Giao hàng thành công">Giao hàng thành công</option>
+                                <option value="Đã hủy">Đã hủy</option>
                             </select>
                         </div>
                     </div>
@@ -159,6 +188,13 @@
         </div>
     }
 
+    <!-- Thông tin phân trang -->
+    <div class="pagination-info">
+        <i class="fas fa-info-circle"></i>
+        Hiển thị @(((currentPage - 1) * pageSize) + 1) - @Math.Min(currentPage * pageSize, totalCount) trong tổng số @totalCount đơn hàng
+        (Trang @currentPage/@totalPages)
+    </div>
+
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Danh sách đơn hàng</h6>
@@ -214,6 +250,7 @@
                                                 "Đang giao hàng" => "status-shipping",
                                                 "Đã giao" => "status-delivered",
                                                 "Giao hàng thành công" => "status-success",
+                                                "Đã hủy" => "status-cancelled",
                                                 _ => "status-pending"
                                             };
                                         }
@@ -223,7 +260,7 @@
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            @hoaDon.NgayTao.ToString("dd/MM/yyyy HH:mm")
+                                            @hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")
                                         </small>
                                     </td>
                                     <td>
@@ -236,6 +273,78 @@
                             }
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Điều khiển phân trang -->
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <label for="pageSize">Hiển thị:</label>
+                        <select id="pageSize" class="form-control form-control-sm d-inline-block w-auto ml-2">
+                            <option value="5" @@(pageSize == 5 ? "selected" : "")>5</option>
+                            <option value="10" @@(pageSize == 10 ? "selected" : "")>10</option>
+                            <option value="20" @@(pageSize == 20 ? "selected" : "")>20</option>
+                            <option value="50" @@(pageSize == 50 ? "selected" : "")>50</option>
+                        </select>
+                    </div>
+
+                    <nav aria-label="Phân trang">
+                        <ul class="pagination mb-0">
+                            <!-- Nút Trang đầu -->
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+
+                            <!-- Nút Trang trước -->
+                            <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+
+                            <!-- Hiển thị các trang -->
+                            @{
+                                var startPage = Math.Max(1, currentPage - 2);
+                                var endPage = Math.Min(totalPages, currentPage + 2);
+                                
+                                if (startPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                }
+                                
+                                for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">@i</a>
+                                    </li>
+                                }
+                                
+                                if (endPage < totalPages)
+                                {
+                                    <li class="page-item">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                }
+                            }
+
+                            <!-- Nút Trang sau -->
+                            <li class="page-item @(!hasNextPage ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+
+                            <!-- Nút Trang cuối -->
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = totalPages, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             }
         </div>
@@ -251,7 +360,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Tổng đơn hàng
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@totalCount</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -333,5 +442,19 @@
         if (loaiDonHang) {
             $('#loaiDonHang').val(loaiDonHang);
         }
+
+        // Xử lý thay đổi page size
+        $('#pageSize').change(function() {
+            const newPageSize = $(this).val();
+            const currentUrl = new URL(window.location);
+            currentUrl.searchParams.set('pageSize', newPageSize);
+            currentUrl.searchParams.set('page', '1'); // Reset về trang đầu
+            window.location.href = currentUrl.toString();
+        });
+
+        // Reset về trang 1 khi submit form filter
+        $('#filterForm').submit(function() {
+            $(this).find('input[name="page"]').val('1');
+        });
     });
 </script> 

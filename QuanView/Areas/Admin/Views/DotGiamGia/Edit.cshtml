@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.DotGiamGia
+@model QuanApi.Data.DotGiamGia
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
@@ -96,8 +96,9 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label asp-for="MaDot" class="form-label fw-semibold">Mã khuyến mãi</label>
-                <input asp-for="MaDot" class="form-control border-primary" placeholder="KM2025" />
+                <input asp-for="MaDot" class="form-control border-primary" readonly style="background-color: #f8f9fa;" />
                 <span asp-validation-for="MaDot" class="text-danger small"></span>
+                <small class="form-text text-muted">Mã này không thể chỉnh sửa</small>
             </div>
             <div class="col-md-6">
                 <label asp-for="TenDot" class="form-label fw-semibold">Tên đợt giảm giá</label>
@@ -109,8 +110,9 @@
         <div class="row mb-3">
             <div class="col-md-4">
                 <label asp-for="PhanTramGiam" class="form-label fw-semibold">Giá trị giảm (%)</label>
-                <input asp-for="PhanTramGiam" class="form-control border-success" min="1" max="100" placeholder="20" />
+                <input asp-for="PhanTramGiam" type="number" min="1" max="40" step="0.01" class="form-control border-success" placeholder="20" oninput="validateDiscountPercentage(this)" />
                 <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
+                <small class="form-text text-muted">Nhập giá trị từ 1% đến 40%</small>
             </div>
             <div class="col-md-4">
                 <label asp-for="NgayBatDau" class="form-label fw-semibold">Ngày bắt đầu</label>
@@ -166,11 +168,30 @@
 
 @section Scripts {
     <script>
-        // Tạo input hidden cho từng id được chọn
+        function validateDiscountPercentage(input) {
+            const value = parseFloat(input.value);
+            
+            if (value < 0) {
+                input.value = 0;
+                alert('Phần trăm giảm giá không được âm!');
+                return;
+            }
+            
+            if (value < 1) {
+                input.value = 1;
+                alert('Phần trăm giảm giá phải từ 1% trở lên!');
+                return;
+            }
+            
+            if (value > 40) {
+                input.value = 40;
+                alert('Phần trăm giảm giá không được vượt quá 40%!');
+                return;
+            }
+        }
+
         function updateSelectedIds() {
-            // Xóa input cũ
             document.querySelectorAll('input[name="SelectedSanPhamChiTietIds"]').forEach(e => e.remove());
-            // Thêm input mới cho từng id
             var selected = Array.from(document.querySelectorAll('.product-item-row.selected'));
             var ids = selected.map(row => row.getAttribute('data-id'));
             var container = document.getElementById('product-list-container');
@@ -182,10 +203,8 @@
                 container.appendChild(input);
             });
         }
-        // Toggle chọn khi click vào ô sản phẩm hoặc label bên trong
         document.querySelectorAll('.product-item-row').forEach(function(row) {
             row.addEventListener('click', function(e) {
-                // Chỉ toggle nếu click vào chính row hoặc label bên trong
                 if (e.target === row || e.target.tagName === 'LABEL' || e.target.tagName === 'SPAN') {
                     row.classList.toggle('selected');
                     updateSelectedIds();
@@ -199,11 +218,9 @@
                 }
             });
         });
-        // Đảm bảo luôn cập nhật input hidden trước khi submit
         document.querySelector('form').addEventListener('submit', function() {
             updateSelectedIds();
         });
-        // Khởi tạo giá trị ban đầu
         updateSelectedIds();
     </script>
 }

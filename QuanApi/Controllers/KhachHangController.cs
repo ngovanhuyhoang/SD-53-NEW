@@ -458,5 +458,58 @@ namespace QuanApi.Controllers.Api
         {
             return _context.KhachHang.Any(e => e.IDKhachHang == id);
         }
+
+        // API endpoint để lấy địa chỉ của khách hàng
+        [HttpGet("{id}/addresses")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<DiaChiDto>>> GetCustomerAddresses(Guid id)
+        {
+            _logger.LogInformation("Đang lấy danh sách địa chỉ của khách hàng ID: {CustomerId}", id);
+
+            var khachHang = await _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId}", id);
+                return NotFound();
+            }
+
+            var addresses = khachHang.DiaChis?.Where(d => d.TrangThai) ?? new List<DiaChi>();
+            var addressDtos = _mapper.Map<IEnumerable<DiaChiDto>>(addresses);
+
+            return Ok(addressDtos);
+        }
+
+        // API endpoint để lấy địa chỉ mặc định của khách hàng
+        [HttpGet("{id}/default-address")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<DiaChiDto>> GetDefaultAddress(Guid id)
+        {
+            _logger.LogInformation("Đang lấy địa chỉ mặc định của khách hàng ID: {CustomerId}", id);
+
+            var khachHang = await _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId}", id);
+                return NotFound();
+            }
+
+            var defaultAddress = khachHang.DiaChis?.FirstOrDefault(d => d.TrangThai && d.LaMacDinh);
+            
+            if (defaultAddress == null)
+            {
+                return NotFound("Không tìm thấy địa chỉ mặc định");
+            }
+
+            var addressDto = _mapper.Map<DiaChiDto>(defaultAddress);
+            return Ok(addressDto);
+        }
     }
 }

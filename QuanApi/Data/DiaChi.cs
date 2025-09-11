@@ -19,6 +19,19 @@ namespace QuanApi.Data
         [MaxLength(255)]
         public string DiaChiChiTiet { get; set; }
 
+        // Thông tin địa chỉ chi tiết
+        [Required]
+        [MaxLength(100)]
+        public string TinhThanhPho { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string QuanHuyen { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string PhuongXa { get; set; }
+
         [Required]
         public bool LaMacDinh { get; set; } = false;
 

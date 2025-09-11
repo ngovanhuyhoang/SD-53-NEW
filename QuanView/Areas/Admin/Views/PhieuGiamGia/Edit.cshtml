@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.PhieuGiamGia
+@model QuanApi.Data.PhieuGiamGia
 
 @{
     ViewData["Title"] = "Sửa phiếu giảm giá";
@@ -74,7 +74,7 @@
     <div class="form-container">
         <div class="alert alert-info" role="alert">
             <i class="fas fa-info-circle"></i>
-            <strong>Lưu ý:</strong> Phiếu giảm giá sẽ được phân phối công khai cho tất cả khách hàng (mỗi người 1 phiếu).
+            <strong>Lưu ý:</strong> Phiếu giảm giá sẽ được phân phối công khai cho tất cả khách hàng.
         </div>
 
         <form asp-action="Edit" method="post" id="editForm">
@@ -85,9 +85,9 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label asp-for="MaCode" class="form-label">Mã Code <span class="text-danger">*</span></label>
-                        <input asp-for="MaCode" class="form-control" placeholder="Nhập mã code..." />
+                        <input asp-for="MaCode" class="form-control" readonly style="background-color: #f8f9fa;" />
                         <span asp-validation-for="MaCode" class="text-danger"></span>
-                        <small class="text-muted">Mã code duy nhất cho phiếu giảm giá</small>
+                        <small class="text-muted">Mã này không thể chỉnh sửa</small>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -103,9 +103,9 @@
                 <div class="col-md-4">
                     <div class="form-group">
                         <label asp-for="GiaTriGiam" class="form-label">Phần trăm giảm (%) <span class="text-danger">*</span></label>
-                        <input asp-for="GiaTriGiam" class="form-control" type="number" min="1" max="100" placeholder="1-100" />
+                        <input asp-for="GiaTriGiam" class="form-control" type="number" min="1" max="99" placeholder="1-99" />
                         <span asp-validation-for="GiaTriGiam" class="text-danger"></span>
-                        <small class="text-muted">Phần trăm giảm từ 1% đến 100%</small>
+                        <small class="text-muted">Phần trăm giảm từ 1% đến 99%</small>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -181,8 +181,8 @@
                 }
                 
                 // Validate percentage
-                if (giaTriGiam < 1 || giaTriGiam > 100) {
-                    alert('Phần trăm giảm phải từ 1% đến 100%!');
+                if (giaTriGiam < 1 || giaTriGiam > 99) {
+                    alert('Phần trăm giảm phải từ 1% đến 99%!');
                     e.preventDefault();
                     return false;
                 }

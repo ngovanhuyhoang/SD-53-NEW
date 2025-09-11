@@ -1,11 +1,11 @@
-﻿@model QuanApi.Data.KieuDang
+@model QuanApi.Data.KieuDang
 
 <form id="editForm" asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="IDKieuDang" />
     <div class="form-group">
-        <label asp-for="MaKieuDang" class="control-label"></label>
-        <input asp-for="MaKieuDang" class="form-control" />
+        <label asp-for="MaKieuDang" class="control-label">Mã kiểu dáng <small class="text-muted">(Không thể chỉnh sửa)</small></label>
+        <input asp-for="MaKieuDang" class="form-control" readonly style="background-color: #f8f9fa;" />
         <span asp-validation-for="MaKieuDang" class="text-danger"></span>
     </div>
     <div class="form-group">

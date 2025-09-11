@@ -70,7 +70,14 @@ namespace QuanApi.Controllers
                 return BadRequest("Dữ liệu không hợp lệ");
 
             var success = await _repository.CreateAsync(dto.Dot, dto.ChiTietIds ?? new List<Guid>());
-            return success ? Ok(new { Success = true }) : BadRequest("Tạo thất bại (có thể do ngày không hợp lệ)");
+            if (success)
+            {
+                return Ok(new { 
+                    Success = true, 
+                    Message = "Đợt giảm giá đã được xử lý thành công. Nếu sản phẩm đã có đợt giảm giá đang hoạt động, đã được cập nhật thay vì tạo mới." 
+                });
+            }
+            return BadRequest("Tạo thất bại (có thể do ngày không hợp lệ)");
         }
 
         // PUT: api/DotGiamGias/{id}
@@ -102,6 +109,23 @@ namespace QuanApi.Controllers
         {
             var sanPhams = await _repository.GetAllSanPhamChiTietWithSelected(id);
             return Ok(sanPhams);
+        }
+
+        // GET: api/DotGiamGias/CheckActiveDiscounts
+        [HttpGet("CheckActiveDiscounts")]
+        public async Task<IActionResult> CheckActiveDiscounts([FromQuery] List<Guid> productIds)
+        {
+            if (productIds == null || !productIds.Any())
+                return BadRequest("Danh sách sản phẩm không hợp lệ");
+
+            var productsWithActiveDiscounts = await _repository.GetProductsWithActiveDiscounts(productIds);
+            return Ok(new { 
+                HasActiveDiscounts = productsWithActiveDiscounts.Any(),
+                ProductIdsWithActiveDiscounts = productsWithActiveDiscounts,
+                Message = productsWithActiveDiscounts.Any() 
+                    ? $"Có {productsWithActiveDiscounts.Count} sản phẩm đã có đợt giảm giá đang hoạt động. Đợt giảm giá hiện tại sẽ được cập nhật thay vì tạo mới."
+                    : "Không có sản phẩm nào có đợt giảm giá đang hoạt động."
+            });
         }
 
 

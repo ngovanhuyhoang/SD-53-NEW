@@ -232,9 +232,9 @@
             <a href="@Url.Action("Index")" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </a>
-            <button class="btn btn-info">
+            <a href="@Url.Action("XuatHoaDon", "QuanLyDonHang", new { area = "Admin", id = Model.IDHoaDon })" target="_blank" class="btn btn-info">
                 <i class="fas fa-file-invoice"></i> Xuất hóa đơn
-            </button>
+            </a>
         </div>
     </div>
 
@@ -266,59 +266,73 @@
                 <h6 class="m-0 font-weight-bold text-primary">Tiến trình đơn hàng</h6>
             </div>
             <div class="card-body">
-                <div class="timeline">
-                    @for (int i = 0; i < statuses.Count; i++)
-                    {
-                        var status = statuses[i];
-                        var isCompleted = completedStatuses.Contains(status.Name);
-                        var isCurrent = status.Name == orderCurrentStatus || 
-                                       (status.Name == "Chờ xác nhận" && orderCurrentStatus == "Đã xác nhận") ||
-                                       (status.Name == "Chờ lấy hàng" && orderCurrentStatus == "Đã lấy hàng") ||
-                                       (status.Name == "Chờ giao hàng" && (orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao")) ||
-                                       (status.Name == "Chờ hoàn thành" && orderCurrentStatus == "Giao hàng thành công");
-                        
-                        // Xác định tên hiển thị dựa trên trạng thái thực tế
-                        string displayName = status.Name;
-                        if (isCompleted)
+                @if (Model.TrangThai == "Đã hủy")
+                {
+                    <div class="alert alert-danger text-center">
+                        <i class="fas fa-ban fa-2x mb-2"></i>
+                        <h5>Đơn hàng đã bị hủy</h5>
+                        @if (!string.IsNullOrEmpty(Model.LyDoHuyDon))
                         {
-                            displayName = status.Name switch
-                            {
-                                "Chờ xác nhận" when orderCurrentStatus != "Chờ xác nhận" => "Đã xác nhận",
-                                "Chờ lấy hàng" when orderCurrentStatus != "Chờ lấy hàng" && orderCurrentStatus != "Chờ xác nhận" => "Đã lấy hàng",
-                                "Chờ giao hàng" when orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao" || orderCurrentStatus == "Giao hàng thành công" => "Đang giao hàng",
-                                "Chờ hoàn thành" when orderCurrentStatus == "Giao hàng thành công" => "Giao hàng thành công",
-                                _ => status.Name
-                            };
+                            <p><strong>Lý do:</strong> @Model.LyDoHuyDon</p>
                         }
-                        
-                        <div class="timeline-item">
-                            <div class="timeline-icon @(isCompleted ? "completed" : "")">
-                                <i class="@status.Icon"></i>
-                            </div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">@displayName</div>
-                                <div class="timeline-time">
-                                    @if (isCompleted && status.Name == "Chờ xác nhận")
-                                    {
-                                        @(((DateTime?)status.Time).Value.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy"))
-                                    }
-                                    else if (isCompleted && status.Name != "Chờ xác nhận")
-                                    {
-                                        <span class="text-success">@Model.LanCapNhatCuoi?.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy")</span>
-                                    }
-                                    else if (isCurrent)
-                                    {
-                                        <span class="text-primary">Đang xử lý...</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Chưa thực hiện</span>
-                                    }
+                    </div>
+                }
+                else
+                {
+                    <div class="timeline">
+                        @for (int i = 0; i < statuses.Count; i++)
+                        {
+                            var status = statuses[i];
+                            var isCompleted = completedStatuses.Contains(status.Name);
+                            var isCurrent = status.Name == orderCurrentStatus || 
+                                           (status.Name == "Chờ xác nhận" && orderCurrentStatus == "Đã xác nhận") ||
+                                           (status.Name == "Chờ lấy hàng" && orderCurrentStatus == "Đã lấy hàng") ||
+                                           (status.Name == "Chờ giao hàng" && (orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao")) ||
+                                           (status.Name == "Chờ hoàn thành" && orderCurrentStatus == "Giao hàng thành công");
+                            
+                            // Xác định tên hiển thị dựa trên trạng thái thực tế
+                            string displayName = status.Name;
+                            if (isCompleted)
+                            {
+                                displayName = status.Name switch
+                                {
+                                    "Chờ xác nhận" when orderCurrentStatus != "Chờ xác nhận" => "Đã xác nhận",
+                                    "Chờ lấy hàng" when orderCurrentStatus != "Chờ lấy hàng" && orderCurrentStatus != "Chờ xác nhận" => "Đã lấy hàng",
+                                    "Chờ giao hàng" when orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao" || orderCurrentStatus == "Giao hàng thành công" => "Đang giao hàng",
+                                    "Chờ hoàn thành" when orderCurrentStatus == "Giao hàng thành công" => "Giao hàng thành công",
+                                    _ => status.Name
+                                };
+                            }
+                            
+                            <div class="timeline-item">
+                                <div class="timeline-icon @(isCompleted ? "completed" : "")">
+                                    <i class="@status.Icon"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">@displayName</div>
+                                    <div class="timeline-time">
+                                        @if (isCompleted && status.Name == "Chờ xác nhận")
+                                        {
+                                            @(((DateTime?)status.Time).Value.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy"))
+                                        }
+                                        else if (isCompleted && status.Name != "Chờ xác nhận")
+                                        {
+                                            <span class="text-success">@Model.LanCapNhatCuoi?.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy")</span>
+                                        }
+                                        else if (isCurrent)
+                                        {
+                                            <span class="text-primary">Đang xử lý...</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa thực hiện</span>
+                                        }
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    }
-                </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     }
@@ -326,43 +340,49 @@
     <!-- Order Information -->
     <div class="row">
         <div class="col-lg-8">
-            <div class="order-info">
-                <div class="order-header">
-                    <h5 class="mb-0">Thông tin đơn hàng</h5>
-                </div>
-                <div class="order-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-row">
-                                <span class="info-label">Mã:</span>
-                                <span class="info-value">@Model.MaHoaDon</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Tên khách hàng:</span>
-                                <span class="info-value">@(Model.KhachHang?.TenKhachHang ?? "Khách lẻ")</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Trạng thái:</span>
-                                <span class="status-badge">@Model.TrangThai</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-row">
-                                <span class="info-label">SĐT người nhận:</span>
-                                <span class="info-value">@Model.SoDienThoaiNguoiNhan</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Địa chỉ người nhận:</span>
-                                <span class="info-value">@Model.DiaChiGiaoHang</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Tên người nhận:</span>
-                                <span class="info-value">@Model.TenNguoiNhan</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="order-info">
+        <div class="order-header">
+        <h5 class="mb-0">Thông tin đơn hàng</h5>
+        </div>
+        <div class="order-body">
+        <div class="row">
+        <div class="col-md-6">
+        <div class="info-row">
+        <span class="info-label">Mã:</span>
+        <span class="info-value">@Model.MaHoaDon</span>
+        </div>
+        <div class="info-row">
+        <span class="info-label">Tên khách hàng:</span>
+        <span class="info-value">@(Model.KhachHang?.TenKhachHang ?? "Khách lẻ")</span>
+        </div>
+        <div class="info-row">
+        <span class="info-label">Trạng thái:</span>
+        <span class="status-badge">@Model.TrangThai</span>
+        </div>
+        </div>
+        <div class="col-md-6">
+        <div class="info-row">
+        <span class="info-label">SĐT người nhận:</span>
+        <span class="info-value">@Model.SoDienThoaiNguoiNhan</span>
+        </div>
+        <div class="info-row">
+        <span class="info-label">Địa chỉ người nhận:</span>
+        <span class="info-value">@Model.DiaChiGiaoHang</span>
+        </div>
+        <div class="info-row">
+        <span class="info-label">Tên người nhận:</span>
+        <span class="info-value">@Model.TenNguoiNhan</span>
+        </div>
+        </div>
+        </div>
+        @if (Model.TrangThai == "Đã hủy" && !string.IsNullOrEmpty(Model.LyDoHuyDon))
+        {
+        <div class="alert alert-danger mt-3">
+        <strong>Lý do hủy đơn:</strong> @Model.LyDoHuyDon
+        </div>
+        }
+        </div>
+        </div>
 
             <!-- Products -->
             <div class="card shadow mb-4">
@@ -388,6 +408,13 @@
                                             <div class="font-weight-bold">
                                                 @(chiTiet.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")
                                             </div>
+                                            <div class="text-muted small">
+                                                Màu sắc: @(chiTiet.SanPhamChiTiet?.MauSac?.TenMauSac ?? "-")
+                                                &nbsp;|&nbsp;
+                                                Kích cỡ: @(chiTiet.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-")
+                                                &nbsp;|&nbsp;
+                                                Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
+                                            </div>
                                         </td>
                                         <td>@chiTiet.DonGia.ToString("N0") VNĐ</td>
                                         <td>@chiTiet.SoLuong</td>
@@ -412,7 +439,13 @@
                         <h6 class="m-0 font-weight-bold text-primary">Cập nhật trạng thái</h6>
                     </div>
                     <div class="card-body">
-                        @if (!orderCompleted)
+                        @if (Model.TrangThai == "Đã hủy")
+                        {
+                            <div class="alert alert-danger text-center">
+                                <i class="fas fa-ban"></i> Đơn hàng đã bị hủy
+                            </div>
+                        }
+                        else if (!orderCompleted)
                         {
                             <form method="post" action="@Url.Action(nextAction, new { id = Model.IDHoaDon })">
                                 <button type="submit" class="btn btn-primary btn-block">
@@ -445,6 +478,10 @@
                         <span class="info-value">@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
                     </div>
                     <div class="info-row">
+                        <span class="info-label">Phí vận chuyển:</span>
+                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
+                    </div>
+                    <div class="info-row">
                         <span class="info-label font-weight-bold">Tổng cộng:</span>
                         <span class="info-value font-weight-bold text-primary">@Model.TongTien.ToString("N0") VNĐ</span>
                     </div>
@@ -455,7 +492,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Ngày tạo:</span>
-                        <span class="info-value">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="info-value">@Model.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
                     </div>
                 </div>
             </div>

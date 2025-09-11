@@ -5,29 +5,22 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using QuanApi.Dtos;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace QuanView.Controllers
 {
-    public static class SessionExtensions
-    {
-        public static void SetObjectAsJson(this ISession session, string key, object value)
-        {
-            session.SetString(key, JsonSerializer.Serialize(value));
-        }
-        public static T GetObjectFromJson<T>(this ISession session, string key)
-        {
-            var value = session.GetString(key);
-            return value == null ? default(T) : JsonSerializer.Deserialize<T>(value);
-        }
-    }
-
     public class GioHangController : Controller
     {
-        private readonly HttpClient _http;
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<GioHangController> _logger;
 
-        public GioHangController(IHttpClientFactory httpClientFactory)
+        public GioHangController(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<GioHangController> logger)
         {
-            _http = httpClientFactory.CreateClient("MyApi");
+            _httpClient = httpClientFactory.CreateClient("MyApi");
+            _configuration = configuration;
+            _logger = logger;
         }
 
         // GET: /GioHang/Index
@@ -38,13 +31,13 @@ namespace QuanView.Controllers
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
                 foreach (var item in cart)
                 {
-                    var responseSpct = await _http.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                    var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
                     if (responseSpct.IsSuccessStatusCode)
                     {
                         var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
                         if (spct != null)
                         {
-                            item.GiaBan = spct.price; 
+                            item.GiaBan = spct.price;
                             item.SanPhamChiTiet = new SanPhamChiTiet
                             {
                                 SanPham = new SanPham
@@ -52,6 +45,7 @@ namespace QuanView.Controllers
                                     TenSanPham = spct.TenSanPham
                                 },
                                 GiaBan = spct.price,
+                                SoLuong = spct.SoLuong,
                                 AnhSanPhams = new List<AnhSanPham>
                                 {
                                     new AnhSanPham
@@ -67,7 +61,7 @@ namespace QuanView.Controllers
                 var gioHang = new QuanApi.Data.GioHang { ChiTietGioHangs = cart };
                 return View(gioHang);
             }
-            var response = await _http.GetAsync($"GioHangs/getbyuser?iduser={iduser}");
+            var response = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={iduser}");
             if (!response.IsSuccessStatusCode)
             {
                 ViewData["ErrorMessage"] = "Không thể tải giỏ hàng.";
@@ -78,16 +72,42 @@ namespace QuanView.Controllers
             {
                 gioHangDb = new QuanApi.Data.GioHang { ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>() };
             }
-            // Merge giỏ hàng session nếu có
+            // Populate SoLuongTon for db cart
+            foreach (var item in gioHangDb.ChiTietGioHangs)
+            {
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                if (responseSpct.IsSuccessStatusCode)
+                {
+                    var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                    if (spct != null)
+                    {
+                        item.GiaBan = spct.price;
+                        if (item.SanPhamChiTiet == null)
+                        {
+                            item.SanPhamChiTiet = new SanPhamChiTiet();
+                        }
+                        item.SanPhamChiTiet.SoLuong = spct.SoLuong;
+                        item.SanPhamChiTiet.SanPham = new SanPham { TenSanPham = spct.TenSanPham };
+                        item.SanPhamChiTiet.AnhSanPhams = new List<AnhSanPham>
+                        {
+                            new AnhSanPham
+                            {
+                                UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                                LaAnhChinh = true
+                            }
+                        };
+                    }
+                }
+            }
             var cartSession = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart");
             if (cartSession != null && cartSession.Any())
             {
                 foreach (var item in cartSession)
                 {
-                    await _http.PostAsync($"GioHangs/add?iduser={iduser}&idsp={item.IDSanPhamChiTiet}&soluong={item.SoLuong}", null);
+                    await _httpClient.PostAsync($"GioHangs/add?iduser={iduser}&idsp={item.IDSanPhamChiTiet}&soluong={item.SoLuong}", null);
                 }
                 HttpContext.Session.Remove("Cart");
-                var reload = await _http.GetAsync($"GioHangs/getbyuser?iduser={iduser}");
+                var reload = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={iduser}");
                 if (reload.IsSuccessStatusCode)
                     gioHangDb = await reload.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>() ?? gioHangDb;
             }
@@ -98,140 +118,253 @@ namespace QuanView.Controllers
         [HttpPost]
         public async Task<IActionResult> Add(Guid? iduser, Guid idsp, int soluong)
         {
-            if (iduser == null || iduser == Guid.Empty)
+            try
             {
-                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-                var item = cart.FirstOrDefault(x => x.IDSanPhamChiTiet == idsp);
-                if (item != null)
-                    item.SoLuong += soluong;
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{idsp}");
+                if (!responseSpct.IsSuccessStatusCode)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy sản phẩm!" });
+                }
+                var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                if (spct == null || spct.SoLuong < soluong)
+                {
+                    return Json(new { success = false, message = "Số lượng vượt quá tồn kho!" });
+                }
+
+                if (iduser.HasValue && iduser != Guid.Empty)
+                {
+                    var response = await _httpClient.PostAsync($"GioHangs/add?iduser={iduser}&idsp={idsp}&soluong={soluong}", null);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return Json(new { success = true, message = "Thêm vào giỏ hàng thành công!" });
+                    }
+                    else
+                    {
+                        return Json(new { success = false, message = "Thêm vào giỏ hàng thất bại!" });
+                    }
+                }
                 else
-                    cart.Add(new QuanApi.Data.ChiTietGioHang {
-                        IDChiTietGioHang = Guid.NewGuid(), 
-                        IDSanPhamChiTiet = idsp,
-                        SoLuong = soluong,
-                        GiaBan = 0
-                    });
-                HttpContext.Session.SetObjectAsJson("Cart", cart);
-                TempData["Success"] = "Đã thêm vào giỏ hàng (tạm).";
-                return RedirectToAction("Index");
+                {
+                    // Khách hàng - lưu vào session
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+
+                    var existingItem = cart.FirstOrDefault(x => x.IDSanPhamChiTiet == idsp);
+                    if (existingItem != null)
+                    {
+                        if (existingItem.SoLuong + soluong > spct.SoLuong)
+                        {
+                            return Json(new { success = false, message = "Số lượng vượt quá tồn kho!" });
+                        }
+                        existingItem.SoLuong += soluong;
+                    }
+                    else
+                    {
+                        cart.Add(new QuanApi.Data.ChiTietGioHang
+                        {
+                            IDChiTietGioHang = Guid.NewGuid(),
+                            IDSanPhamChiTiet = idsp,
+                            SoLuong = soluong,
+                            GiaBan = spct.price
+                        });
+                    }
+
+                    HttpContext.Session.SetObjectAsJson("Cart", cart);
+                    return Json(new { success = true, message = "Thêm vào giỏ hàng thành công!" });
+                }
             }
-            var response = await _http.PostAsync($"GioHangs/add?iduser={iduser}&idsp={idsp}&soluong={soluong}", null);
-            if (!response.IsSuccessStatusCode)
+            catch (Exception ex)
             {
-                TempData["Error"] = "Thêm sản phẩm thất bại.";
+                _logger.LogError($"Error adding item to cart: {ex.Message}");
+                return Json(new { success = false, message = "Có lỗi xảy ra khi thêm vào giỏ hàng!" });
             }
-            return RedirectToAction("Index", new { iduser });
         }
 
         // POST: /GioHang/Update
         [HttpPost]
         public async Task<IActionResult> Update(Guid idghct, int soluong, Guid? iduser)
         {
-            if (iduser == null || iduser == Guid.Empty)
+            try
             {
-                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-                var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idghct);
-                if (item != null && soluong > 0)
-                    item.SoLuong = soluong;
-                else if (item != null && soluong <= 0)
-                    cart.Remove(item);
-                HttpContext.Session.SetObjectAsJson("Cart", cart);
-                return RedirectToAction("Index");
+                if (soluong < 1)
+                {
+                    return await Delete(idghct, iduser);
+                }
+
+                Guid idsp;
+                if (iduser.HasValue && iduser != Guid.Empty)
+                {
+                    // Lấy ID sản phẩm từ database
+                    var ghctResponse = await _httpClient.GetAsync($"GioHangs/get-chi-tiet?idghct={idghct}");
+                    if (!ghctResponse.IsSuccessStatusCode)
+                    {
+                        return RedirectToAction(nameof(Index), new { iduser = iduser });
+                    }
+                    var ghct = await ghctResponse.Content.ReadFromJsonAsync<QuanApi.Data.ChiTietGioHang>();
+                    idsp = ghct?.IDSanPhamChiTiet ?? Guid.Empty;
+                }
+                else
+                {
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idghct);
+                    if (item == null)
+                    {
+                        return RedirectToAction(nameof(Index));
+                    }
+                    idsp = item.IDSanPhamChiTiet;
+                }
+
+                // Kiểm tra tồn kho
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{idsp}");
+                if (!responseSpct.IsSuccessStatusCode)
+                {
+                    return RedirectToAction(nameof(Index), new { iduser = iduser });
+                }
+                var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                if (spct == null || spct.SoLuong < soluong)
+                {
+                    TempData["ErrorMessage"] = "Số lượng vượt quá tồn kho!";
+                    return RedirectToAction(nameof(Index), new { iduser = iduser });
+                }
+
+                if (iduser.HasValue && iduser != Guid.Empty)
+                {
+                    // Người dùng đã đăng nhập - cập nhật database
+                    var response = await _httpClient.PutAsync($"GioHangs/update?idghct={idghct}&soluong={soluong}", null);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return RedirectToAction(nameof(Index), new { iduser = iduser });
+                    }
+                }
+                else
+                {
+                    // Khách hàng - cập nhật session
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idghct);
+                    if (item != null)
+                    {
+                        item.SoLuong = soluong;
+                        HttpContext.Session.SetObjectAsJson("Cart", cart);
+                    }
+                }
+                return RedirectToAction(nameof(Index));
             }
-            var content = JsonContent.Create(soluong);
-            var response = await _http.PutAsJsonAsync($"GioHangs/update?idghct={idghct}&soluong={soluong}", content);
-            if (!response.IsSuccessStatusCode)
+            catch (Exception ex)
             {
-                TempData["Error"] = "Cập nhật thất bại.";
+                _logger.LogError($"Error updating cart: {ex.Message}");
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction("Index", new { iduser });
         }
 
         // POST: /GioHang/Delete
         [HttpPost]
         public async Task<IActionResult> Delete(Guid idgiohang, Guid? iduser)
         {
-            if (iduser == null || iduser == Guid.Empty)
+            try
             {
-                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-                var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idgiohang);
-                if (item != null)
-                    cart.Remove(item);
-                HttpContext.Session.SetObjectAsJson("Cart", cart);
-                return RedirectToAction("Index");
+                if (iduser.HasValue && iduser != Guid.Empty)
+                {
+                    // Người dùng đã đăng nhập - xóa từ database
+                    var response = await _httpClient.DeleteAsync($"GioHangs/xoa?idgiohang={idgiohang}");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return RedirectToAction(nameof(Index), new { iduser = iduser });
+                    }
+                }
+                else
+                {
+                    // Khách hàng - xóa từ session
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    var item = cart.FirstOrDefault(x => x.IDChiTietGioHang == idgiohang);
+                    if (item != null)
+                    {
+                        cart.Remove(item);
+                        HttpContext.Session.SetObjectAsJson("Cart", cart);
+                    }
+                }
+                return RedirectToAction(nameof(Index));
             }
-            var response = await _http.DeleteAsync($"GioHangs/xoa?idgiohang={idgiohang}");
-            if (!response.IsSuccessStatusCode)
+            catch (Exception ex)
             {
-                TempData["Error"] = "Xoá thất bại.";
+                _logger.LogError($"Error deleting cart item: {ex.Message}");
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction("Index", new { iduser });
         }
 
-        // GET: /GioHang/GetGioHang
+        // GET: GioHang/GetGioHang
         [HttpGet]
         public async Task<IActionResult> GetGioHang()
         {
             try
             {
-                // Lấy giỏ hàng từ session hoặc database
-                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-                
-                // Cập nhật thông tin sản phẩm cho từng item
-                foreach (var item in cart)
+                var customerIdClaim = User.FindFirst("custom:id_khachhang");
+                if (customerIdClaim == null || !Guid.TryParse(customerIdClaim.Value, out var customerId))
                 {
-                    var responseSpct = await _http.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
-                    if (responseSpct.IsSuccessStatusCode)
-                    {
-                        var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                        if (spct != null)
-                        {
-                            item.GiaBan = spct.price;
-                            item.SanPhamChiTiet = new SanPhamChiTiet
-                            {
-                                SanPham = new SanPham
-                                {
-                                    TenSanPham = spct.TenSanPham
-                                },
-                                GiaBan = spct.price,
-                                AnhSanPhams = new List<AnhSanPham>
-                                {
-                                    new AnhSanPham
-                                    {
-                                        UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
-                                        LaAnhChinh = true
-                                    }
-                                }
-                            };
-                        }
-                    }
+                    // Khách hàng - trả về giỏ hàng session
+                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                    return Json(cart);
                 }
 
-                var gioHang = new
+                // Người dùng đã đăng nhập - trả về giỏ hàng từ database
+                var response = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={customerId}");
+                if (response.IsSuccessStatusCode)
                 {
-                    chiTietGioHangs = cart.Select(item => new
-                    {
-                        idChiTietGioHang = item.IDChiTietGioHang,
-                        idSanPhamChiTiet = item.IDSanPhamChiTiet,
-                        soLuong = item.SoLuong,
-                        giaBan = item.GiaBan,
-                        sanPhamChiTiet = new
-                        {
-                            sanPham = new
-                            {
-                                tenSanPham = item.SanPhamChiTiet?.SanPham?.TenSanPham,
-                                anhSanPhams = item.SanPhamChiTiet?.AnhSanPhams?.Select(a => new { urlAnh = a.UrlAnh, laAnhChinh = a.LaAnhChinh }).ToList()
-                            }
-                        }
-                    }).ToList()
-                };
+                    var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
+                    return Json(gioHang?.ChiTietGioHangs ?? new List<QuanApi.Data.ChiTietGioHang>());
+                }
 
-                return Json(gioHang);
+                return Json(new List<QuanApi.Data.ChiTietGioHang>());
             }
             catch (Exception ex)
             {
-                return Json(new { error = ex.Message });
+                _logger.LogError($"Error getting cart: {ex.Message}");
+                return Json(new List<QuanApi.Data.ChiTietGioHang>());
             }
+        }
+
+        // GET: GioHang/GetCustomerVouchers
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerVouchers()
+        {
+            try
+            {
+                var customerIdClaim = User.FindFirst("custom:id_khachhang");
+                Guid? customerId = null;
+
+                if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
+                {
+                    customerId = parsedCustomerId;
+                    _logger.LogInformation($"Getting vouchers for logged-in customer: {customerId}");
+                }
+                else
+                {
+                    _logger.LogInformation("Getting public vouchers for guest user");
+                }
+
+                // Lấy phiếu giảm giá công khai cho tất cả người dùng
+                var response = await _httpClient.GetAsync($"PhieuGiamGias/public-vouchers");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<List<object>>();
+                    _logger.LogInformation($"Found {vouchers?.Count ?? 0} public vouchers");
+                    return Json(vouchers ?? new List<object>());
+                }
+                else
+                {
+                    _logger.LogWarning($"API returned status: {response.StatusCode}");
+                }
+
+                return Json(new List<object>());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting customer vouchers: {ex.Message}");
+                return Json(new List<object>());
+            }
+        }
+        public IActionResult PaymenCallBack()
+        {
+            return View();
         }
     }
 }

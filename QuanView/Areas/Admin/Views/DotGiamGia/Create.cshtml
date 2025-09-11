@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.DotGiamGia
+@model QuanApi.Data.DotGiamGia
 
 @{
     ViewData["Title"] = "Tạo mới đợt giảm giá";
@@ -24,7 +24,10 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label asp-for="MaDot" class="form-label">Mã khuyến mãi</label>
-                        <input asp-for="MaDot" class="form-control" />
+                        <div class="input-group">
+                            <input asp-for="MaDot" class="form-control" readonly style="background-color: #f8f9fa;" />
+                            <button type="button" class="btn btn-outline-primary" onclick="generateMaDot()">Tạo mã</button>
+                        </div>
                         <span asp-validation-for="MaDot" class="text-danger small"></span>
                     </div>
 
@@ -36,8 +39,9 @@
 
                     <div class="col-md-4">
                         <label asp-for="PhanTramGiam" class="form-label">Giảm (%)</label>
-                        <input asp-for="PhanTramGiam" class="form-control" />
+                        <input asp-for="PhanTramGiam" type="number" min="1" max="40" step="0.01" class="form-control" oninput="validateDiscountPercentage(this)" />
                         <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
+                        <small class="form-text text-muted">Nhập giá trị từ 1% đến 40%</small>
                     </div>
 
                     <div class="col-md-4">
@@ -173,7 +177,44 @@
             renderSanPhams(filtered);
         });
 
+        function generateMaDot() {
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            
+            const maDot = `DG${year}${month}${day}${hours}${minutes}${seconds}${random}`;
+            document.getElementById('MaDot').value = maDot;
+        }
+
+        function validateDiscountPercentage(input) {
+            const value = parseFloat(input.value);
+            
+            if (value < 0) {
+                input.value = 0;
+                alert('Phần trăm giảm giá không được âm!');
+                return;
+            }
+            
+            if (value < 1) {
+                input.value = 1;
+                alert('Phần trăm giảm giá phải từ 1% trở lên!');
+                return;
+            }
+            
+            if (value > 40) {
+                input.value = 40;
+                alert('Phần trăm giảm giá không được vượt quá 40%!');
+                return;
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
+            generateMaDot();
             loadSanPhams();
         });
     </script>

@@ -104,16 +104,29 @@ namespace QuanApi.Repository
                 _db.GioHangs.Add(nguoidung);
                 _db.SaveChanges();
             }
-            var sp = _db.SanPhamChiTiets.Find(idsp);
+            var sp = _db.SanPhamChiTiets
+                .Include(s => s.DotGiamGia)
+                .FirstOrDefault(s => s.IDSanPhamChiTiet == idsp);
             if (sp == null || soluong <= 0)
             {
-                throw new ArgumentException("Món ăn hoặc số lượng không hợp lệ.");
+                throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
             }
+            
+            // Tính giá sau khi áp dụng giảm giá
+            var giaSauGiam = sp.GiaBan;
+            if (sp.DotGiamGia != null && 
+                sp.DotGiamGia.TrangThai && 
+                sp.DotGiamGia.NgayBatDau <= DateTime.Now && 
+                sp.DotGiamGia.NgayKetThuc >= DateTime.Now)
+            {
+                giaSauGiam = sp.GiaBan * (1 - sp.DotGiamGia.PhanTramGiam / 100m);
+            }
+            
             var giohang = nguoidung.ChiTietGioHangs.FirstOrDefault(ghct => ghct.IDSanPhamChiTiet == idsp);
             if (giohang != null)
             {
                 giohang.SoLuong += soluong;
-                giohang.GiaBan = sp.GiaBan;
+                giohang.GiaBan = giaSauGiam;
             }
             else
             {
@@ -121,7 +134,7 @@ namespace QuanApi.Repository
                 {
                     IDSanPhamChiTiet = idsp,
                     SoLuong = soluong,
-                    GiaBan = sp.GiaBan,
+                    GiaBan = giaSauGiam,
                 });
             }
             _db.SaveChanges();

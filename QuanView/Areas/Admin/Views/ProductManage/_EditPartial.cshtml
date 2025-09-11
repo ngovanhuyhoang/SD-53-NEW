@@ -1,11 +1,11 @@
-﻿@model QuanApi.Data.DanhMuc
+@model QuanApi.Data.DanhMuc
 
 <form id="editForm" asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="IDDanhMuc" />
     <div class="form-group">
-        <label asp-for="MaDanhMuc" class="control-label"></label>
-        <input asp-for="MaDanhMuc" class="form-control" />
+        <label asp-for="MaDanhMuc" class="control-label">Mã danh mục <small class="text-muted">(Không thể chỉnh sửa)</small></label>
+        <input asp-for="MaDanhMuc" class="form-control" readonly style="background-color: #f8f9fa;" />
         <span asp-validation-for="MaDanhMuc" class="text-danger"></span>
     </div>
     <div class="form-group">

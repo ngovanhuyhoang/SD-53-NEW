@@ -425,7 +425,7 @@ namespace QuanApi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("IDKhachHang")
+                    b.Property<Guid?>("IDKhachHang")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("LanCapNhatCuoi")
@@ -444,6 +444,10 @@ namespace QuanApi.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("NguoiTao")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SessionId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -482,6 +486,10 @@ namespace QuanApi.Migrations
                     b.Property<DateTime?>("LanCapNhatCuoi")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LyDoHuyDon")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("MaHoaDon")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -497,6 +505,9 @@ namespace QuanApi.Migrations
                     b.Property<string>("NguoiTao")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("PhiVanChuyen")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("SoDienThoaiNguoiNhan")
                         .HasMaxLength(20)
@@ -1439,9 +1450,7 @@ namespace QuanApi.Migrations
                 {
                     b.HasOne("KhachHang", "KhachHang")
                         .WithMany("GioHangs")
-                        .HasForeignKey("IDKhachHang")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("IDKhachHang");
 
                     b.Navigation("KhachHang");
                 });

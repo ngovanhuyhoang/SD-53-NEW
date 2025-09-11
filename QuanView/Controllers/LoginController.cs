@@ -9,8 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using QuanView.Models; // Thêm namespace chứa ViewModel
+using QuanView.Models; 
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 
 namespace QuanView.Controllers
 {
@@ -26,6 +27,7 @@ namespace QuanView.Controllers
         public IActionResult Index()
         {
             ViewBag.Error = TempData["Error"];
+            ViewBag.SuccessMessage = TempData["SuccessMessage"];
             return View();
         }
 
@@ -58,11 +60,9 @@ namespace QuanView.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Chuẩn hóa email
             email = email.Trim().ToLower();
             Console.WriteLine($"Email Google: {email}");
 
-            // Tìm nhân viên trong cơ sở dữ liệu
             var nhanVien = await _context.NhanViens
                 .Include(nv => nv.VaiTro)
                 .FirstOrDefaultAsync(nv => nv.Email != null && nv.Email.Trim().ToLower() == email && nv.TrangThai);
@@ -126,7 +126,19 @@ namespace QuanView.Controllers
             };
 
             var khachIdentity = new ClaimsIdentity(khachClaims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(khachIdentity));
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = false, // Không lưu trữ lâu dài
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2) // Hết hạn sau 2 giờ
+            };
+            
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(khachIdentity), authProperties);
+
+            // Lưu thông tin khách hàng vào session
+            HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+
+            Console.WriteLine($"Đăng nhập thành công: {khachHang.TenKhachHang} - {khachHang.Email}");
+            Console.WriteLine($"Claims: {string.Join(", ", khachClaims.Select(c => $"{c.Type}={c.Value}"))}");
 
             return LocalRedirect(returnUrl ?? "/");
         }
@@ -136,16 +148,18 @@ namespace QuanView.Controllers
         public IActionResult FormLogin()
         {
             ViewBag.Error = TempData["Error"];
-            return View("Index"); // Dùng chung view Index.cshtml
+            return View(); 
         }
 
-        // Đăng nhập bằng form (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FormLogin(LoginViewModel model)
         {
+            Console.WriteLine($"🔍 Đang xử lý đăng nhập với email: {model.Email}");
+            
             if (!ModelState.IsValid)
             {
+                Console.WriteLine("❌ ModelState không hợp lệ");
                 return View("Index", model);
             }
 
@@ -154,9 +168,16 @@ namespace QuanView.Controllers
                 .Include(nv => nv.VaiTro)
                 .FirstOrDefaultAsync(nv => nv.Email == model.Email && nv.MatKhau == model.Password && nv.TrangThai);
 
+            Console.WriteLine($"🔍 Tìm thấy nhân viên: {(nhanVien != null ? "Có" : "Không")}");
+            if (nhanVien != null)
+            {
+                Console.WriteLine($"🔍 Vai trò nhân viên: {(nhanVien.VaiTro != null ? nhanVien.VaiTro.MaVaiTro : "NULL")}");
+            }
+
             if (nhanVien != null && nhanVien.VaiTro != null &&
                 (nhanVien.VaiTro.MaVaiTro?.ToLower() == "admin" || nhanVien.VaiTro.MaVaiTro?.ToLower() == "nhanvien"))
             {
+                Console.WriteLine("✅ Đăng nhập thành công với vai trò admin/nhân viên");
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, nhanVien.TenNhanVien ?? model.Email.Split('@')[0]),
@@ -169,12 +190,14 @@ namespace QuanView.Controllers
                 return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
             }
 
-            // Check khách hàng
             var khachHang = await _context.KhachHang
                 .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);
 
+            Console.WriteLine($"🔍 Tìm thấy khách hàng: {(khachHang != null ? "Có" : "Không")}");
+
             if (khachHang != null)
             {
+                Console.WriteLine("✅ Đăng nhập thành công với vai trò khách hàng");
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
@@ -183,15 +206,25 @@ namespace QuanView.Controllers
                     new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
                 };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = false, // Không lưu trữ lâu dài
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2) // Hết hạn sau 2 giờ
+                };
+                
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+                
+                // Lưu thông tin khách hàng vào session
+                HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+                
                 return RedirectToAction("Index", "Home");
             }
 
+            Console.WriteLine("❌ Đăng nhập thất bại - Email hoặc mật khẩu không đúng");
             ModelState.AddModelError("", "Email hoặc mật khẩu không đúng.");
             return View("Index", model);
         }
 
-        // Đăng ký bằng form (GET)
         [HttpGet]
         public IActionResult Register()
         {
@@ -199,7 +232,6 @@ namespace QuanView.Controllers
             return View();
         }
 
-        // Đăng ký bằng form (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
@@ -209,14 +241,12 @@ namespace QuanView.Controllers
                 return View(model);
             }
 
-            // Kiểm tra email đã tồn tại
             if (await _context.KhachHang.AnyAsync(kh => kh.Email == model.Email))
             {
                 ModelState.AddModelError("Email", "Email đã được sử dụng.");
                 return View(model);
             }
 
-            // Tạo khách hàng mới
             var khachHang = new KhachHang
             {
                 IDKhachHang = Guid.NewGuid(),
@@ -231,22 +261,19 @@ namespace QuanView.Controllers
             _context.KhachHang.Add(khachHang);
             await _context.SaveChangesAsync();
 
-            // Đăng nhập luôn sau khi đăng ký
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
-                new Claim(ClaimTypes.Email, khachHang.Email),
-                new Claim(ClaimTypes.Role, "KhachHang"),
-                new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
-            };
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-            return RedirectToAction("Index", "Home");
+            // Lưu thông báo thành công vào TempData
+            TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.";
+            
+            return RedirectToAction("Index", "Login");
         }
 
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            
+            // Xóa thông tin khách hàng khỏi session
+            HttpContext.Session.Remove("CustomerId");
+            
             return RedirectToAction("Index", "Home");
         }
 
@@ -254,5 +281,42 @@ namespace QuanView.Controllers
         {
             return View();
         }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult TestAuth()
+        {
+            var result = new
+            {
+                IsAuthenticated = User.Identity.IsAuthenticated,
+                UserName = User.Identity.Name,
+                Role = User.FindFirst(ClaimTypes.Role)?.Value,
+                Email = User.FindFirst(ClaimTypes.Email)?.Value,
+                CustomerId = User.FindFirst("custom:id_khachhang")?.Value,
+                SessionCustomerId = HttpContext.Session.GetString("CustomerId"),
+                AllClaims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+            };
+            
+            return Json(result);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult CheckAdminAccess()
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+            var isAdmin = role == "admin" || role == "nhanvien";
+            
+            var result = new
+            {
+                CanAccessAdmin = isAdmin,
+                Role = role,
+                UserName = User.Identity.Name,
+                Message = isAdmin ? "Có quyền truy cập Admin" : "Không có quyền truy cập Admin"
+            };
+            
+            return Json(result);
+        }
     }
 }
+

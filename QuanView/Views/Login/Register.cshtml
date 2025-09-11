@@ -1,4 +1,5 @@
-﻿@{
+﻿@model QuanView.Models.RegisterViewModel
+@{
     Layout = null;
 }
 <!DOCTYPE html>
@@ -33,43 +34,108 @@
         .google-btn:hover {
             background-color: #f8f9fa;
         }
+        .validation-summary-errors {
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+        .field-validation-error {
+            color: #dc3545;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
     <div class="register-container">
         <h2 class="text-center mb-4">Đăng ký</h2>
-        <form>
-            <div class="mb-3">
-                <label for="username" class="form-label">Tên người dùng</label>
-                <input type="text" class="form-control" id="username" placeholder="Nhập tên người dùng" required>
+        
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                @Html.ValidationSummary(false, "", new { @class = "validation-summary-errors" })
             </div>
+        }
+        
+        <form method="post" action="@Url.Action("Register", "Login")" id="registerForm">
+            @Html.AntiForgeryToken()
+            
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" placeholder="Nhập email của bạn" required>
+                <label for="TenKhachHang" class="form-label">Tên khách hàng</label>
+                <input type="text" class="form-control" id="TenKhachHang" name="TenKhachHang" 
+                       value="@Model?.TenKhachHang" placeholder="Nhập tên khách hàng" required>
+                @Html.ValidationMessageFor(m => m.TenKhachHang, "", new { @class = "field-validation-error" })
             </div>
+            
             <div class="mb-3">
-                <label for="password" class="form-label">Mật khẩu</label>
-                <input type="password" class="form-control" id="password" placeholder="Nhập mật khẩu" required>
+                <label for="Email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="Email" name="Email" 
+                       value="@Model?.Email" placeholder="Nhập email của bạn" required>
+                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-validation-error" })
             </div>
+            
             <div class="mb-3">
-                <label for="confirmPassword" class="form-label">Xác nhận mật khẩu</label>
-                <input type="password" class="form-control" id="confirmPassword" placeholder="Xác nhận mật khẩu" required>
+                <label for="SoDienThoai" class="form-label">Số điện thoại</label>
+                <input type="tel" class="form-control" id="SoDienThoai" name="SoDienThoai" 
+                       value="@Model?.SoDienThoai" placeholder="Nhập số điện thoại" required>
+                @Html.ValidationMessageFor(m => m.SoDienThoai, "", new { @class = "field-validation-error" })
             </div>
+            
+            <div class="mb-3">
+                <label for="Password" class="form-label">Mật khẩu</label>
+                <input type="password" class="form-control" id="Password" name="Password" 
+                       placeholder="Nhập mật khẩu (ít nhất 6 ký tự)" required>
+                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-validation-error" })
+            </div>
+            
+            <div class="mb-3">
+                <label for="ConfirmPassword" class="form-label">Xác nhận mật khẩu</label>
+                <input type="password" class="form-control" id="ConfirmPassword" name="ConfirmPassword" 
+                       placeholder="Xác nhận mật khẩu" required>
+                @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-validation-error" })
+            </div>
+            
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="agreeTerms" required>
                 <label class="form-check-label" for="agreeTerms">Đồng ý với các điều khoản dịch vụ</label>
             </div>
+            
             <button type="submit" class="btn btn-primary w-100 mb-3">Đăng ký</button>
         </form>
+        
         <div class="text-center mb-3">Hoặc</div>
-          <a href="@Url.Action("Login", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
+        <a href="@Url.Action("Login", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
             <i class="fab fa-google"></i> Đăng ký bằng Google
         </a>
+        
         <p class="text-center mt-3">
             Đã có tài khoản? <a href="@Url.Action("Index", "Login")">Đăng nhập</a>
         </p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Validation cho số điện thoại
+            $.validator.addMethod("phoneFormat", function(value, element) {
+                return this.optional(element) || /^[0-9]{10,11}$/.test(value);
+            }, "Số điện thoại phải có 10-11 số");
+            
+            $("#SoDienThoai").rules("add", {
+                phoneFormat: true
+            });
+            
+            // Validation cho mật khẩu
+            $.validator.addMethod("passwordStrength", function(value, element) {
+                return this.optional(element) || value.length >= 6;
+            }, "Mật khẩu phải có ít nhất 6 ký tự");
+            
+            $("#Password").rules("add", {
+                passwordStrength: true
+            });
+        });
+    </script>
 </body>
 </html>
