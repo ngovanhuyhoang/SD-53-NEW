@@ -88,8 +88,14 @@ namespace QuanApi.Services
 
         public decimal CalculateShippingFee(string province, string district, decimal orderValue, decimal weight = 0)
         {
+            // Chuẩn hóa tên tỉnh để tìm kiếm chính xác hơn
+            string normalizedProvince = NormalizeProvinceName(province);
+            
             // Lấy phí cơ bản theo tỉnh
-            decimal baseFee = _regionBaseFees.GetValueOrDefault(province, 50000); // Mặc định 50k cho tỉnh không có trong danh sách
+            decimal baseFee = _regionBaseFees.GetValueOrDefault(normalizedProvince, 50000); // Mặc định 50k cho tỉnh không có trong danh sách
+            
+            // Log để debug
+            Console.WriteLine($"[ShippingService] Original province: '{province}', Normalized: '{normalizedProvince}', Base fee: {baseFee}");
 
             // Áp dụng phụ phí theo quận/huyện
             decimal districtFee = _districtSurcharge.GetValueOrDefault(district, 0);
@@ -183,6 +189,114 @@ namespace QuanApi.Services
             }
             
             return 5; // 3-5 ngày cho các tỉnh xa
+        }
+
+        private string NormalizeProvinceName(string province)
+        {
+            if (string.IsNullOrWhiteSpace(province))
+                return string.Empty;
+
+            // Loại bỏ khoảng trắng thừa và chuẩn hóa
+            string normalized = province.Trim();
+
+            // Mapping các tên tỉnh có thể khác nhau
+            var provinceMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                // Thành phố trực thuộc trung ương
+                { "TP Hồ Chí Minh", "Hồ Chí Minh" },
+                { "Thành phố Hồ Chí Minh", "Hồ Chí Minh" },
+                { "TP.HCM", "Hồ Chí Minh" },
+                { "TPHCM", "Hồ Chí Minh" },
+                { "Sài Gòn", "Hồ Chí Minh" },
+                { "TP Hà Nội", "Hà Nội" },
+                { "Thành phố Hà Nội", "Hà Nội" },
+                { "TP Đà Nẵng", "Đà Nẵng" },
+                { "Thành phố Đà Nẵng", "Đà Nẵng" },
+                { "TP Hải Phòng", "Hải Phòng" },
+                { "Thành phố Hải Phòng", "Hải Phòng" },
+                { "TP Cần Thơ", "Cần Thơ" },
+                { "Thành phố Cần Thơ", "Cần Thơ" },
+
+                // Các tỉnh có thể có tiền tố
+                { "Tỉnh An Giang", "An Giang" },
+                { "Tỉnh Bà Rịa - Vũng Tàu", "Bà Rịa - Vũng Tàu" },
+                { "Tỉnh Bạc Liêu", "Bạc Liêu" },
+                { "Tỉnh Bắc Ninh", "Bắc Ninh" },
+                { "Tỉnh Bến Tre", "Bến Tre" },
+                { "Tỉnh Bình Định", "Bình Định" },
+                { "Tỉnh Bình Dương", "Bình Dương" },
+                { "Tỉnh Bình Phước", "Bình Phước" },
+                { "Tỉnh Bình Thuận", "Bình Thuận" },
+                { "Tỉnh Cà Mau", "Cà Mau" },
+                { "Tỉnh Đắk Lắk", "Đắk Lắk" },
+                { "Tỉnh Đắk Nông", "Đắk Nông" },
+                { "Tỉnh Đồng Nai", "Đồng Nai" },
+                { "Tỉnh Đồng Tháp", "Đồng Tháp" },
+                { "Tỉnh Gia Lai", "Gia Lai" },
+                { "Tỉnh Hà Nam", "Hà Nam" },
+                { "Tỉnh Hà Tĩnh", "Hà Tĩnh" },
+                { "Tỉnh Hậu Giang", "Hậu Giang" },
+                { "Tỉnh Hưng Yên", "Hưng Yên" },
+                { "Tỉnh Khánh Hòa", "Khánh Hòa" },
+                { "Tỉnh Kiên Giang", "Kiên Giang" },
+                { "Tỉnh Kon Tum", "Kon Tum" },
+                { "Tỉnh Lâm Đồng", "Lâm Đồng" },
+                { "Tỉnh Long An", "Long An" },
+                { "Tỉnh Nam Định", "Nam Định" },
+                { "Tỉnh Nghệ An", "Nghệ An" },
+                { "Tỉnh Ninh Bình", "Ninh Bình" },
+                { "Tỉnh Ninh Thuận", "Ninh Thuận" },
+                { "Tỉnh Phú Yên", "Phú Yên" },
+                { "Tỉnh Quảng Bình", "Quảng Bình" },
+                { "Tỉnh Quảng Nam", "Quảng Nam" },
+                { "Tỉnh Quảng Ngãi", "Quảng Ngãi" },
+                { "Tỉnh Quảng Ninh", "Quảng Ninh" },
+                { "Tỉnh Quảng Trị", "Quảng Trị" },
+                { "Tỉnh Sóc Trăng", "Sóc Trăng" },
+                { "Tỉnh Tây Ninh", "Tây Ninh" },
+                { "Tỉnh Thái Nguyên", "Thái Nguyên" },
+                { "Tỉnh Thanh Hóa", "Thanh Hóa" },
+                { "Tỉnh Thừa Thiên Huế", "Thừa Thiên Huế" },
+                { "Tỉnh Tiền Giang", "Tiền Giang" },
+                { "Tỉnh Trà Vinh", "Trà Vinh" },
+                { "Tỉnh Vĩnh Long", "Vĩnh Long" },
+                { "Tỉnh Vĩnh Phúc", "Vĩnh Phúc" }
+            };
+
+            // Kiểm tra mapping trước
+            if (provinceMapping.ContainsKey(normalized))
+            {
+                return provinceMapping[normalized];
+            }
+
+            // Nếu không có trong mapping, thử tìm kiếm gần đúng
+            foreach (var key in _regionBaseFees.Keys)
+            {
+                if (string.Equals(key, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return key;
+                }
+            }
+
+            // Thử loại bỏ các tiền tố phổ biến
+            var prefixes = new[] { "Tỉnh ", "Thành phố ", "TP ", "TP." };
+            foreach (var prefix in prefixes)
+            {
+                if (normalized.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    string withoutPrefix = normalized.Substring(prefix.Length).Trim();
+                    foreach (var key in _regionBaseFees.Keys)
+                    {
+                        if (string.Equals(key, withoutPrefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return key;
+                        }
+                    }
+                }
+            }
+
+            // Trả về tên gốc nếu không tìm thấy
+            return normalized;
         }
     }
 }

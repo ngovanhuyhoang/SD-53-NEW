@@ -21,7 +21,11 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddTransient<IEmailService, EmailService>();
+
+// Đăng ký các dịch vụ
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IOrderHistoryService, OrderHistoryService>();
+builder.Services.AddScoped<SanPhamValidationService>();
 
 // Đăng ký Shipping Service
 builder.Services.AddScoped<IShippingService, ShippingService>();
@@ -47,7 +51,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
-
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

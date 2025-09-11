@@ -488,6 +488,80 @@ namespace QuanView.Areas.Admin.Controllers
             return await CapNhatTrangThai(id, "Giao hàng thành công");
         }
 
+        // POST: Admin/QuanLyDonHang/Rollback/{id}
+        [HttpPost]
+        public async Task<IActionResult> Rollback(Guid id)
+        {
+            try
+            {
+                // Lấy thông tin đơn hàng hiện tại để xác định trạng thái rollback
+                var hoaDonResponse = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!hoaDonResponse.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDon = await hoaDonResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>();
+                if (hoaDon == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                // Xác định trạng thái rollback dựa trên trạng thái hiện tại
+                string targetStatus = hoaDon.TrangThai switch
+                {
+                    "Đã xác nhận" => "Chờ xác nhận",
+                    "Chờ lấy hàng" => "Đã xác nhận",
+                    "Đã lấy hàng" => "Chờ lấy hàng",
+                    "Chờ giao hàng" => "Đã lấy hàng",
+                    "Đang giao hàng" => "Chờ giao hàng",
+                    "Đã giao" => "Đang giao hàng",
+                    "Giao hàng thành công" => "Đã giao",
+                    _ => ""
+                };
+
+                if (string.IsNullOrEmpty(targetStatus))
+                {
+                    TempData["ErrorMessage"] = "Không thể rollback trạng thái này";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                // Tạo DTO cho rollback
+                var rollbackDto = new
+                {
+                    TargetStatus = targetStatus,
+                    Reason = $"Rollback từ '{hoaDon.TrangThai}' về '{targetStatus}' bởi admin",
+                    UpdatedBy = User.Identity?.Name ?? "Admin"
+                };
+
+                var jsonContent = new StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(rollbackDto),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+
+                var response = await _httpClient.PostAsync($"HoaDons/{id}/rollback", jsonContent);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = $"Đã rollback trạng thái từ '{hoaDon.TrangThai}' về '{targetStatus}' thành công";
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    TempData["ErrorMessage"] = $"Lỗi khi rollback trạng thái: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         // GET: Admin/QuanLyDonHang/DonHangCanXacNhan
         [HttpGet]
         public async Task<IActionResult> DonHangCanXacNhan()
