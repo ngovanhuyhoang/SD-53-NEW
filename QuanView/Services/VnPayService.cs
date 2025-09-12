@@ -13,11 +13,16 @@ namespace QuanView.Services
 
         public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
         {
+            var urlCallBack = _configuration["PaymentCallBack:ReturnUrl"];
+            return CreatePaymentUrl(model, context, urlCallBack);
+        }
+
+        public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context, string returnUrl)
+        {
             var timeZoneById = TimeZoneInfo.FindSystemTimeZoneById(_configuration["TimeZoneId"]);
             var timeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneById);
             var tick = DateTime.Now.Ticks.ToString();
             var pay = new VnPayLibrary();
-            var urlCallBack = _configuration["PaymentCallBack:ReturnUrl"];
 
             pay.AddRequestData("vnp_Version", _configuration["Vnpay:Version"]);
             pay.AddRequestData("vnp_Command", _configuration["Vnpay:Command"]);
@@ -29,7 +34,7 @@ namespace QuanView.Services
             pay.AddRequestData("vnp_Locale", _configuration["Vnpay:Locale"]);
             pay.AddRequestData("vnp_OrderInfo", $"{model.Name} {model.OrderDescription} {model.Amount}");
             pay.AddRequestData("vnp_OrderType", model.OrderType);
-            pay.AddRequestData("vnp_ReturnUrl", urlCallBack);
+            pay.AddRequestData("vnp_ReturnUrl", returnUrl);
             pay.AddRequestData("vnp_TxnRef", tick);
 
             var paymentUrl =
