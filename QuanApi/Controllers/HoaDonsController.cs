@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanApi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,16 +14,21 @@ namespace QuanApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-            public class HoaDonsController : ControllerBase
-        {
-            private readonly BanQuanAu1DbContext _context;
-            private readonly ILogger<HoaDonsController> _logger;
+    public class HoaDonsController : ControllerBase
+    {
+        private readonly BanQuanAu1DbContext _context;
+        private readonly ILogger<HoaDonsController> _logger;
+        private readonly IEmailService _emailService;
+        private readonly IOrderHistoryService _orderHistoryService;
 
-            public HoaDonsController(BanQuanAu1DbContext context, ILogger<HoaDonsController> logger)
-            {
-                _context = context;
-                _logger = logger;
-            }
+        public HoaDonsController(BanQuanAu1DbContext context, ILogger<HoaDonsController> logger, 
+            IEmailService emailService, IOrderHistoryService orderHistoryService)
+        {
+            _context = context;
+            _logger = logger;
+            _emailService = emailService;
+            _orderHistoryService = orderHistoryService;
+        }
 
         // GET: api/HoaDons - Cho admin (hiển thị tất cả đơn hàng)
         [HttpGet]
@@ -336,6 +342,171 @@ namespace QuanApi.Controllers
             }
         }
 
+        // PUT: api/HoaDons/{id}/trangthai
+        [HttpPut("{id}/trangthai")]
+        public async Task<IActionResult> UpdateTrangThai(Guid id, [FromBody] UpdateTrangThaiDto dto)
+        {
+            try
+            {
+                var hoaDon = await _context.HoaDons
+                    .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
+                    .Include(h => h.KhachHang)
+                    .FirstOrDefaultAsync(h => h.IDHoaDon == id);
+                
+                if (hoaDon == null)
+                {
+                    return NotFound("Không tìm thấy hóa đơn");
+                }
+
+                var oldStatus = hoaDon.TrangThai;
+
+                // Nếu đơn hàng đang chuyển sang trạng thái "Đã hủy", hoàn trả số lượng sản phẩm
+                if (dto.TrangThai == "Đã hủy" && hoaDon.TrangThai != "Đã hủy")
+                {
+                    _logger.LogInformation($"Bắt đầu hoàn trả số lượng sản phẩm cho đơn hàng {id}");
+                    
+                    foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+                    {
+                        if (chiTiet.SanPhamChiTiet != null)
+                        {
+                            var soLuongCu = chiTiet.SanPhamChiTiet.SoLuong;
+                            // Hoàn trả số lượng sản phẩm về kho
+                            chiTiet.SanPhamChiTiet.SoLuong += chiTiet.SoLuong;
+                            
+                            _logger.LogInformation($"Hoàn trả {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} về kho: {soLuongCu} -> {chiTiet.SanPhamChiTiet.SoLuong}");
+                        }
+                    }
+                    
+                    _logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
+                }
+
+                // Cập nhật trạng thái
+                hoaDon.TrangThai = dto.TrangThai;
+                hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
+                hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
+                
+                // Lưu lý do hủy đơn nếu có
+                if (dto.TrangThai == "Đã hủy" && !string.IsNullOrEmpty(dto.LyDoHuyDon))
+                {
+                    hoaDon.LyDoHuyDon = dto.LyDoHuyDon;
+                }
+
+                // Lưu lịch sử thay đổi trạng thái
+                await _orderHistoryService.SaveOrderHistoryAsync(id, oldStatus, dto.TrangThai, dto.NguoiCapNhat, dto.LyDoHuyDon);
+
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
+                
+                // Gửi email thông báo thay đổi trạng thái
+                if (dto.TrangThai == "Đã hủy")
+                {
+                    await _emailService.SendOrderCancellationEmailAsync(hoaDon, dto.LyDoHuyDon);
+                }
+                else
+                {
+                    await _emailService.SendOrderStatusChangeEmailAsync(hoaDon, oldStatus, dto.TrangThai);
+                }
+
+                return Ok(new { message = "Cập nhật trạng thái thành công" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating order status: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi cập nhật trạng thái đơn hàng");
+            }
+        }
+
+        // GET: api/HoaDons/{id}/rollback-options
+        [HttpGet("{id}/rollback-options")]
+        public async Task<IActionResult> GetRollbackOptions(Guid id)
+        {
+            try
+            {
+                var hoaDon = await _context.HoaDons.FindAsync(id);
+                if (hoaDon == null)
+                {
+                    return NotFound("Không tìm thấy hóa đơn");
+                }
+
+                var validStatuses = await _orderHistoryService.GetValidRollbackStatusesAsync(id, hoaDon.TrangThai);
+                
+                return Ok(new 
+                { 
+                    currentStatus = hoaDon.TrangThai,
+                    validRollbackStatuses = validStatuses,
+                    canRollback = validStatuses.Any()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting rollback options: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi lấy tùy chọn rollback");
+            }
+        }
+
+        // POST: api/HoaDons/{id}/rollback
+        [HttpPost("{id}/rollback")]
+        public async Task<IActionResult> RollbackStatus(Guid id, [FromBody] RollbackStatusDto dto)
+        {
+            try
+            {
+                var hoaDon = await _context.HoaDons
+                    .Include(h => h.KhachHang)
+                    .FirstOrDefaultAsync(h => h.IDHoaDon == id);
+                    
+                if (hoaDon == null)
+                {
+                    return NotFound("Không tìm thấy hóa đơn");
+                }
+
+                var oldStatus = hoaDon.TrangThai;
+                var success = await _orderHistoryService.RollbackOrderStatusAsync(id, dto.TargetStatus, dto.Reason, dto.UpdatedBy);
+
+                if (!success)
+                {
+                    return BadRequest("Không thể rollback đơn hàng về trạng thái này");
+                }
+
+                // Gửi email thông báo rollback
+                await _emailService.SendOrderStatusChangeEmailAsync(hoaDon, oldStatus, dto.TargetStatus);
+
+                return Ok(new { message = "Rollback trạng thái thành công" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rolling back order status: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi rollback trạng thái đơn hàng");
+            }
+        }
+
+        // GET: api/HoaDons/{id}/history
+        [HttpGet("{id}/history")]
+        public async Task<IActionResult> GetOrderHistory(Guid id)
+        {
+            try
+            {
+                var history = await _orderHistoryService.GetOrderHistoryAsync(id);
+                
+                var result = history.Select(h => new
+                {
+                    id = h.IDLichSuHoaDon,
+                    trangThai = h.TrangThai,
+                    ghiChu = h.GhiChu,
+                    ngayTao = h.NgayTao,
+                    nguoiTao = h.NguoiTao
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting order history: {Message}", ex.Message);
+                return StatusCode(500, "Lỗi khi lấy lịch sử đơn hàng");
+            }
+        }
+
         // PUT: api/HoaDons/5
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateHoaDon(Guid id, HoaDon hoaDon)
@@ -418,66 +589,6 @@ namespace QuanApi.Controllers
         private bool HoaDonExists(Guid id)
         {
             return _context.HoaDons.Any(e => e.IDHoaDon == id);
-        }
-
-        // PUT: api/HoaDons/{id}/trangthai
-        [HttpPut("{id}/trangthai")]
-        public async Task<IActionResult> UpdateTrangThai(Guid id, [FromBody] UpdateTrangThaiDto dto)
-        {
-            try
-            {
-                var hoaDon = await _context.HoaDons
-                    .Include(h => h.ChiTietHoaDons)
-                    .ThenInclude(ct => ct.SanPhamChiTiet)
-                    .FirstOrDefaultAsync(h => h.IDHoaDon == id);
-                
-                if (hoaDon == null)
-                {
-                    return NotFound("Không tìm thấy hóa đơn");
-                }
-
-                // Nếu đơn hàng đang chuyển sang trạng thái "Đã hủy", hoàn trả số lượng sản phẩm
-                if (dto.TrangThai == "Đã hủy" && hoaDon.TrangThai != "Đã hủy")
-                {
-                    _logger.LogInformation($"Bắt đầu hoàn trả số lượng sản phẩm cho đơn hàng {id}");
-                    
-                    foreach (var chiTiet in hoaDon.ChiTietHoaDons)
-                    {
-                        if (chiTiet.SanPhamChiTiet != null)
-                        {
-                            var soLuongCu = chiTiet.SanPhamChiTiet.SoLuong;
-                            // Hoàn trả số lượng sản phẩm về kho
-                            chiTiet.SanPhamChiTiet.SoLuong += chiTiet.SoLuong;
-                            
-                            _logger.LogInformation($"Hoàn trả {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} về kho: {soLuongCu} -> {chiTiet.SanPhamChiTiet.SoLuong}");
-                        }
-                    }
-                    
-                    _logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
-                }
-
-                // Cập nhật trạng thái
-                hoaDon.TrangThai = dto.TrangThai;
-                hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
-                hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
-                
-                // Lưu lý do hủy đơn nếu có
-                if (dto.TrangThai == "Đã hủy" && !string.IsNullOrEmpty(dto.LyDoHuyDon))
-                {
-                    hoaDon.LyDoHuyDon = dto.LyDoHuyDon;
-                }
-
-                await _context.SaveChangesAsync();
-                
-                _logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
-                
-                return Ok(new { success = true, message = "Cập nhật trạng thái thành công" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error updating order status: {ex.Message}");
-                return StatusCode(500, "Internal server error");
-            }
         }
 
         // GET: api/HoaDons/don-hang-can-xac-nhan
@@ -656,4 +767,11 @@ namespace QuanApi.Controllers
         public DateTime LanCapNhatCuoi { get; set; }
         public string? LyDoHuyDon { get; set; }
     }
-} 
+
+    public class RollbackStatusDto
+    {
+        public string TargetStatus { get; set; }
+        public string Reason { get; set; }
+        public string UpdatedBy { get; set; }
+    }
+}

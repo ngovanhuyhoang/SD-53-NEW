@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Dtos;
+using QuanApi.Services;
 
 namespace QuanApi.Controllers
 {
@@ -7,34 +8,12 @@ namespace QuanApi.Controllers
     [ApiController]
     public class ShippingController : ControllerBase
     {
-        // Tạm thời sử dụng service inline để tránh lỗi DI
-        private readonly Dictionary<string, decimal> _regionBaseFees = new()
-        {
-            { "Hà Nội", 20000 }, { "Hải Phòng", 25000 }, { "Quảng Ninh", 30000 },
-            { "Thái Nguyên", 25000 }, { "Vĩnh Phúc", 25000 }, { "Bắc Ninh", 22000 },
-            { "Hưng Yên", 25000 }, { "Hà Nam", 25000 }, { "Nam Định", 30000 },
-            { "Ninh Bình", 30000 }, { "Thanh Hóa", 40000 }, { "Nghệ An", 45000 },
-            { "Hà Tĩnh", 45000 }, { "Quảng Bình", 50000 }, { "Quảng Trị", 50000 },
-            { "Thừa Thiên Huế", 50000 }, { "Đà Nẵng", 55000 }, { "Quảng Nam", 55000 },
-            { "Quảng Ngãi", 60000 }, { "Bình Định", 60000 }, { "Phú Yên", 65000 },
-            { "Khánh Hòa", 65000 }, { "Ninh Thuận", 70000 }, { "Bình Thuận", 70000 },
-            { "Hồ Chí Minh", 75000 }, { "Bình Dương", 75000 }, { "Đồng Nai", 80000 },
-            { "Bà Rịa - Vũng Tàu", 85000 }, { "Long An", 80000 }, { "Tiền Giang", 85000 },
-            { "Bến Tre", 90000 }, { "Vĩnh Long", 90000 }, { "Trà Vinh", 95000 },
-            { "Cần Thơ", 90000 }, { "Đồng Tháp", 90000 }, { "An Giang", 95000 },
-            { "Kiên Giang", 100000 }, { "Cà Mau", 110000 }, { "Bạc Liêu", 105000 },
-            { "Sóc Trăng", 95000 }, { "Hậu Giang", 95000 }, { "Tây Ninh", 85000 },
-            { "Bình Phước", 85000 }, { "Đắk Lắk", 90000 }, { "Đắk Nông", 95000 },
-            { "Lâm Đồng", 85000 }, { "Gia Lai", 95000 }, { "Kon Tum", 100000 }
-        };
+        private readonly IShippingService _shippingService;
 
-        private readonly Dictionary<string, decimal> _districtSurcharge = new()
+        public ShippingController(IShippingService shippingService)
         {
-            { "Quận 1", -5000 }, { "Quận 3", -3000 }, { "Quận Hai Bà Trưng", -3000 },
-            { "Quận Hoàn Kiếm", -5000 }, { "Quận Ba Đình", -3000 },
-            { "Huyện Cần Giờ", 15000 }, { "Huyện Củ Chi", 10000 },
-            { "Huyện Nhà Bè", 8000 }, { "Huyện Bình Chánh", 8000 }
-        };
+            _shippingService = shippingService;
+        }
 
         [HttpPost("calculate")]
         public ActionResult<ShippingInfoDto> CalculateShipping([FromBody] CalculateShippingRequest request)
@@ -51,7 +30,13 @@ namespace QuanApi.Controllers
 
                 if (string.IsNullOrEmpty(request.Province))
                 {
-                    return BadRequest("Tỉnh/thành phố không được để trống");
+                    return BadRequest(new { 
+                        error = "Tỉnh/thành phố không được để trống",
+                        originalFee = 50000,
+                        finalFee = 50000,
+                        discountAmount = 0,
+                        discountMessage = ""
+                    });
                 }
 
                 if (request.OrderValue < 0)
@@ -59,7 +44,7 @@ namespace QuanApi.Controllers
                     return BadRequest("Giá trị đơn hàng không được âm");
                 }
 
-                var shippingInfo = CalculateShippingInfo(
+                var shippingInfo = _shippingService.GetShippingInfo(
                     request.Province, 
                     request.District ?? "", 
                     request.OrderValue
@@ -76,86 +61,30 @@ namespace QuanApi.Controllers
             }
         }
 
-        private ShippingInfoDto CalculateShippingInfo(string province, string district, decimal orderValue)
-        {
-            // Lấy phí cơ bản theo tỉnh
-            decimal baseFee = _regionBaseFees.GetValueOrDefault(province, 50000);
-
-            // Áp dụng phụ phí theo quận/huyện
-            decimal districtFee = _districtSurcharge.GetValueOrDefault(district, 0);
-
-            decimal totalFee = baseFee + districtFee;
-            if (totalFee < 0) totalFee = 0;
-
-            // Áp dụng giảm giá theo giá trị đơn hàng
-            decimal discount = 0;
-            string discountMessage = "";
-
-            if (orderValue >= 500000)
-            {
-                discount = totalFee; // Miễn phí 100%
-                discountMessage = "Miễn phí vận chuyển cho đơn hàng từ 500.000đ";
-            }
-            else if (orderValue >= 300000)
-            {
-                discount = totalFee * 0.5m; // Giảm 50%
-                discountMessage = "Giảm 50% phí vận chuyển cho đơn hàng từ 300.000đ";
-            }
-            else if (orderValue >= 200000)
-            {
-                discount = totalFee * 0.2m; // Giảm 20%
-                discountMessage = "Giảm 20% phí vận chuyển cho đơn hàng từ 200.000đ";
-            }
-
-            decimal finalFee = totalFee - discount;
-            if (finalFee < 0) finalFee = 0;
-
-            // Thời gian giao hàng ước tính
-            int estimatedDays = GetEstimatedDeliveryDays(province);
-
-            return new ShippingInfoDto
-            {
-                Province = province,
-                District = district,
-                OriginalFee = totalFee,
-                DiscountAmount = discount,
-                FinalFee = finalFee,
-                DiscountMessage = discountMessage,
-                EstimatedDeliveryDays = estimatedDays
-            };
-        }
-
-        private int GetEstimatedDeliveryDays(string province)
-        {
-            var majorCities = new[] { "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng" };
-            
-            if (majorCities.Contains(province))
-            {
-                return 2;
-            }
-            
-            var nearbyProvinces = new[] { 
-                "Bình Dương", "Đồng Nai", "Long An", "Bắc Ninh", "Hưng Yên", 
-                "Vĩnh Phúc", "Hà Nam", "Quảng Nam", "Bình Thuận" 
-            };
-            
-            if (nearbyProvinces.Contains(province))
-            {
-                return 3;
-            }
-            
-            return 5;
-        }
 
         [HttpGet("test")]
         public ActionResult<object> TestShipping()
         {
             try
             {
-                var testResult = CalculateShippingInfo("Hà Nội", "Ba Đình", 100000);
+                var testCases = new[]
+                {
+                    new { Province = "Hà Nội", District = "Ba Đình", OrderValue = 100000m },
+                    new { Province = "TP Hồ Chí Minh", District = "Quận 1", OrderValue = 250000m },
+                    new { Province = "Thành phố Đà Nẵng", District = "Hải Châu", OrderValue = 400000m },
+                    new { Province = "Tỉnh Cần Thơ", District = "Ninh Kiều", OrderValue = 600000m },
+                    new { Province = "Quảng Ninh", District = "", OrderValue = 150000m }
+                };
+
+                var results = testCases.Select(test => new
+                {
+                    Input = test,
+                    Result = _shippingService.GetShippingInfo(test.Province, test.District, test.OrderValue)
+                }).ToArray();
+
                 return Ok(new { 
-                    message = "Shipping service hoạt động bình thường", 
-                    testResult = testResult 
+                    message = "Shipping service test completed", 
+                    testResults = results 
                 });
             }
             catch (Exception ex)
@@ -177,7 +106,7 @@ namespace QuanApi.Controllers
                     return BadRequest("Tỉnh/thành phố không được để trống");
                 }
 
-                var shippingInfo = CalculateShippingInfo(province, district ?? "", orderValue);
+                var shippingInfo = _shippingService.GetShippingInfo(province, district ?? "", orderValue);
                 return Ok(shippingInfo.FinalFee);
             }
             catch (Exception ex)

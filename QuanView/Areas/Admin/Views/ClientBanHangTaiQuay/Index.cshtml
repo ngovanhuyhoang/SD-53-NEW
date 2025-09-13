@@ -462,7 +462,7 @@
             </div>
             <div class="modal-body">
                 <div id="voucherList">
-                    <!-- Danh sách phiếu giảm giá sẽ được load ở đây -->
+                    <!-- Danh sách voucher sẽ được load ở đây -->
                 </div>
                 <div id="noVoucherMessage" style="display:none;" class="text-center py-4">
                     <i class="bi bi-ticket-perforated" style="font-size: 3rem; color: #ccc;"></i>
@@ -471,6 +471,53 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nhập số lượng sản phẩm -->
+<div class="modal fade" id="quantityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cart-plus me-2"></i>Chọn số lượng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Sản phẩm:</label>
+                    <p class="mb-1" id="quantityProductName">-</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tồn kho:</label>
+                    <span class="badge bg-info" id="quantityProductStock">0</span>
+                </div>
+                <div class="mb-3">
+                    <label for="quantityInput" class="form-label">Số lượng:</label>
+                    <div class="input-group">
+                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                        <input type="number" class="form-control text-center" id="quantityInput" 
+                               min="1" value="1" oninput="validateQuantityInput()" 
+                               onkeypress="if(event.key==='Enter') confirmAddProduct()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle"></i> Nhập số lượng từ 1 đến <span id="maxQuantityText">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" onclick="confirmAddProduct()">
+                    <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                </button>
             </div>
         </div>
     </div>
@@ -516,8 +563,8 @@
     </div>
 </div>
 
-<!-- Modal chọn địa chỉ -->
-<div class="modal fade" id="selectAddressModal" tabindex="-1">
+<!-- Modal chọn địa chỉ (cũ - có thể xóa nếu không dùng) -->
+<div class="modal fade" id="selectAddressModal" tabindex="-1" style="display: none;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -964,6 +1011,17 @@
             return;
         }
 
+        // Kiểm tra tồn kho trước khi gửi request
+        const productInfo = products.find(p => p.id === productId);
+        if (productInfo) {
+            // Tính tổng số lượng có thể sử dụng (tồn kho hiện tại + số lượng đã chọn)
+            const availableStock = productInfo.stock + product.soLuong;
+            if (newQty > availableStock) {
+                showError(`Số lượng vượt quá tồn kho. Hiện có: ${availableStock}`);
+                return;
+            }
+        }
+
         const dto = {
             idGioHang: gh.id,
             idSanPhamChiTiet: productId,
@@ -978,7 +1036,13 @@
             data: JSON.stringify(dto),
             success: function(res) {
                 loadGioHang(); // Reload từ server
+                renderTabs();
                 loadProducts(); // cập nhật lại tồn kho
+                
+                // Hiển thị thông báo thành công với số lượng còn lại
+                if (res && res.message) {
+                    showSuccess(res.message);
+                }
             },
             error: function(xhr) {
                 let msg = 'Cập nhật số lượng thất bại!';
@@ -1001,11 +1065,34 @@
     function changeQtyManual(productId, value) {
         const qty = parseInt(value, 10);
         if (isNaN(qty) || qty < 1) {
-            removeProduct(productId);
+            showError('Số lượng phải là số nguyên dương!');
+            // Reset về giá trị cũ
+            const gh = gioHangs[currentGioHang];
+            const product = gh.products.find(p => p.id === productId);
+            if (product) {
+                const input = document.querySelector(`input[onchange*="${productId}"]`);
+                if (input) input.value = product.soLuong;
+            }
             return;
         }
 
+        // Kiểm tra tồn kho trước khi gửi request
         const gh = gioHangs[currentGioHang];
+        const product = gh.products.find(p => p.id === productId);
+        const productInfo = products.find(p => p.id === productId);
+        
+        if (productInfo && product) {
+            // Tính tổng số lượng có thể sử dụng (tồn kho hiện tại + số lượng đã chọn)
+            const availableStock = productInfo.stock + product.soLuong;
+            if (qty > availableStock) {
+                showError(`Số lượng vượt quá tồn kho. Hiện có: ${availableStock}`);
+                // Reset về giá trị cũ
+                const input = document.querySelector(`input[onchange*="${productId}"]`);
+                if (input) input.value = product.soLuong;
+                return;
+            }
+        }
+
         const dto = {
             idGioHang: gh.id,
             idSanPhamChiTiet: productId,
@@ -1020,7 +1107,13 @@
             data: JSON.stringify(dto),
             success: function(res) {
                 loadGioHang(); // Reload từ server
+                renderTabs();
                 loadProducts(); // cập nhật lại tồn kho
+                
+                // Hiển thị thông báo thành công
+                if (res && res.message) {
+                    showSuccess(res.message);
+                }
             },
             error: function(xhr) {
                 let msg = 'Cập nhật số lượng thất bại!';
@@ -1035,6 +1128,14 @@
                     }
                 }
                 showError(msg);
+                
+                // Reset về giá trị cũ khi có lỗi
+                const gh = gioHangs[currentGioHang];
+                const product = gh.products.find(p => p.id === productId);
+                if (product) {
+                    const input = document.querySelector(`input[onchange*="${productId}"]`);
+                    if (input) input.value = product.soLuong;
+                }
             }
         });
     }
@@ -1119,7 +1220,16 @@
                         <td>${p.size}</td>
                         <td>${p.color}</td>
                         <td><span class="badge ${p.stock > 10 ? 'bg-success' : p.stock > 5 ? 'bg-warning' : 'bg-danger'}">${p.stock}</span></td>
-                        <td><button class="btn btn-success btn-sm" onclick="addProductToGioHang('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>Chọn</button></td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-success btn-sm" onclick="addProductQuick('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Thêm nhanh (SL: 1)">
+                                    <i class="bi bi-plus-circle"></i>
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="addProductToGioHang('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Chọn số lượng">
+                                    <i class="bi bi-123"></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -1127,10 +1237,33 @@
         $('#productList').html(html);
     }
 
-    // Thêm sản phẩm vào giỏ hàng
-    function addProductToGioHang(productId) {
+    // Thêm sản phẩm vào giỏ hàng với tùy chọn số lượng
+    function addProductToGioHang(productId, quantity = null) {
         if (gioHangs.length === 0) {
             showWarning('Vui lòng tạo giỏ hàng trước!');
+            return;
+        }
+
+        // Nếu không có số lượng, hiển thị modal để nhập số lượng
+        if (quantity === null) {
+            showQuantityModal(productId);
+            return;
+        }
+
+        // Kiểm tra tồn kho trước khi thêm
+        const productInfo = products.find(p => p.id === productId);
+        if (!productInfo) {
+            showError('Không tìm thấy thông tin sản phẩm!');
+            return;
+        }
+
+        if (quantity > productInfo.stock) {
+            showError(`Số lượng vượt quá tồn kho. Hiện có: ${productInfo.stock}`);
+            return;
+        }
+
+        if (quantity <= 0) {
+            showError('Số lượng phải lớn hơn 0!');
             return;
         }
 
@@ -1138,7 +1271,7 @@
         const dto = {
             idGioHang: gh.id,
             idSanPhamChiTiet: productId,
-            soLuong: 1,
+            soLuong: quantity,
             nguoiCapNhat: "Admin"
         };
 
@@ -1149,6 +1282,7 @@
             data: JSON.stringify(dto),
             success: function(res) {
                 $('#productModal').modal('hide');
+                $('#quantityModal').modal('hide');
                 loadGioHang(); // Reload từ server
                 renderTabs();
                 loadProducts(); // cập nhật lại tồn kho
@@ -1173,6 +1307,85 @@
                 showError(msg);
             }
         });
+    }
+
+    // Hiển thị modal nhập số lượng
+    function showQuantityModal(productId) {
+        const productInfo = products.find(p => p.id === productId);
+        if (!productInfo) {
+            showError('Không tìm thấy thông tin sản phẩm!');
+            return;
+        }
+
+        // Cập nhật thông tin sản phẩm trong modal
+        document.getElementById('quantityProductName').textContent = productInfo.name;
+        document.getElementById('quantityProductStock').textContent = productInfo.stock;
+        document.getElementById('quantityInput').value = 1;
+        document.getElementById('quantityInput').max = productInfo.stock;
+        document.getElementById('maxQuantityText').textContent = productInfo.stock;
+        
+        // Lưu productId để sử dụng khi xác nhận
+        document.getElementById('quantityModal').setAttribute('data-product-id', productId);
+        
+        $('#quantityModal').modal('show');
+        
+        // Focus vào input số lượng
+        setTimeout(() => {
+            document.getElementById('quantityInput').focus();
+            document.getElementById('quantityInput').select();
+        }, 500);
+    }
+
+    // Xác nhận thêm sản phẩm với số lượng đã nhập
+    function confirmAddProduct() {
+        const modal = document.getElementById('quantityModal');
+        const productId = modal.getAttribute('data-product-id');
+        const quantity = parseInt(document.getElementById('quantityInput').value);
+        
+        if (isNaN(quantity) || quantity <= 0) {
+            showError('Vui lòng nhập số lượng hợp lệ!');
+            return;
+        }
+        
+        addProductToGioHang(productId, quantity);
+    }
+
+    // Thêm nhanh với số lượng 1
+    function addProductQuick(productId) {
+        addProductToGioHang(productId, 1);
+    }
+
+    // Điều chỉnh số lượng trong modal
+    function adjustQuantity(delta) {
+        const input = document.getElementById('quantityInput');
+        const currentValue = parseInt(input.value) || 1;
+        const maxValue = parseInt(input.max) || 1;
+        const newValue = Math.max(1, Math.min(maxValue, currentValue + delta));
+        
+        input.value = newValue;
+        validateQuantityInput();
+    }
+
+    // Kiểm tra tính hợp lệ của số lượng nhập vào
+    function validateQuantityInput() {
+        const input = document.getElementById('quantityInput');
+        const value = parseInt(input.value);
+        const maxValue = parseInt(input.max) || 1;
+        
+        // Xóa các ký tự không phải số
+        input.value = input.value.replace(/[^0-9]/g, '');
+        
+        if (isNaN(value) || value < 1) {
+            input.value = 1;
+        } else if (value > maxValue) {
+            input.value = maxValue;
+            showWarning(`Số lượng tối đa là ${maxValue}`);
+        }
+        
+        // Cập nhật trạng thái nút xác nhận
+        const confirmBtn = document.querySelector('#quantityModal .btn-success');
+        const isValid = !isNaN(parseInt(input.value)) && parseInt(input.value) >= 1 && parseInt(input.value) <= maxValue;
+        confirmBtn.disabled = !isValid;
     }
 
     function showCustomerModal() {
@@ -2200,7 +2413,7 @@
         console.log('Sending shipping calculation request:', requestData);
         
         $.ajax({
-            url: '/api/Shipping/calculate',
+            url: '/Admin/ClientBanHangTaiQuay/tinh-phi-van-chuyen',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(requestData),
