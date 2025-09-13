@@ -497,11 +497,12 @@
                         </div>
                         <div class="order-item">
                             <span>Phí vận chuyển:</span>
-                            <span id="phiVanChuyen">50,000 VNĐ</span>
+                            <span id="phiVanChuyen">0 VND</span>
                         </div>
+                        <div id="shippingDiscountMsg" style="display:none; margin: 4px 0 8px 0; font-size: 13px; color: #2e7d32;"></div>
                         <div class="order-item">
                             <strong>Tổng cộng:</strong>
-                            <strong style="color:#d32f2f;" id="tongCong">@(((decimal)ViewBag.TongTien + 50000).ToString("N0")) VND</strong>
+                            <strong style="color:#d32f2f;" id="tongCong">@(((decimal)ViewBag.TongTien).ToString("N0")) VND</strong>
                         </div>
                     </div>
 
@@ -574,7 +575,7 @@
     let discountValue = 0;
 
     // Load dữ liệu khi trang được tải
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
     // Khởi tạo esgoo.net API
     initEsgooAddressAPI();
     
@@ -606,8 +607,12 @@
     
     // KHÔNG gọi hienThiDonHang() vì HTML đã được render từ server
     // Chỉ cập nhật thông tin thanh toán nếu cần
-    // Gọi updatePaymentInfo để tính toán đúng tổng cộng bao gồm phí vận chuyển
-    updatePaymentInfo();
+    // Tính phí vận chuyển ban đầu và cập nhật tổng cộng
+    window.currentShippingFee = 0;
+    // Ẩn thông báo ưu đãi ship lúc đầu
+    const shipMsg = document.getElementById('shippingDiscountMsg');
+    if (shipMsg) shipMsg.style.display = 'none';
+    await recalcShipping();
     
     // Kiểm tra trạng thái đăng nhập và hiển thị section phiếu giảm giá phù hợp
     checkLoginStatusAndShowCouponSection();
@@ -840,9 +845,11 @@
             diaChiGiaoHang: diaChiGiaoHang,
             phuongThucThanhToanId: phuongThucThanhToan,
             ghiChu: document.getElementById('ghiChu').value,
-        tongTien: tongTien - discountValue + 50000, // Cộng thêm phí vận chuyển 50,000 VNĐ
+        tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
         tienGiam: discountValue || 0,
-        phiVanChuyen: 50000, // Gửi phí vận chuyển lên server
+        phiVanChuyen: window.currentShippingFee || 0,
+        province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
+        district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
         maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
         };
     
@@ -1274,6 +1281,7 @@
                                         $("#phuong").html('<option value="0">Phường Xã</option>');
                                     }
                                     updateFullAddress();
+                                    recalcShipping();
                                 });
                             }
                         });
@@ -1282,6 +1290,7 @@
                         $("#phuong").html('<option value="0">Phường Xã</option>');
                     }
                     updateFullAddress();
+                    recalcShipping();
                 });
                 
                 // Xử lý khi chọn tỉnh - Modal lưu địa chỉ
@@ -1745,7 +1754,7 @@
         sessionStorage.setItem('appliedDiscount', JSON.stringify(discountInfo));
         
         // Cập nhật UI trực tiếp (bao gồm phí vận chuyển)
-        const phiVanChuyen = 50000;
+        const phiVanChuyen = window.currentShippingFee || 0;
         const tongCong = Math.max(0, total - discountAmount + phiVanChuyen);
         document.getElementById('giamGia').textContent = discountAmount.toLocaleString() + ' VND';
         document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
@@ -1780,7 +1789,7 @@
             }
         }
         
-        const phiVanChuyen = 50000;
+        const phiVanChuyen = window.currentShippingFee || 0;
         const tongCongCleared = tamTinh + phiVanChuyen;
         document.getElementById('giamGia').textContent = '0 VND';
         document.getElementById('tongCong').textContent = tongCongCleared.toLocaleString() + ' VND';
@@ -1796,6 +1805,59 @@
 
 
     // Cập nhật thông tin thanh toán
+    async function recalcShipping() {
+        try {
+            const provinceText = $('#tinh option:selected').text();
+            const districtText = $('#quan option:selected').text();
+            let subtotal = 0;
+            if (gioHangData && gioHangData.chiTietGioHangs) {
+                gioHangData.chiTietGioHangs.forEach(item => {
+                    const giaBan = parseFloat(item.GiaBan) || 0;
+                    const soLuong = parseInt(item.SoLuong) || 0;
+                    subtotal += giaBan * soLuong;
+                });
+            }
+            if (subtotal === 0) {
+                const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
+                subtotal = parseFloat(serverTongTien) || 0;
+            }
+            if (provinceText && provinceText !== 'Tỉnh Thành') {
+                const payload = { province: provinceText, district: (districtText !== 'Quận Huyện' ? districtText : ''), orderValue: subtotal };
+                const res = await fetch('/Checkout/CalculateShipping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                    const info = await res.json();
+                    window.currentShippingFee = (info && (info.finalFee ?? info.FinalFee)) || 0;
+                    const msg = (info && (info.discountMessage ?? info.DiscountMessage)) || '';
+                    const shipMsgEl = document.getElementById('shippingDiscountMsg');
+                    if (shipMsgEl) {
+                        if (msg && window.currentShippingFee >= 0) {
+                            shipMsgEl.textContent = msg;
+                            shipMsgEl.style.display = 'block';
+                        } else {
+                            shipMsgEl.textContent = '';
+                            shipMsgEl.style.display = 'none';
+                        }
+                    }
+                } else {
+                    window.currentShippingFee = 0;
+                    const shipMsgEl = document.getElementById('shippingDiscountMsg');
+                    if (shipMsgEl) { shipMsgEl.textContent = ''; shipMsgEl.style.display = 'none'; }
+                }
+            } else {
+                window.currentShippingFee = 0;
+                const shipMsgEl = document.getElementById('shippingDiscountMsg');
+                if (shipMsgEl) { shipMsgEl.textContent = ''; shipMsgEl.style.display = 'none'; }
+            }
+            document.getElementById('phiVanChuyen').textContent = (window.currentShippingFee || 0).toLocaleString('vi-VN') + ' VND';
+            updatePaymentInfo();
+        } catch (e) {
+            window.currentShippingFee = 0;
+            const shipMsgEl = document.getElementById('shippingDiscountMsg');
+            if (shipMsgEl) { shipMsgEl.textContent = ''; shipMsgEl.style.display = 'none'; }
+            updatePaymentInfo();
+        }
+    }
+
     function updatePaymentInfo(tamTinh = null) {
         // Nếu không có tamTinh được truyền vào, tính từ giỏ hàng
         if (tamTinh === null) {
@@ -1831,8 +1893,8 @@
         // Đảm bảo tamTinh là số
         tamTinh = parseFloat(tamTinh) || 0;
         
-        // Phí vận chuyển cố định 50,000 VNĐ
-        const phiVanChuyen = 50000;
+        // Phí vận chuyển động
+        const phiVanChuyen = window.currentShippingFee || 0;
         
         // Kiểm tra phiếu giảm giá hiện tại có hợp lệ không
         const discountInfo = sessionStorage.getItem('appliedDiscount');

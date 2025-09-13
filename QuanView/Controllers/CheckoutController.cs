@@ -229,6 +229,34 @@ namespace QuanView.Controllers
                 Console.WriteLine($"PhieuGiamGiaId: {phieuGiamGiaId}");
                 Console.WriteLine($"MaGiamGia: {checkoutData.MaGiamGia}");
                 
+                // Tính phí vận chuyển động dựa trên API Shipping nếu có province/district
+                try
+                {
+                    var orderValue = chiTietHoaDons.Sum(x => x.thanhTien);
+                    if (!string.IsNullOrWhiteSpace(checkoutData.Province))
+                    {
+                        var calcRequest = new
+                        {
+                            Province = checkoutData.Province,
+                            District = checkoutData.District,
+                            OrderValue = orderValue
+                        };
+                        var shippingResp = await _httpClient.PostAsJsonAsync("shipping/calculate", calcRequest);
+                        if (shippingResp.IsSuccessStatusCode)
+                        {
+                            var shippingInfo = await shippingResp.Content.ReadFromJsonAsync<ShippingInfoDto>();
+                            if (shippingInfo != null)
+                            {
+                                checkoutData.PhiVanChuyen = shippingInfo.FinalFee;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Không tính được phí vận chuyển động, dùng giá trị gửi từ client nếu có");
+                }
+
                 // Kiểm tra phương thức thanh toán - nếu là "chuyển khoản" thì chuyển hướng đến VNPay
                 var paymentMethodResponse = await _httpClient.GetAsync($"PhuongThucThanhToans/{checkoutData.PhuongThucThanhToanId}");
                 if (paymentMethodResponse.IsSuccessStatusCode)
@@ -288,7 +316,7 @@ namespace QuanView.Controllers
                     phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
-                    phiVanChuyen = checkoutData.PhiVanChuyen, // Thêm phí vận chuyển
+                    phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -349,6 +377,22 @@ namespace QuanView.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        // Proxy tính phí vận chuyển giống bán hàng tại quầy
+        [HttpPost]
+        public async Task<IActionResult> CalculateShipping([FromBody] object shippingData)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
+                var result = await response.Content.ReadAsStringAsync();
+                return Content(result, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
 
@@ -849,6 +893,8 @@ namespace QuanView.Controllers
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }
         public string DiaChiGiaoHang { get; set; }
+        public string Province { get; set; }
+        public string District { get; set; }
         public Guid PhuongThucThanhToanId { get; set; }
         public Guid? PhieuGiamGiaId { get; set; }
         public decimal TongTien { get; set; }
