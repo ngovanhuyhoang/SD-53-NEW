@@ -1653,6 +1653,32 @@
             customerPaid: customerPaid,
             shippingFee: shippingFee // Phí vận chuyển động từ API
         };
+        
+        // Nếu chọn chuyển khoản/thẻ -> chuyển hướng VNPay (POS)
+        const isPosVnpay = paymentMethod.trim().toLowerCase() === 'chuyển khoản' || paymentMethod.trim().toLowerCase() === 'thẻ';
+        if (isPosVnpay) {
+            const paymentInfo = {
+                orderType: 'billpayment',
+                amount: pay,
+                orderDescription: `Thanh toan don POS ${dto.customerName}`,
+                name: dto.customerName || 'Khach POS'
+            };
+            fetch('/Admin/ClientBanHangTaiQuay/vnpay/init', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paymentInfo)
+            }).then(r => r.json()).then(res => {
+                if (res && res.success && res.paymentUrl) {
+                    // Lưu tạm order để callback có thể đọc (tạo đơn sau callback)
+                    sessionStorage.setItem('POS_PendingDTO', JSON.stringify(dto));
+                    window.location.href = res.paymentUrl;
+                } else {
+                    showError('Không tạo được URL thanh toán VNPay.');
+                }
+            }).catch(() => showError('Lỗi khi khởi tạo thanh toán VNPay.'));
+            return;
+        }
+
         $.ajax({
             url: '/Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don',
             method: 'POST',
