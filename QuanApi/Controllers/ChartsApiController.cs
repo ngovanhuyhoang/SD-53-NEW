@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -394,7 +394,7 @@ public class ChartsApiController : ControllerBase
         return Ok(sanPhamHetHang);
     }
 
-    // API cho doanh thu hôm nay (không bao gồm phí vận chuyển)
+    // API cho doanh thu hôm nay (khong bao gồm phí vận chuyển)
     [HttpGet("today-revenue")]
     public async Task<IActionResult> GetTodayRevenue()
     {
@@ -415,7 +415,7 @@ public class ChartsApiController : ControllerBase
         }
     }
 
-    // API cho doanh thu tháng này (không bao gồm phí vận chuyển)
+    // API cho doanh thu tháng này (khong bao gồm phí vận chuyển)
     [HttpGet("month-revenue")]
     public async Task<IActionResult> GetMonthRevenue()
     {
@@ -641,6 +641,139 @@ public class ChartsApiController : ControllerBase
             var totalShipping = await query.SumAsync(h => h.PhiVanChuyen ?? 0);
 
             return Ok(new { count, totalShipping });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    // API cho thống kê các loại sản phẩm trong kho theo danh mục
+    [HttpGet("product-category-inventory")]
+    public async Task<IActionResult> GetProductCategoryInventory()
+    {
+        try
+        {
+            var categoryInventory = await _context.SanPhamChiTiets
+                .Include(spct => spct.SanPham)
+                    .ThenInclude(sp => sp.DanhMuc)
+                .GroupBy(spct => new { 
+                    spct.SanPham.DanhMuc.IDDanhMuc,
+                    spct.SanPham.DanhMuc.TenDanhMuc 
+                })
+                .Select(g => new
+                {
+                    CategoryId = g.Key.IDDanhMuc,
+                    CategoryName = g.Key.TenDanhMuc ?? "Không xác định",
+                    TotalQuantity = g.Sum(spct => spct.SoLuong),
+                    ProductCount = g.Select(spct => spct.IDSanPham).Distinct().Count(),
+                    VariantCount = g.Count()
+                })
+                .OrderByDescending(x => x.TotalQuantity)
+                .ToListAsync();
+
+            var labels = categoryInventory.Select(c => c.CategoryName).ToList();
+            var quantities = categoryInventory.Select(c => c.TotalQuantity).ToList();
+            var productCounts = categoryInventory.Select(c => c.ProductCount).ToList();
+
+            // Màu sắc cho biểu đồ
+            var colors = new[]
+            {
+                "rgba(255, 99, 132, 0.8)",
+                "rgba(54, 162, 235, 0.8)",
+                "rgba(255, 205, 86, 0.8)",
+                "rgba(75, 192, 192, 0.8)",
+                "rgba(153, 102, 255, 0.8)",
+                "rgba(255, 159, 64, 0.8)",
+                "rgba(199, 199, 199, 0.8)",
+                "rgba(83, 102, 255, 0.8)",
+                "rgba(255, 99, 255, 0.8)",
+                "rgba(99, 255, 132, 0.8)"
+            };
+
+            var borderColors = new[]
+            {
+                "rgba(255, 99, 132, 1)",
+                "rgba(54, 162, 235, 1)",
+                "rgba(255, 205, 86, 1)",
+                "rgba(75, 192, 192, 1)",
+                "rgba(153, 102, 255, 1)",
+                "rgba(255, 159, 64, 1)",
+                "rgba(199, 199, 199, 1)",
+                "rgba(83, 102, 255, 1)",
+                "rgba(255, 99, 255, 1)",
+                "rgba(99, 255, 132, 1)"
+            };
+
+            var result = new
+            {
+                labels = labels,
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Số lượng tồn kho",
+                        data = quantities,
+                        backgroundColor = colors.Take(labels.Count).ToArray(),
+                        borderColor = borderColors.Take(labels.Count).ToArray(),
+                        borderWidth = 2
+                    }
+                },
+                details = categoryInventory.Select(c => new
+                {
+                    categoryName = c.CategoryName,
+                    totalQuantity = c.TotalQuantity,
+                    productCount = c.ProductCount,
+                    variantCount = c.VariantCount
+                }).ToList()
+            };
+
+            return Ok(new { success = true, data = result });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    // API cho thống kê tổng quan kho hàng
+    [HttpGet("inventory-summary")]
+    public async Task<IActionResult> GetInventorySummary()
+    {
+        try
+        {
+            // Tổng số sản phẩm (bao gồm cả hoạt động và không hoạt động)
+            var totalProducts = await _context.SanPhams.CountAsync();
+
+            // Tổng số biến thể sản phẩm (bao gồm cả hoạt động và không hoạt động)
+            var totalVariants = await _context.SanPhamChiTiets.CountAsync();
+
+            // Tổng số lượng tồn kho (bao gồm cả hoạt động và không hoạt động)
+            var totalQuantity = await _context.SanPhamChiTiets
+                .SumAsync(spct => spct.SoLuong);
+
+            // Sản phẩm hết hàng (bao gồm cả hoạt động và không hoạt động)
+            var outOfStockProducts = await _context.SanPhamChiTiets
+                .GroupBy(spct => spct.IDSanPham)
+                .Where(g => g.Sum(spct => spct.SoLuong) == 0)
+                .CountAsync();
+
+            // Sản phẩm sắp hết hàng (bao gồm cả hoạt động và không hoạt động)
+            var lowStockProducts = await _context.SanPhamChiTiets
+                .GroupBy(spct => spct.IDSanPham)
+                .Where(g => g.Sum(spct => spct.SoLuong) > 0 && g.Sum(spct => spct.SoLuong) <= 10)
+                .CountAsync();
+
+            var summary = new
+            {
+                totalProducts = totalProducts,
+                totalVariants = totalVariants,
+                totalQuantity = totalQuantity,
+                outOfStockProducts = outOfStockProducts,
+                lowStockProducts = lowStockProducts
+            };
+
+            return Ok(new { success = true, data = summary });
         }
         catch (Exception ex)
         {
