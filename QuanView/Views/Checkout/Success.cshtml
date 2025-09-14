@@ -7,6 +7,7 @@
     var customerName = ViewBag.CustomerName as string;
     var customerPhone = ViewBag.CustomerPhone as string;
     var customerAddress = ViewBag.CustomerAddress as string;
+    var shippingFee = ViewBag.ShippingFee as decimal? ?? 0;
 }
 
 <style>
@@ -218,7 +219,7 @@
             
             <div class="info-item">
                 <span class="info-label">Phí vận chuyển:</span>
-                <span class="info-value">50,000 VNĐ</span>
+                <span class="info-value">@(shippingFee > 0 ? shippingFee.ToString("N0") + " VND" : "0 VND")</span>
             </div>
         </div>
         
