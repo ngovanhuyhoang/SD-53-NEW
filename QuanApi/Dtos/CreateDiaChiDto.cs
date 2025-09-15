@@ -13,7 +13,6 @@ namespace QuanApi.Dtos
         [StringLength(255, ErrorMessage = "Địa chỉ chi tiết không được vượt quá 255 ký tự.")]
         public string DiaChiChiTiet { get; set; } = string.Empty;
 
-        // Bổ sung các thuộc tính Tỉnh, Huyện, Xã vào DTO
         [StringLength(100, ErrorMessage = "Tên tỉnh/thành không được vượt quá 100 ký tự.")]
         public string? TinhThanh { get; set; }
 
