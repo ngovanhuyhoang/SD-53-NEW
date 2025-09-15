@@ -1,7 +1,7 @@
-﻿@model QuanApi.Dtos.CreateKhachHangDto
+﻿@model QuanApi.Dtos.KhachHangDto
 
 @{
-    ViewData["Title"] = "Thêm mới Khách Hàng và Địa Chỉ";
+    ViewData["Title"] = "Chi tiết Khách Hàng";
     Layout = "_Layout";
 }
 
@@ -13,192 +13,149 @@
         font-family: 'Inter', sans-serif;
         background-color: #f3f4f6;
     }
-
-    .form-check-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .form-check-input {
-        margin-top: 0;
-    }
 </style>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-4xl w-full bg-white p-8 rounded-xl shadow-lg space-y-6">
-        <h1 class="text-3xl font-extrabold text-gray-900 text-center">Thêm mới Khách Hàng</h1>
-        <p class="text-center text-gray-600">Điền thông tin khách hàng và địa chỉ liên quan.</p>
+        <h1 class="text-3xl font-extrabold text-gray-900 text-center">Chi tiết Khách Hàng</h1>
+        <p class="text-center text-gray-600">Thông tin chi tiết về khách hàng và các địa chỉ của họ.</p>
 
         <hr class="my-6 border-gray-200" />
 
-        <form asp-action="Create" id="createKhachHangForm" class="space-y-6">
-            <div asp-validation-summary="ModelOnly" class="text-red-600 font-medium text-sm mb-4"></div>
+        <div class="bg-gray-50 p-6 rounded-lg shadow-sm space-y-4">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Thông tin Khách Hàng</h3>
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.MaKhachHang)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.MaKhachHang)</dd>
 
-            <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Thông tin Khách Hàng</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label asp-for="MaKhachHang" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                        <input asp-for="MaKhachHang" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span asp-validation-for="MaKhachHang" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="TenKhachHang" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                        <input asp-for="TenKhachHang" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span asp-validation-for="TenKhachHang" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="Email" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                        <input asp-for="Email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span asp-validation-for="Email" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group">
-                        <label asp-for="MatKhau" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                        <input asp-for="MatKhau" type="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span asp-validation-for="MatKhau" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group md:col-span-2">
-                        <label asp-for="SoDienThoai" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                        <input asp-for="SoDienThoai" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span asp-validation-for="SoDienThoai" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group form-check md:col-span-2">
-                        <label class="form-check-label inline-flex items-center text-sm text-gray-700">
-                            <input class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" asp-for="TrangThai" />
-                            <span class="ml-2">@Html.DisplayNameFor(model => model.TrangThai)</span>
-                        </label>
-                    </div>
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.TenKhachHang)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.TenKhachHang)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.Email)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.Email)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.SoDienThoai)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.SoDienThoai)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.NgayTao)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.NguoiTao)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.NguoiTao)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Model.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.NguoiCapNhat)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.NguoiCapNhat)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.TrangThai)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">
+                    @if (Model.TrangThai)
+                    {
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Kích hoạt</span>
+                    }
+                    else
+                    {
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Ẩn</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+
+        <div class="bg-gray-50 p-6 rounded-lg shadow-sm space-y-4">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Địa Chỉ Khách Hàng</h3>
+            @if (Model.DiaChis != null && Model.DiaChis.Any())
+            {
+                <div class="space-y-4">
+                    @foreach (var diaChi in Model.DiaChis)
+                    {
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <h4 class="text-lg font-medium text-gray-800 mb-2">Địa chỉ: @Html.DisplayFor(modelItem => diaChi.MaDiaChi)</h4>
+                            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                <dt class="text-gray-500">Địa chỉ đầy đủ:</dt>
+                                <dd class="text-gray-900">
+                                    @{
+                                        List<string> addressParts = new List<string>();
+                                        if (!string.IsNullOrEmpty(diaChi.DiaChiChiTiet))
+                                        {
+                                            addressParts.Add(diaChi.DiaChiChiTiet);
+                                        }
+                                        if (!string.IsNullOrEmpty(diaChi.PhuongXa))
+                                        {
+                                            addressParts.Add(diaChi.PhuongXa);
+                                        }
+                                        if (!string.IsNullOrEmpty(diaChi.QuanHuyen))
+                                        {
+                                            addressParts.Add(diaChi.QuanHuyen);
+                                        }
+                                        if (!string.IsNullOrEmpty(diaChi.TinhThanh))
+                                        {
+                                            addressParts.Add(diaChi.TinhThanh);
+                                        }
+                                        @string.Join(", ", addressParts)
+                                    }
+                                </dd>
+
+                                <dt class="text-gray-500">Tên người nhận:</dt>
+                                <dd class="text-gray-900">@(string.IsNullOrEmpty(diaChi.TenNguoiNhan) ? "Không có" : diaChi.TenNguoiNhan)</dd>
+
+                                <dt class="text-gray-500">SĐT người nhận:</dt>
+                                <dd class="text-gray-900">@(string.IsNullOrEmpty(diaChi.SdtNguoiNhan) ? "Không có" : diaChi.SdtNguoiNhan)</dd>
+
+                                <dt class="text-gray-500">Là mặc định:</dt>
+                                <dd class="text-gray-900">
+                                    @if (diaChi.LaMacDinh)
+                                    {
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Có</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Không</span>
+                                    }
+                                </dd>
+
+                                <dt class="text-gray-500">Trạng thái:</dt>
+                                <dd class="text-gray-900">
+                                    @if (diaChi.TrangThai)
+                                    {
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Kích hoạt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Ẩn</span>
+                                    }
+                                </dd>
+
+                                <dt class="text-gray-500">Ngày tạo:</dt>
+                                <dd class="text-gray-900">@diaChi.NgayTao.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                                <dt class="text-gray-500">Người tạo:</dt>
+                                <dd class="text-gray-900">@(string.IsNullOrEmpty(diaChi.NguoiTao) ? "Hệ thống" : diaChi.NguoiTao)</dd>
+
+                                <dt class="text-gray-500">Cập nhật cuối:</dt>
+                                <dd class="text-gray-900">@(diaChi.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</dd>
+
+                                <dt class="text-gray-500">Người cập nhật:</dt>
+                                <dd class="text-gray-900">@(string.IsNullOrEmpty(diaChi.NguoiCapNhat) ? "Chưa cập nhật" : diaChi.NguoiCapNhat)</dd>
+                            </dl>
+                        </div>
+                    }
                 </div>
-            </div>
+            }
+            else
+            {
+                <p class="text-gray-600">Khách hàng này chưa có địa chỉ nào.</p>
+            }
+        </div>
 
-            <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center justify-between">
-                    Địa Chỉ
-                    <button type="button" id="addAddressBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition ease-in-out duration-150">
-                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
-                        Thêm địa chỉ
-                    </button>
-                </h3>
-                <div id="addressesContainer" class="space-y-4">
-                </div>
-            </div>
-
-            <div class="form-group mt-6 text-center">
-                <button type="submit" class="w-full sm:w-auto inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ease-in-out duration-150">
-                    Tạo mới Khách Hàng
-                </button>
-            </div>
-        </form>
-
-        <div class="mt-8 text-center">
-            <a asp-action="Index" class="text-indigo-600 hover:text-indigo-900 font-medium">Quay lại danh sách</a>
+        <div class="mt-8 text-center space-x-4">
+            <a asp-action="Edit" asp-route-id="@Model?.IDKhachHang" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition ease-in-out duration-150">
+                Sửa
+            </a>
+            <a asp-action="Index" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition ease-in-out duration-150">
+                Quay lại danh sách
+            </a>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-
-    <script>
-        let addressIndex = 0;
-
-        function addAddressForm() {
-            const container = document.getElementById('addressesContainer');
-            const newAddressForm = document.createElement('div');
-            newAddressForm.classList.add('address-item', 'bg-white', 'p-5', 'rounded-lg', 'shadow-md', 'space-y-4', 'border', 'border-gray-200');
-            newAddressForm.innerHTML = `
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-lg font-medium text-gray-800">Địa chỉ #${addressIndex + 1}</h4>
-                    <button type="button" class="btn btn-sm btn-danger remove-address-btn inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ease-in-out duration-150">
-                        <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-1 1v1H5a1 1 0 000 2h1v9a2 2 0 002 2h4a2 2 0 002-2V6h1a1 1 0 100-2h-3V3a1 1 0 00-1-1H9zm0 2h2v1H9V4zm0 3a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        Xóa
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__MaDiaChi" class="block text-sm font-medium text-gray-700 mb-1">Mã địa chỉ</label>
-                        <input name="DiaChis[${addressIndex}].MaDiaChi" id="DiaChis_${addressIndex}__MaDiaChi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].MaDiaChi" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="DiaChis_${addressIndex}__DiaChiChiTiet" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ chi tiết</label>
-                        <input name="DiaChis[${addressIndex}].DiaChiChiTiet" id="DiaChis_${addressIndex}__DiaChiChiTiet" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].DiaChiChiTiet" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__TenNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">Tên người nhận</label>
-                        <input name="DiaChis[${addressIndex}].TenNguoiNhan" id="DiaChis_${addressIndex}__TenNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].TenNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__SdtNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">SĐT người nhận</label>
-                        <input name="DiaChis[${addressIndex}].SdtNguoiNhan" id="DiaChis_${addressIndex}__SdtNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].SdtNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group form-check">
-                        <label class="form-check-label inline-flex items-center text-sm text-gray-700">
-                            <input type="checkbox" name="DiaChis[${addressIndex}].LaMacDinh" id="DiaChis_${addressIndex}__LaMacDinh" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" />
-                            <span class="ml-2">Là mặc định</span>
-                        </label>
-                        <input type="hidden" name="DiaChis[${addressIndex}].LaMacDinh" value="false" />
-                    </div>
-                    <div class="form-group form-check">
-                        <label class="form-check-label inline-flex items-center text-sm text-gray-700">
-                            <input type="checkbox" name="DiaChis[${addressIndex}].TrangThai" id="DiaChis_${addressIndex}__TrangThai" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" checked />
-                            <span class="ml-2">Trạng thái</span>
-                        </label>
-                        <input type="hidden" name="DiaChis[${addressIndex}].TrangThai" value="false" />
-                    </div>
-                </div>
-            `;
-            container.appendChild(newAddressForm);
-
-            newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function() {
-                newAddressForm.remove();
-                updateAddressIndices();
-            });
-
-            const form = document.getElementById('createKhachHangForm');
-            $.validator.unobtrusive.parse(form);
-
-            addressIndex++;
-        }
-
-        function updateAddressIndices() {
-            const addressItems = document.querySelectorAll('#addressesContainer .address-item');
-            addressItems.forEach((item, index) => {
-                item.querySelectorAll('[name^="DiaChis["]').forEach(input => {
-                    const oldName = input.getAttribute('name');
-                    const newName = oldName.replace(/DiaChis\[\d+\]/, `DiaChis[${index}]`);
-                    input.setAttribute('name', newName);
-                });
-                item.querySelectorAll('[id^="DiaChis_"]').forEach(input => {
-                    const oldId = input.getAttribute('id');
-                    const newId = oldId.replace(/DiaChis_\d+__/, `DiaChis_${index}__`);
-                    input.setAttribute('id', newId);
-                });
-                item.querySelectorAll('[data-valmsg-for^="DiaChis["]').forEach(span => {
-                    const oldValMsgFor = span.getAttribute('data-valmsg-for');
-                    const newValMsgFor = oldValMsgFor.replace(/DiaChis\[\d+\]/, `DiaChis[${index}]`);
-                    span.setAttribute('data-valmsg-for', newValMsgFor);
-                });
-                item.querySelector('h4').textContent = `Địa chỉ #${index + 1}`;
-            });
-            addressIndex = addressItems.length;
-        }
-
-
-        document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('addAddressBtn').addEventListener('click', addAddressForm);
-
-            addAddressForm();
-        });
-    </script>
-}

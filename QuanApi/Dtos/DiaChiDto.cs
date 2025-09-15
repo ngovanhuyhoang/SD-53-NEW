@@ -14,7 +14,17 @@ namespace QuanApi.Dtos
         [DisplayName("Địa chỉ chi tiết")]
         public string DiaChiChiTiet { get; set; } = string.Empty;
 
-        public Guid IDKhachHang { get; set; } 
+        // Thêm các trường địa chỉ mới để lưu dữ liệu từ form
+        [DisplayName("Tỉnh/Thành phố")]
+        public string? TinhThanh { get; set; }
+
+        [DisplayName("Quận/Huyện")]
+        public string? QuanHuyen { get; set; }
+
+        [DisplayName("Phường/Xã")]
+        public string? PhuongXa { get; set; }
+
+        public Guid IDKhachHang { get; set; }
 
         [DisplayName("Là mặc định")]
         public bool LaMacDinh { get; set; }

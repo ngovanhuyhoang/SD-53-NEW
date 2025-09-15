@@ -13,17 +13,30 @@ namespace QuanApi.Dtos
         [StringLength(255, ErrorMessage = "Địa chỉ chi tiết không được vượt quá 255 ký tự.")]
         public string DiaChiChiTiet { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "ID khách hàng là bắt buộc.")]
-        public Guid IDKhachHang { get; set; } 
+        // Bổ sung các thuộc tính Tỉnh, Huyện, Xã vào DTO
+        [StringLength(100, ErrorMessage = "Tên tỉnh/thành không được vượt quá 100 ký tự.")]
+        public string? TinhThanh { get; set; }
 
-        public bool LaMacDinh { get; set; } = false; 
+        [StringLength(100, ErrorMessage = "Tên quận/huyện không được vượt quá 100 ký tự.")]
+        public string? QuanHuyen { get; set; }
+
+        [StringLength(100, ErrorMessage = "Tên phường/xã không được vượt quá 100 ký tự.")]
+        public string? PhuongXa { get; set; }
+
+        [Required(ErrorMessage = "ID khách hàng là bắt buộc.")]
+        public Guid IDKhachHang { get; set; }
+
+        public bool LaMacDinh { get; set; } = false;
+
         [StringLength(100, ErrorMessage = "Tên người nhận không được vượt quá 100 ký tự.")]
+        [RegularExpression("^[A-Za-z\\sÀ-ỹ]+$", ErrorMessage = "Tên người nhận không được chứa số và ký tự đặc biệt.")]
         public string? TenNguoiNhan { get; set; }
 
         [Phone(ErrorMessage = "Số điện thoại người nhận không hợp lệ.")]
-        [StringLength(20, ErrorMessage = "Số điện thoại người nhận không được vượt quá 20 ký tự.")]
+        [StringLength(11, ErrorMessage = "Số điện thoại không được vượt quá 11 ký tự.")]
+        [RegularExpression(@"^(0|\+84|84)?[1-9]\d{8}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
         public string? SdtNguoiNhan { get; set; }
 
-        public bool TrangThai { get; set; } = true; 
+        public bool TrangThai { get; set; } = true;
     }
 }
