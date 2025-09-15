@@ -21,7 +21,7 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("ApiSettings:EmailSettings"));
-builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IEmailService,EmailService>();
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
