@@ -51,5 +51,17 @@ namespace QuanApi.Dtos
 
         [DisplayName("Trạng thái")]
         public bool TrangThai { get; set; }
+        public string DiaChiDayDu
+        {
+            get
+            {
+                var parts = new List<string>();
+                if (!string.IsNullOrEmpty(DiaChiChiTiet)) parts.Add(DiaChiChiTiet);
+                if (!string.IsNullOrEmpty(PhuongXa)) parts.Add(PhuongXa);
+                if (!string.IsNullOrEmpty(QuanHuyen)) parts.Add(QuanHuyen);
+                if (!string.IsNullOrEmpty(TinhThanh)) parts.Add(TinhThanh);
+                return string.Join(", ", parts);
+            }
+        }
     }
 }
