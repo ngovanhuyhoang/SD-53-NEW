@@ -10,22 +10,19 @@
 <script src="https://esgoo.net/scripts/jquery.js"></script>
 
 <style>
-        body {
-                font-family: 'Inter', sans-serif;
-                background-color: #f3f4f6;
-
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f3f4f6;
     }
 
-        .form-check-label {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-
+    .form-check-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
-        .form-check-input {
-                margin-top: 0;
-
+    .form-check-input {
+        margin-top: 0;
     }
 </style>
 
@@ -112,15 +109,19 @@
         let addressIndex = 0;
 
         function updateAddressString(formElement) {
-            const diaChiChiTiet = formElement.querySelector('[name$="DiaChiChiTiet"]').value || '';
+            const diaChiChiTietInput = formElement.querySelector('[name$="DiaChiChiTiet"]');
+            const diaChiDayDuInput = formElement.querySelector('[name$="DiaChiDayDu"]');
+
             const phuongXa = formElement.querySelector('[name$="PhuongXa"]').value || '';
             const quanHuyen = formElement.querySelector('[name$="QuanHuyen"]').value || '';
             const tinhThanh = formElement.querySelector('[name$="TinhThanh"]').value || '';
+            const soNhaTenDuong = formElement.querySelector('[name$="SoNhaTenDuong"]').value || '';
 
-            const parts = [diaChiChiTiet, phuongXa, quanHuyen, tinhThanh].filter(part => part !== '');
+            const parts = [soNhaTenDuong, phuongXa, quanHuyen, tinhThanh].filter(part => part !== '');
             const fullAddress = parts.join(', ');
 
-            formElement.querySelector('[name$="DiaChiDayDu"]').value = fullAddress;
+            diaChiChiTietInput.value = fullAddress; 
+            diaChiDayDuInput.value = fullAddress; 
         }
 
         function addAddressForm() {
@@ -144,7 +145,7 @@
                         <span data-valmsg-for="DiaChis[${addressIndex}].MaDiaChi" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
 
-                                        <div class="form-group">
+                    <div class="form-group">
                         <label for="DiaChis_${addressIndex}__TinhThanh" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
                         <select name="DiaChis[${addressIndex}].TinhThanh" id="DiaChis_${addressIndex}__TinhThanh" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm tinh-select" required>
                             <option value="">-- Chọn Tỉnh/Thành phố --</option>
@@ -166,16 +167,18 @@
                         <span data-valmsg-for="DiaChis[${addressIndex}].PhuongXa" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
 
-                                        <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__DiaChiChiTiet" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ chi tiết</label>
-                        <input name="DiaChis[${addressIndex}].DiaChiChiTiet" id="DiaChis_${addressIndex}__DiaChiChiTiet" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Số nhà, tên đường..." />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].DiaChiChiTiet" class="text-red-600 text-xs mt-1 block"></span>
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__SoNhaTenDuong" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, tên đường</label>
+                        <input name="DiaChis[${addressIndex}].SoNhaTenDuong" id="DiaChis_${addressIndex}__SoNhaTenDuong" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Số nhà, tên đường..." />
+                        <span data-valmsg-for="DiaChis[${addressIndex}].SoNhaTenDuong" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
 
-                                        <div class="form-group md:col-span-2">
+                    <div class="form-group md:col-span-2">
                         <label for="DiaChis_${addressIndex}__DiaChiDayDu" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ đầy đủ</label>
                         <input name="DiaChis[${addressIndex}].DiaChiDayDu" id="DiaChis_${addressIndex}__DiaChiDayDu" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-200 cursor-not-allowed" readonly />
                     </div>
+
+                    <input type="hidden" name="DiaChis[${addressIndex}].DiaChiChiTiet" id="DiaChis_${addressIndex}__DiaChiChiTiet" />
 
                     <div class="form-group">
                         <label for="DiaChis_${addressIndex}__TenNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">Tên người nhận</label>
@@ -205,26 +208,24 @@
             `;
             container.appendChild(newAddressForm);
 
-            // Lấy các phần tử dropdown và input của form mới
             const tinhSelect = newAddressForm.querySelector('.tinh-select');
             const quanSelect = newAddressForm.querySelector('.quan-select');
             const phuongSelect = newAddressForm.querySelector('.phuong-select');
-            const diaChiChiTietInput = newAddressForm.querySelector('[name$="DiaChiChiTiet"]');
-            const fullAddressInput = newAddressForm.querySelector('[name$="DiaChiDayDu"]');
+            const soNhaTenDuongInput = newAddressForm.querySelector('[name$="SoNhaTenDuong"]');
 
-            // Cập nhật địa chỉ đầy đủ khi có thay đổi
+       
             const updateHandler = () => updateAddressString(newAddressForm);
             tinhSelect.addEventListener('change', updateHandler);
             quanSelect.addEventListener('change', updateHandler);
             phuongSelect.addEventListener('change', updateHandler);
-            diaChiChiTietInput.addEventListener('input', updateHandler);
+            soNhaTenDuongInput.addEventListener('input', updateHandler);
 
             newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function() {
                 newAddressForm.remove();
                 updateAddressIndices();
             });
 
-            // Tải dữ liệu tỉnh thành
+       
             $.getJSON('https://esgoo.net/api-tinhthanh/1/0.htm', function(data_tinh) {
                 if (data_tinh.error === 0) {
                     $.each(data_tinh.data, function (key, val) {
@@ -233,14 +234,12 @@
                 }
             });
 
-            // Lắng nghe sự kiện thay đổi của Tỉnh/Thành phố
+         
             $(tinhSelect).change(function() {
                 const idtinh = $(this).find('option:selected').data('id');
-                // Xóa dữ liệu cũ và cập nhật dropdown Quận/Huyện, Phường/Xã
                 $(quanSelect).html('<option value="">-- Chọn Quận/Huyện --</option>');
                 $(phuongSelect).html('<option value="">-- Chọn Phường/Xã --</option>');
 
-                // Tải dữ liệu Quận/Huyện
                 $.getJSON('https://esgoo.net/api-tinhthanh/2/' + idtinh + '.htm', function(data_quan) {
                     if (data_quan.error === 0) {
                         $.each(data_quan.data, function (key, val) {
@@ -250,13 +249,11 @@
                 });
             });
 
-            // Lắng nghe sự kiện thay đổi của Quận/Huyện
+  
             $(quanSelect).change(function() {
                 const idquan = $(this).find('option:selected').data('id');
-                // Xóa dữ liệu cũ và cập nhật dropdown Phường/Xã
                 $(phuongSelect).html('<option value="">-- Chọn Phường/Xã --</option>');
 
-                // Tải dữ liệu Phường/Xã
                 $.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
                     if (data_phuong.error === 0) {
                         $.each(data_phuong.data, function (key, val) {
@@ -295,10 +292,8 @@
             addressIndex = addressItems.length;
         }
 
-
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('addAddressBtn').addEventListener('click', addAddressForm);
-
             addAddressForm();
         });
     </script>

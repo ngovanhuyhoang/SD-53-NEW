@@ -13,15 +13,6 @@ namespace QuanApi.Dtos
         [StringLength(255, ErrorMessage = "Địa chỉ chi tiết không được vượt quá 255 ký tự.")]
         public string DiaChiChiTiet { get; set; } = string.Empty;
 
-        [StringLength(100, ErrorMessage = "Tên tỉnh/thành không được vượt quá 100 ký tự.")]
-        public string? TinhThanh { get; set; }
-
-        [StringLength(100, ErrorMessage = "Tên quận/huyện không được vượt quá 100 ký tự.")]
-        public string? QuanHuyen { get; set; }
-
-        [StringLength(100, ErrorMessage = "Tên phường/xã không được vượt quá 100 ký tự.")]
-        public string? PhuongXa { get; set; }
-
         [Required(ErrorMessage = "ID khách hàng là bắt buộc.")]
         public Guid IDKhachHang { get; set; }
 

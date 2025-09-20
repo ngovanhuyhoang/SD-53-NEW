@@ -1,4 +1,5 @@
-﻿@model IEnumerable<QuanApi.Dtos.KhachHangDto>
+﻿```
+@model IEnumerable<QuanApi.Dtos.KhachHangDto>
 
 @{
     ViewData["Title"] = "Danh Sách Khách Hàng";
@@ -7,7 +8,6 @@
 <div class="container-fluid py-4">
     <h2 class="mb-4 text-primary fw-bold">@ViewData["Title"]</h2>
 
-    <!-- Thông báo -->
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -23,28 +23,26 @@
         </div>
     }
 
-    <!-- Card tìm kiếm -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <a class="btn btn-primary" asp-area="Admin" asp-controller="KhachHang" asp-action="Create">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                <a class="btn btn-primary mb-3 mb-md-0" asp-area="Admin" asp-controller="KhachHang" asp-action="Create">
                     <i class="bi bi-plus-circle me-2"></i>Thêm khách hàng mới
                 </a>
-                <form asp-action="Index" asp-controller="KhachHang" asp-area="Admin" method="get" class="d-flex w-50">
+                <form asp-action="Index" asp-controller="KhachHang" asp-area="Admin" method="get" class="d-flex w-100 w-md-50 ms-md-auto">
                     <div class="input-group">
                         <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" value="@ViewData["CurrentSearch"]" 
+                        <input type="text" name="search" value="@ViewData["CurrentSearch"]"
                                class="form-control" placeholder="Tìm theo mã, tên, email, SĐT..." />
-                        <button class="btn btn-outline-primary" type="submit">Tìm</button>
-                        <a asp-action="Index" asp-controller="KhachHang" asp-area="Admin" 
-                           class="btn btn-outline-secondary">Xóa</a>
+                        <button class="btn btn-primary" type="submit">Tìm</button>
+                        <a asp-action="Index" asp-controller="KhachHang" asp-area="Admin"
+                           class="btn btn-secondary">Xóa</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Card bảng dữ liệu -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -57,8 +55,6 @@
                             <th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
                             <th>@Html.DisplayNameFor(model => model.NgayTao)</th>
                             <th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
-                            <th>@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</th>
-                            <th>@Html.DisplayNameFor(model => model.NguoiCapNhat)</th>
                             <th>@Html.DisplayNameFor(model => model.TrangThai)</th>
                             <th class="text-end">Thao tác</th>
                         </tr>
@@ -73,8 +69,6 @@
                                 <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
                                 <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                                 <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
-                                <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td>
                                 <td>
                                     @if (item.TrangThai)
                                     {
@@ -85,19 +79,12 @@
                                         <span class="badge bg-secondary rounded-pill">Ẩn</span>
                                     }
                                 </td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-info me-1" 
-                                       asp-area="Admin" asp-controller="KhachHang" asp-action="Details" 
-                                       asp-route-id="@item.IDKhachHang">
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-info"
+                                       asp-area="Admin" asp-controller="KhachHang" asp-action="Details"
+                                       asp-route-id="@item.IDKhachHang" title="Chi tiết">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus" 
-                                          asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
-                                      @*   <button type="submit" class="btn btn-sm btn-outline-warning">
-                                            <i class="bi bi-toggle-on"></i>
-                                        </button> *@
-                                        @Html.AntiForgeryToken()
-                                    </form>
                                 </td>
                             </tr>
                         }
@@ -129,3 +116,4 @@
         });
     </script>
 }
+```
