@@ -175,6 +175,9 @@ namespace QuanApi.Controllers
                         .ThenInclude(spct => spct.MauSac)
                 .Include(h => h.ChiTietHoaDons)
                     .ThenInclude(ct => ct.SanPhamChiTiet)
+                        .ThenInclude(spct => spct.HoaTiet) // Thêm include cho HoaTiet
+                .Include(h => h.ChiTietHoaDons)
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
                         .ThenInclude(spct => spct.SanPham) // Thêm include này để tránh lỗi
                     .Where(h => h.IDHoaDon == id)
                     .Select(h => new
@@ -228,6 +231,7 @@ namespace QuanApi.Controllers
                                 GiaBan = ct.SanPhamChiTiet.GiaBan,
                                 KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
                                 MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
+                                HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
                                 SanPham = ct.SanPhamChiTiet.SanPham != null ? new
                                 {
                                     IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,

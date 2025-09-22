@@ -965,28 +965,53 @@
         }
         let rows = gh.products.map((p, i) => `
             <tr>
-                <td>${i+1}</td>
-                <td><img src="${p.anh}" width="60"/></td>
-                <td>${p.ten}<br><small>Kích cỡ: ${p.kichCo} | Màu sắc: ${p.mauSac}</small></td>
+                <td class="text-center">${i+1}</td>
+                <td class="text-center"><img src="${p.anh}" width="60" class="rounded"/></td>
                 <td>
-                    ${p.giaGoc && p.giaGoc > p.giaBan ? `<span style="color:#888;text-decoration:line-through;font-size:0.95em;">${p.giaGoc.toLocaleString()} VND</span><br>` : ''}
-                    <span style="font-weight:bold; color:#d32f2f;">${p.giaBan.toLocaleString()} VND</span>
+                    <div class="fw-bold">${p.ten}</div>
+                    <small class="text-muted">
+                        <span class="badge bg-light text-dark me-1">${p.kichCo}</span>
+                        <span class="badge bg-light text-dark me-1">${p.mauSac}</span>
+                        ${p.hoaTiet ? `<span class="badge bg-light text-dark">${p.hoaTiet}</span>` : ''}
+                    </small>
                 </td>
-                <td>
-                    <button class="btn btn-sm btn-light" onclick="changeQty('${p.id}',-1)">-</button>
-                    <input type="number" class="form-control form-control-sm d-inline-block mx-2 text-center" style="width:80px" min="1" value="${p.soLuong}" onchange="changeQtyManual('${p.id}', this.value)" oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
-                    <button class="btn btn-sm btn-light" onclick="changeQty('${p.id}',1)">+</button>
+                <td class="text-end">
+                    ${p.giaGoc && p.giaGoc > p.giaBan ? `<div><small class="text-muted text-decoration-line-through">${p.giaGoc.toLocaleString()} VND</small></div>` : ''}
+                    <div class="fw-bold text-danger">${p.giaBan.toLocaleString()} VND</div>
                 </td>
-                <td>${p.thanhTien.toLocaleString()} VND</td>
-                <td><button class="btn btn-danger btn-sm" onclick="removeProduct('${p.id}')">🗑</button></td>
+                <td class="text-center">
+                    <div class="input-group input-group-sm" style="width: 120px;">
+                        <button class="btn btn-outline-secondary" type="button" onclick="changeQty('${p.id}',-1)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                        <input type="number" class="form-control text-center" min="1" value="${p.soLuong}" 
+                               onchange="changeQtyManual('${p.id}', this.value)" 
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'');" />
+                        <button class="btn btn-outline-secondary" type="button" onclick="changeQty('${p.id}',1)">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </td>
+                <td class="text-end fw-bold">${p.thanhTien.toLocaleString()} VND</td>
+                <td class="text-center">
+                    <button class="btn btn-outline-danger btn-sm" onclick="removeProduct('${p.id}')" title="Xóa sản phẩm">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
         let total = gh.products.reduce((sum, p) => sum + p.thanhTien, 0);
         $('#invoiceContent').html(`
-            <table class="table table-bordered align-middle">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
                     <tr>
-                        <th>STT</th><th>Ảnh</th><th>Sản phẩm</th><th>Giá bán</th><th>Số lượng</th><th>Tổng tiền</th><th>Thao tác</th>
+                        <th class="text-center" style="width: 60px;">STT</th>
+                        <th class="text-center" style="width: 80px;">Ảnh</th>
+                        <th style="width: 300px;">Sản phẩm</th>
+                        <th class="text-end" style="width: 120px;">Giá bán</th>
+                        <th class="text-center" style="width: 140px;">Số lượng</th>
+                        <th class="text-end" style="width: 120px;">Tổng tiền</th>
+                        <th class="text-center" style="width: 80px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -1199,7 +1224,7 @@
         let html = `<table class="table table-hover">
             <thead>
                 <tr>
-                    <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Tồn kho</th><th>Hành động</th>
+                    <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Họa tiết</th><th>Tồn kho</th><th>Hành động</th>
                 </tr>
             </thead>
             <tbody>
@@ -1219,6 +1244,7 @@
 </td>
                         <td>${p.size}</td>
                         <td>${p.color}</td>
+                        <td>${p.pattern || 'Không có'}</td>
                         <td><span class="badge ${p.stock > 10 ? 'bg-success' : p.stock > 5 ? 'bg-warning' : 'bg-danger'}">${p.stock}</span></td>
                         <td>
                             <div class="btn-group" role="group">

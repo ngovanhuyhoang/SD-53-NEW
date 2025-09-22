@@ -223,10 +223,11 @@ namespace QuanApi.Controllers
                 .Include(x => x.AnhSanPhams.Where(a => a.TrangThai))
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
+                .Include(x => x.HoaTiet)
                 .Where(x => x.TrangThai)
                 .Select(x => new {
                     id = x.IDSanPhamChiTiet,
-                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}]",
+                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
                     // Giá gốc
                     originalPrice = x.GiaBan,
                     // Tính giá giảm nếu có đợt giảm giá đang áp dụng
@@ -252,6 +253,7 @@ namespace QuanApi.Controllers
                     ),
                     size = x.KichCo.TenKichCo,
                     color = x.MauSac.TenMauSac,
+                    pattern = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "Không có",
                     // Lấy ảnh chính hoặc ảnh đầu tiên
                     img = x.AnhSanPhams
                         .Where(a => a.TrangThai)

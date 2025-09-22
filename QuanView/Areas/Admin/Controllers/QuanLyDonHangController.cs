@@ -132,11 +132,13 @@ namespace QuanView.Areas.Admin.Controllers
             public decimal GiaBan { get; set; }
             public KichCoDto KichCo { get; set; }
             public MauSacDto MauSac { get; set; }
+            public HoaTietDto HoaTiet { get; set; }
             public SanPhamDetailDto SanPham { get; set; }
         }
 
         public class KichCoDto { public string TenKichCo { get; set; } }
         public class MauSacDto { public string TenMauSac { get; set; } }
+        public class HoaTietDto { public string TenHoaTiet { get; set; } }
 
         public class SanPhamDetailDto
         {
@@ -348,6 +350,10 @@ namespace QuanView.Areas.Admin.Controllers
                                         MauSac = ct.SanPhamChiTiet.MauSac != null ? new MauSac
                                         {
                                             TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac
+                                        } : null,
+                                        HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new HoaTiet
+                                        {
+                                            TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet
                                         } : null
                                     };
 
@@ -663,6 +669,10 @@ namespace QuanView.Areas.Admin.Controllers
                                 MauSac = ct.SanPhamChiTiet.MauSac != null ? new MauSac
                                 {
                                     TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac
+                                } : null,
+                                HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new HoaTiet
+                                {
+                                    TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet
                                 } : null,
                                 SanPham = ct.SanPhamChiTiet.SanPham != null ? new SanPham
                                 {

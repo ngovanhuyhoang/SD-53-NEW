@@ -1,4 +1,4 @@
-﻿<!-- SD-53/QuanView/Areas/Admin/Views/QuanLyDonHang/Invoice.cshtml -->
+<!-- SD-53/QuanView/Areas/Admin/Views/QuanLyDonHang/Invoice.cshtml -->
 @model QuanApi.Data.HoaDon
 @{
     Layout = null;
@@ -119,7 +119,8 @@
                             </td>
                             <td class="text-muted">
                                 Màu: @(ct.SanPhamChiTiet?.MauSac?.TenMauSac ?? "-") |
-                                Size: @(ct.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-")
+                                Size: @(ct.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-") |
+                                Họa tiết: @(ct.SanPhamChiTiet?.HoaTiet?.TenHoaTiet ?? "Không có")
                             </td>
                             <td class="text-right">@ct.DonGia.ToString("N0")</td>
                             <td class="text-center">@ct.SoLuong</td>
