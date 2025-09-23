@@ -7,17 +7,20 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://esgoo.net/scripts/jquery.js"></script>
 
 <style>
     body {
         font-family: 'Inter', sans-serif;
         background-color: #f3f4f6;
     }
+
     .form-check-label {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
+
     .form-check-input {
         margin-top: 0;
     }
@@ -87,81 +90,38 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
     <script>
         let addressIndex = 0;
-        function renderAddresses(addresses) {
-            const container = document.getElementById('addressesContainer');
-            container.innerHTML = '';
-            addresses.forEach((address, idx) => {
-                const newAddressForm = document.createElement('div');
-                newAddressForm.classList.add('address-item', 'bg-white', 'p-5', 'rounded-lg', 'shadow-md', 'space-y-4', 'border', 'border-gray-200');
-                newAddressForm.innerHTML = `
-                    <div class=\"flex items-center justify-between mb-3\">
-                        <h4 class=\"text-lg font-medium text-gray-800\">Địa chỉ #${idx + 1}</h4>
-                        <button type=\"button\" class=\"btn btn-sm btn-danger remove-address-btn inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ease-in-out duration-150\">
-                            <svg class=\"-ml-0.5 mr-1 h-4 w-4\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 20 20\" fill=\"currentColor\">
-                                <path fill-rule=\"evenodd\" d=\"M9 2a1 1 0 00-1 1v1H5a1 1 0 000 2h1v9a2 2 0 002 2h4a2 2 0 002-2V6h1a1 1 0 100-2h-3V3a1 1 0 00-1-1H9zm0 2h2v1H9V4zm0 3a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z\" clip-rule=\"evenodd\" />
-                            </svg>
-                            Xóa
-                        </button>
-                    </div>
-                    <input type=\"hidden\" name=\"DiaChis[${idx}].IDDiaChi\" value=\"${address.idDiaChi || ''}\" />
-                    <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
-                        <div class=\"form-group\">
-                            <label for=\"DiaChis_${idx}__MaDiaChi\" class=\"block text-sm font-medium text-gray-700 mb-1\">Mã địa chỉ</label>
-                            <input name=\"DiaChis[${idx}].MaDiaChi\" id=\"DiaChis_${idx}__MaDiaChi\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm\" value=\"${address.maDiaChi || ''}\" required />
-                            <span data-valmsg-for=\"DiaChis[${idx}].MaDiaChi\" class=\"text-red-600 text-xs mt-1 block\"></span>
-                        </div>
-                        <div class=\"form-group md:col-span-2\">
-                            <label for=\"DiaChis_${idx}__DiaChiChiTiet\" class=\"block text-sm font-medium text-gray-700 mb-1\">Địa chỉ chi tiết</label>
-                            <input name=\"DiaChis[${idx}].DiaChiChiTiet\" id=\"DiaChis_${idx}__DiaChiChiTiet\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm\" value=\"${address.diaChiChiTiet || ''}\" required />
-                            <span data-valmsg-for=\"DiaChis[${idx}].DiaChiChiTiet\" class=\"text-red-600 text-xs mt-1 block\"></span>
-                        </div>
-                        <div class=\"form-group\">
-                            <label for=\"DiaChis_${idx}__TenNguoiNhan\" class=\"block text-sm font-medium text-gray-700 mb-1\">Tên người nhận</label>
-                            <input name=\"DiaChis[${idx}].TenNguoiNhan\" id=\"DiaChis_${idx}__TenNguoiNhan\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm\" value=\"${address.tenNguoiNhan || ''}\" />
-                            <span data-valmsg-for=\"DiaChis[${idx}].TenNguoiNhan\" class=\"text-red-600 text-xs mt-1 block\"></span>
-                        </div>
-                        <div class=\"form-group\">
-                            <label for=\"DiaChis_${idx}__SdtNguoiNhan\" class=\"block text-sm font-medium text-gray-700 mb-1\">SĐT người nhận</label>
-                            <input name=\"DiaChis[${idx}].SdtNguoiNhan\" id=\"DiaChis_${idx}__SdtNguoiNhan\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm\" value=\"${address.sdtNguoiNhan || ''}\" />
-                            <span data-valmsg-for=\"DiaChis[${idx}].SdtNguoiNhan\" class=\"text-red-600 text-xs mt-1 block\"></span>
-                        </div>
-                        <div class=\"form-group form-check\">
-                            <label class=\"form-check-label inline-flex items-center text-sm text-gray-700\">
-                                <input type=\"checkbox\" name=\"DiaChis[${idx}].LaMacDinh\" id=\"DiaChis_${idx}__LaMacDinh\" class=\"form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500\" value=\"true\" ${address.laMacDinh ? 'checked' : ''} />
-                                <span class=\"ml-2\">Là mặc định</span>
-                            </label>
-                            <input type=\"hidden\" name=\"DiaChis[${idx}].LaMacDinh\" value=\"false\" />
-                        </div>
-                        <div class=\"form-group form-check\">
-                            <label class=\"form-check-label inline-flex items-center text-sm text-gray-700\">
-                                <input type=\"checkbox\" name=\"DiaChis[${idx}].TrangThai\" id=\"DiaChis_${idx}__TrangThai\" class=\"form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500\" value=\"true\" ${address.trangThai !== false ? 'checked' : ''} />
-                                <span class=\"ml-2\">Trạng thái</span>
-                            </label>
-                            <input type=\"hidden\" name=\"DiaChis[${idx}].TrangThai\" value=\"false\" />
-                        </div>
-                    </div>
-                `;
-                container.appendChild(newAddressForm);
-                newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function() {
-                    newAddressForm.remove();
-                    updateAddressIndices();
-                });
-            });
-            addressIndex = addresses.length;
-        }
-        function addAddressForm() {
-            const container = document.getElementById('addressesContainer');
+
+        function createAddressForm(index, address = {}) {
+            const diaChiChiTiet = address.diaChiChiTiet || '';
+            const parts = diaChiChiTiet.split(',').map(part => part.trim());
+
+            const tinhThanh = parts[parts.length - 1] || '';
+            const quanHuyen = parts.length > 2 ? parts[parts.length - 2] : '';
+            const phuongXa = parts.length > 3 ? parts[parts.length - 3] : '';
+
+            let soNhaTenDuong = '';
+            if (parts.length > 0) {
+                soNhaTenDuong = parts[0];
+                if (parts.length > 1) {
+                    if (parts.length > 3) soNhaTenDuong = parts.slice(0, parts.length - 3).join(', ').trim();
+                    else if (parts.length > 2) soNhaTenDuong = parts.slice(0, parts.length - 2).join(', ').trim();
+                    else soNhaTenDuong = parts.slice(0, parts.length - 1).join(', ').trim();
+                }
+            }
+
             const newAddressForm = document.createElement('div');
             newAddressForm.classList.add('address-item', 'bg-white', 'p-5', 'rounded-lg', 'shadow-md', 'space-y-4', 'border', 'border-gray-200');
             newAddressForm.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-lg font-medium text-gray-800">Địa chỉ #${addressIndex + 1}</h4>
+                    <h4 class="text-lg font-medium text-gray-800">Địa chỉ #${index + 1}</h4>
                     <button type="button" class="btn btn-sm btn-danger remove-address-btn inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ease-in-out duration-150">
                         <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-1 1v1H5a1 1 0 000 2h1v9a2 2 0 002 2h4a2 2 0 002-2V6h1a1 1 0 100-2h-3V3a1 1 0 00-1-1H9zm0 2h2v1H9V4zm0 3a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -169,52 +129,186 @@
                         Xóa
                     </button>
                 </div>
+                ${address.idDiaChi ? `<input type="hidden" name="DiaChis[${index}].IDDiaChi" value="${address.idDiaChi}" />` : ''}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__MaDiaChi" class="block text-sm font-medium text-gray-700 mb-1">Mã địa chỉ</label>
-                        <input name="DiaChis[${addressIndex}].MaDiaChi" id="DiaChis_${addressIndex}__MaDiaChi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].MaDiaChi" class="text-red-600 text-xs mt-1 block"></span>
+                        <label for="DiaChis_${index}__MaDiaChi" class="block text-sm font-medium text-gray-700 mb-1">Mã địa chỉ</label>
+                        <input name="DiaChis[${index}].MaDiaChi" id="DiaChis_${index}__MaDiaChi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" value="${address.maDiaChi || ''}" required />
+                        <span data-valmsg-for="DiaChis[${index}].MaDiaChi" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${index}__TinhThanh" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
+                        <select name="DiaChis[${index}].TinhThanh" id="DiaChis_${index}__TinhThanh" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm tinh-select" required>
+                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        </select>
+                        <span data-valmsg-for="DiaChis[${index}].TinhThanh" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${index}__QuanHuyen" class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
+                        <select name="DiaChis[${index}].QuanHuyen" id="DiaChis_${index}__QuanHuyen" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm quan-select" required>
+                            <option value="">-- Chọn Quận/Huyện --</option>
+                        </select>
+                        <span data-valmsg-for="DiaChis[${index}].QuanHuyen" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${index}__PhuongXa" class="block text-sm font-medium text-gray-700 mb-1">Phường/Xã</label>
+                        <select name="DiaChis[${index}].PhuongXa" id="DiaChis_${index}__PhuongXa" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm phuong-select" required>
+                            <option value="">-- Chọn Phường/Xã --</option>
+                        </select>
+                        <span data-valmsg-for="DiaChis[${index}].PhuongXa" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${index}__SoNhaTenDuong" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, tên đường</label>
+                        <input name="DiaChis[${index}].SoNhaTenDuong" id="DiaChis_${index}__SoNhaTenDuong" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" value="${soNhaTenDuong}" placeholder="Số nhà, tên đường..." />
+                        <span data-valmsg-for="DiaChis[${index}].SoNhaTenDuong" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group md:col-span-2">
-                        <label for="DiaChis_${addressIndex}__DiaChiChiTiet" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ chi tiết</label>
-                        <input name="DiaChis[${addressIndex}].DiaChiChiTiet" id="DiaChis_${addressIndex}__DiaChiChiTiet" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].DiaChiChiTiet" class="text-red-600 text-xs mt-1 block"></span>
+                        <label for="DiaChis_${index}__DiaChiDayDu" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ đầy đủ</label>
+                        <input name="DiaChis[${index}].DiaChiDayDu" id="DiaChis_${index}__DiaChiDayDu" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-200 cursor-not-allowed" value="${diaChiChiTiet}" readonly />
+                    </div>
+                    <input type="hidden" name="DiaChis[${index}].DiaChiChiTiet" id="DiaChis_${index}__DiaChiChiTiet" value="${diaChiChiTiet}" />
+                    <div class="form-group">
+                        <label for="DiaChis_${index}__TenNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">Tên người nhận</label>
+                        <input name="DiaChis[${index}].TenNguoiNhan" id="DiaChis_${index}__TenNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" value="${address.tenNguoiNhan || ''}" />
+                        <span data-valmsg-for="DiaChis[${index}].TenNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__TenNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">Tên người nhận</label>
-                        <input name="DiaChis[${addressIndex}].TenNguoiNhan" id="DiaChis_${addressIndex}__TenNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].TenNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="DiaChis_${addressIndex}__SdtNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">SĐT người nhận</label>
-                        <input name="DiaChis[${addressIndex}].SdtNguoiNhan" id="DiaChis_${addressIndex}__SdtNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                        <span data-valmsg-for="DiaChis[${addressIndex}].SdtNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
+                        <label for="DiaChis_${index}__SdtNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">SĐT người nhận</label>
+                        <input name="DiaChis[${index}].SdtNguoiNhan" id="DiaChis_${index}__SdtNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" value="${address.sdtNguoiNhan || ''}" />
+                        <span data-valmsg-for="DiaChis[${index}].SdtNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group form-check">
                         <label class="form-check-label inline-flex items-center text-sm text-gray-700">
-                            <input type="checkbox" name="DiaChis[${addressIndex}].LaMacDinh" id="DiaChis_${addressIndex}__LaMacDinh" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" />
+                            <input type="checkbox" name="DiaChis[${index}].LaMacDinh" id="DiaChis_${index}__LaMacDinh" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" ${address.laMacDinh ? 'checked' : ''} />
                             <span class="ml-2">Là mặc định</span>
                         </label>
-                        <input type="hidden" name="DiaChis[${addressIndex}].LaMacDinh" value="false" />
+                        <input type="hidden" name="DiaChis[${index}].LaMacDinh" value="false" />
                     </div>
                     <div class="form-group form-check">
                         <label class="form-check-label inline-flex items-center text-sm text-gray-700">
-                            <input type="checkbox" name="DiaChis[${addressIndex}].TrangThai" id="DiaChis_${addressIndex}__TrangThai" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" checked />
+                            <input type="checkbox" name="DiaChis[${index}].TrangThai" id="DiaChis_${index}__TrangThai" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" ${address.trangThai !== false ? 'checked' : ''} />
                             <span class="ml-2">Trạng thái</span>
                         </label>
-                        <input type="hidden" name="DiaChis[${addressIndex}].TrangThai" value="false" />
+                        <input type="hidden" name="DiaChis[${index}].TrangThai" value="false" />
                     </div>
                 </div>
             `;
+            return newAddressForm;
+        }
+
+        function updateAddressString(formElement) {
+            const diaChiChiTietInput = formElement.querySelector('[name$="DiaChiChiTiet"]');
+            const diaChiDayDuInput = formElement.querySelector('[name$="DiaChiDayDu"]');
+
+            const soNhaTenDuong = formElement.querySelector('[name$="SoNhaTenDuong"]').value || '';
+            const phuongXa = formElement.querySelector('[name$="PhuongXa"]').value || '';
+            const quanHuyen = formElement.querySelector('[name$="QuanHuyen"]').value || '';
+            const tinhThanh = formElement.querySelector('[name$="TinhThanh"]').value || '';
+
+            const parts = [soNhaTenDuong, phuongXa, quanHuyen, tinhThanh].filter(part => part !== '');
+            const fullAddress = parts.join(', ');
+
+            diaChiChiTietInput.value = fullAddress;
+            diaChiDayDuInput.value = fullAddress;
+        }
+
+        function loadAddressData(formElement, address = {}) {
+            const tinhSelect = formElement.querySelector('.tinh-select');
+            const quanSelect = formElement.querySelector('.quan-select');
+            const phuongSelect = formElement.querySelector('.phuong-select');
+
+            const updateHandler = () => updateAddressString(formElement);
+            tinhSelect.addEventListener('change', updateHandler);
+            quanSelect.addEventListener('change', updateHandler);
+            phuongSelect.addEventListener('change', updateHandler);
+            formElement.querySelector('[name$="SoNhaTenDuong"]').addEventListener('input', updateHandler);
+
+            $.getJSON('https://esgoo.net/api-tinhthanh/1/0.htm', function (data_tinh) {
+                if (data_tinh.error === 0) {
+                    $.each(data_tinh.data, function (key, val) {
+                        $(tinhSelect).append('<option value="' + val.full_name + '" data-id="' + val.id + '">' + val.full_name + '</option>');
+                    });
+                    if (address.diaChiChiTiet) {
+                        const tinhThanhName = address.diaChiChiTiet.split(',').pop().trim();
+                        $(tinhSelect).val(tinhThanhName).change();
+                    }
+                }
+            });
+
+            $(tinhSelect).change(function () {
+                const idtinh = $(this).find('option:selected').data('id');
+                $(quanSelect).html('<option value="">-- Chọn Quận/Huyện --</option>');
+                $(phuongSelect).html('<option value="">-- Chọn Phường/Xã --</option>');
+                if (idtinh) {
+                    $.getJSON('https://esgoo.net/api-tinhthanh/2/' + idtinh + '.htm', function (data_quan) {
+                        if (data_quan.error === 0) {
+                            $.each(data_quan.data, function (key, val) {
+                                $(quanSelect).append('<option value="' + val.full_name + '" data-id="' + val.id + '">' + val.full_name + '</option>');
+                            });
+                            if (address.diaChiChiTiet) {
+                                const quanHuyenName = address.diaChiChiTiet.split(',')[address.diaChiChiTiet.split(',').length - 2]?.trim();
+                                if (quanHuyenName) {
+                                    $(quanSelect).val(quanHuyenName).change();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            $(quanSelect).change(function () {
+                const idquan = $(this).find('option:selected').data('id');
+                $(phuongSelect).html('<option value="">-- Chọn Phường/Xã --</option>');
+                if (idquan) {
+                    $.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function (data_phuong) {
+                        if (data_phuong.error === 0) {
+                            $.each(data_phuong.data, function (key, val) {
+                                $(phuongSelect).append('<option value="' + val.full_name + '">' + val.full_name + '</option>');
+                            });
+                            if (address.diaChiChiTiet) {
+                                const phuongXaName = address.diaChiChiTiet.split(',')[address.diaChiChiTiet.split(',').length - 3]?.trim();
+                                if (phuongXaName) {
+                                    $(phuongSelect).val(phuongXaName);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function renderAddresses(addresses) {
+            const container = document.getElementById('addressesContainer');
+            container.innerHTML = '';
+            addresses.forEach((address, idx) => {
+                const newAddressForm = createAddressForm(idx, address);
+                container.appendChild(newAddressForm);
+                loadAddressData(newAddressForm, address);
+
+                newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function () {
+                    newAddressForm.remove();
+                    updateAddressIndices();
+                });
+            });
+            addressIndex = addresses.length;
+        }
+
+        function addAddressForm() {
+            const container = document.getElementById('addressesContainer');
+            const newAddressForm = createAddressForm(addressIndex);
             container.appendChild(newAddressForm);
-            newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function() {
+            loadAddressData(newAddressForm);
+
+            newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function () {
                 newAddressForm.remove();
                 updateAddressIndices();
             });
+
             const form = document.getElementById('editKhachHangForm');
             $.validator.unobtrusive.parse(form);
             addressIndex++;
         }
+
         function updateAddressIndices() {
             const addressItems = document.querySelectorAll('#addressesContainer .address-item');
             addressItems.forEach((item, index) => {
@@ -236,11 +330,13 @@
                 item.querySelector('h4').textContent = `Địa chỉ #${index + 1}`;
             });
             addressIndex = addressItems.length;
+            const form = document.getElementById('editKhachHangForm');
+            $.validator.unobtrusive.parse(form);
         }
+
         document.addEventListener('DOMContentLoaded', function () {
-            // Lấy dữ liệu DiaChis từ model Razor sang JS
-            var diaChis = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DiaChis ?? new List<QuanApi.Dtos.DiaChiDto>()))
-            if (diaChis.length > 0) {
+            var diaChis = @Html.Raw(Model.DiaChis != null && Model.DiaChis.Any() ? Newtonsoft.Json.JsonConvert.SerializeObject(Model.DiaChis) : "[]");
+            if (diaChis && diaChis.length > 0) {
                 renderAddresses(diaChis);
             } else {
                 addAddressForm();
