@@ -141,6 +141,7 @@ namespace QuanView.Controllers
                     IDSanPhamChiTiet = b.IdSanPhamChiTiet,
                     Size = b.TenKichCo,
                     Mau = b.TenMauSac,
+                    HoaTiet = b.TenHoaTiet,
                     GiaGoc = b.GiaBan,
                     GiaSauGiam = b.price,
                     SoLuong = b.SoLuong

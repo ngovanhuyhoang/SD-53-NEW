@@ -1,31 +1,31 @@
-using Microsoft.AspNetCore.Mvc;
-using QuanView.Models;
-using QuanView.Services;
+    using Microsoft.AspNetCore.Mvc;
+    using QuanView.Models;
+    using QuanView.Services;
 
-namespace QuanView.Controllers
-{
-    public class PaymentController : Controller
+    namespace QuanView.Controllers
     {
-        private readonly IVnPayService _vnPayService;
-
-        public PaymentController(IVnPayService vnPayService)
+        public class PaymentController : Controller
         {
-            _vnPayService = vnPayService;
-        }
+            private readonly IVnPayService _vnPayService;
 
-        public IActionResult CreatePaymentUrlVnpay(PaymentInformationModel model)
-        {
-            var url = _vnPayService.CreatePaymentUrl(model, HttpContext);
+            public PaymentController(IVnPayService vnPayService)
+            {
+                _vnPayService = vnPayService;
+            }
 
-            return Redirect(url);
-        }
+            public IActionResult CreatePaymentUrlVnpay(PaymentInformationModel model)
+            {
+                var url = _vnPayService.CreatePaymentUrl(model, HttpContext);
 
-        [HttpGet]
-        public IActionResult PaymentCallbackVnpay()
-        {
-            var response = _vnPayService.PaymentExecute(Request.Query);
+                return Redirect(url);
+            }
 
-            return Json(response);
+            [HttpGet]
+            public IActionResult PaymentCallbackVnpay()
+            {
+                var response = _vnPayService.PaymentExecute(Request.Query);
+
+                return Json(response);
+            }
         }
     }
-}

@@ -147,7 +147,7 @@ media (max-width: 900px) {
                 <span class="text-muted">Chọn size và màu để xem thông tin tồn kho</span>
             </div>
             
-            <button class="product-detail-addcart" onclick="themGioHang()">Chọn size và màu</button>
+            <button class="product-detail-addcart" onclick="themGioHang()">Chọn màu-họa tiết, size</button>
         </div>
     </div>
 </div>
@@ -156,14 +156,21 @@ media (max-width: 900px) {
 let bienThes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BienThes));
 let selectedSize = '';
 let selectedColor = '';
+let selectedPattern = '';
 function renderOptions() {
-    const colors = [...new Set(bienThes.map(b => b.Mau))];
+    // Gộp thành nút Màu - Họa tiết
+    const comboMap = new Map();
+    bienThes.forEach(b => {
+        const key = `${b.Mau}||${b.HoaTiet ?? ''}`;
+        if (!comboMap.has(key)) comboMap.set(key, { mau: b.Mau, hoatiet: b.HoaTiet ?? '' });
+    });
     let colorHtml = '';
-    colors.forEach(mau => {
-        const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
-        const stockClass = stockForColor > 10 ? "text-success" : stockForColor > 0 ? "text-warning" : "text-danger";
-        const stockText = stockForColor > 0 ? `(${stockForColor})` : "(Hết)";
-        colorHtml += `<button type="button" class="product-detail-btn-option" data-mau="${mau}">${mau} <small class="${stockClass}">${stockText}</small></button>`;
+    [...comboMap.values()].forEach(({ mau, hoatiet }) => {
+        const stockForCombo = bienThes.filter(b => b.Mau === mau && (b.HoaTiet ?? '') === hoatiet).reduce((sum, b) => sum + b.SoLuong, 0);
+        const stockClass = stockForCombo > 10 ? "text-success" : stockForCombo > 0 ? "text-warning" : "text-danger";
+        const stockText = stockForCombo > 0 ? `(${stockForCombo})` : "(Hết)";
+        const text = `${mau}${hoatiet ? ' - ' + hoatiet : ''}`;
+        colorHtml += `<button type="button" class="product-detail-btn-option" data-mau="${mau}" data-hoatiet="${hoatiet}">${text} <small class="${stockClass}">${stockText}</small></button>`;
     });
     $('#colorOptions').html(colorHtml);
     
@@ -178,7 +185,7 @@ function renderOptions() {
     $('#sizeOptions').html(sizeHtml);
 }
 function updatePriceAndQty() {
-    const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
+    const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor && b.HoaTiet === selectedPattern);
     if (bienThe) {
         $('#giaBan').text(bienThe.GiaSauGiam.toLocaleString() + ' VND');
         if (bienThe.GiaSauGiam < bienThe.GiaGoc) {
@@ -202,7 +209,7 @@ function updatePriceAndQty() {
         $('#giaBan').text('');
         $('#giaGoc').text('');
         $('#soLuong').attr('max', 1);
-        $('.product-detail-addcart').text('Chọn size và màu').prop('disabled', true).css('background', '#6c757d');
+        $('.product-detail-addcart').text('Chọn màu-họa tiết, size').prop('disabled', true).css('background', '#6c757d');
         updateStockInfo(0);
     }
 }
@@ -218,19 +225,18 @@ function updateStockInfo(stock) {
     }
     $('#stockInfo').html(stockHtml);
 }
-$(document).on('click', '.product-detail-btn-option[data-mau]', function() {
+$(document).on('click', '.product-detail-btn-option[data-mau][data-hoatiet]', function() {
     const mau = $(this).data('mau');
-    const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
-    
-    // Không cho phép chọn màu hết hàng
-    if (stockForColor <= 0) {
-        alert('Màu này đã hết hàng!');
+    const ht = $(this).data('hoatiet');
+    const stockForCombo = bienThes.filter(b => b.Mau === mau && (b.HoaTiet ?? '') === ht).reduce((sum, b) => sum + b.SoLuong, 0);
+    if (stockForCombo <= 0) {
+        alert('Biến thể này đã hết hàng!');
         return;
     }
-    
-    $('.product-detail-btn-option[data-mau]').removeClass('selected');
+    $('.product-detail-btn-option[data-mau][data-hoatiet]').removeClass('selected');
     $(this).addClass('selected');
     selectedColor = mau;
+    selectedPattern = ht;
     updatePriceAndQty();
 });
 
@@ -266,10 +272,11 @@ $(document).ready(function() {
     if (firstAvailable) {
         selectedColor = firstAvailable.Mau;
         selectedSize = firstAvailable.Size;
+        selectedPattern = firstAvailable.HoaTiet;
 
         // Đánh dấu nút được chọn tương ứng
-        $('.product-detail-btn-option[data-mau]').removeClass('selected');
-        $(`.product-detail-btn-option[data-mau="${selectedColor}"]`).addClass('selected');
+        $('.product-detail-btn-option[data-mau][data-hoatiet]').removeClass('selected');
+        $(`.product-detail-btn-option[data-mau="${selectedColor}"][data-hoatiet="${selectedPattern ?? ''}"]`).addClass('selected');
 
         $('.product-detail-btn-option[data-size]').removeClass('selected');
         $(`.product-detail-btn-option[data-size="${selectedSize}"]`).addClass('selected');
@@ -283,11 +290,11 @@ $(document).ready(function() {
 });
 function themGioHang() {
     if (!selectedSize || !selectedColor) {
-        alert('Vui lòng chọn size và màu!');
+        alert('Vui lòng chọn màu-họa tiết và size!');
         return;
     }
     
-    const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
+    const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor && b.HoaTiet === selectedPattern);
     if (!bienThe) {
         alert('Vui lòng chọn đúng biến thể!');
         return;
@@ -319,7 +326,7 @@ function themGioHang() {
     
     // Thông báo xác nhận trước khi thêm vào giỏ hàng
     const tenSanPham = decodeHtmlEntities('@Model.TenSanPham');
-    const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
+    const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}${selectedPattern ? ' - ' + selectedPattern : ''}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
     
     if (!confirm(confirmMessage)) {
         return;
