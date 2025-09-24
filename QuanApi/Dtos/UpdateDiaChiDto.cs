@@ -6,7 +6,7 @@ namespace QuanApi.Dtos
     public class UpdateDiaChiDto
     {
         [Required]
-        public Guid IDDiaChi { get; set; } 
+        public Guid IDDiaChi { get; set; }
 
         [Required(ErrorMessage = "Mã địa chỉ là bắt buộc.")]
         [StringLength(50, ErrorMessage = "Mã địa chỉ không được vượt quá 50 ký tự.")]

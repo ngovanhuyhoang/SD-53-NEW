@@ -291,6 +291,7 @@ namespace BanQuanAu1.Web.Areas.Admin.Controllers
             return View(updateKhachHangDto);
         }
 
+
         // GET: Admin/KhachHang/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {

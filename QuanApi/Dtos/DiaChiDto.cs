@@ -14,7 +14,7 @@ namespace QuanApi.Dtos
         [DisplayName("Địa chỉ chi tiết")]
         public string DiaChiChiTiet { get; set; } = string.Empty;
 
-        public Guid IDKhachHang { get; set; } 
+        public Guid IDKhachHang { get; set; }
 
         [DisplayName("Là mặc định")]
         public bool LaMacDinh { get; set; }
