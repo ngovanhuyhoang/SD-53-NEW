@@ -23,7 +23,7 @@ namespace QuanApi.Dtos
 
         [StringLength(255, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ 6 đến 255 ký tự.")]
         [DataType(DataType.Password)]
-        public string? MatKhau { get; set; } 
+        public string? MatKhau { get; set; }
 
         [Required(ErrorMessage = "Số điện thoại là bắt buộc.")]
         [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]

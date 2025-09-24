@@ -103,19 +103,28 @@
             const diaChiChiTiet = address.diaChiChiTiet || '';
             const parts = diaChiChiTiet.split(',').map(part => part.trim());
 
-            const tinhThanh = parts[parts.length - 1] || '';
-            const quanHuyen = parts.length > 2 ? parts[parts.length - 2] : '';
-            const phuongXa = parts.length > 3 ? parts[parts.length - 3] : '';
-
+            let tinhThanh = '';
+            let quanHuyen = '';
+            let phuongXa = '';
             let soNhaTenDuong = '';
-            if (parts.length > 0) {
-                soNhaTenDuong = parts[0];
-                if (parts.length > 1) {
-                    if (parts.length > 3) soNhaTenDuong = parts.slice(0, parts.length - 3).join(', ').trim();
-                    else if (parts.length > 2) soNhaTenDuong = parts.slice(0, parts.length - 2).join(', ').trim();
-                    else soNhaTenDuong = parts.slice(0, parts.length - 1).join(', ').trim();
-                }
+
+            if (parts.length >= 4) {
+                tinhThanh = parts[parts.length - 1];
+                quanHuyen = parts[parts.length - 2];
+                phuongXa = parts[parts.length - 3];
+                soNhaTenDuong = parts.slice(0, parts.length - 3).join(', ');
+            } else if (parts.length === 3) {
+                tinhThanh = parts[2];
+                quanHuyen = parts[1];
+                phuongXa = parts[0];
+            } else if (parts.length === 2) {
+                tinhThanh = parts[1];
+                quanHuyen = parts[0];
+            } else if (parts.length === 1) {
+                tinhThanh = parts[0];
             }
+
+            const idKhachHang = '@Model.IDKhachHang'; 
 
             const newAddressForm = document.createElement('div');
             newAddressForm.classList.add('address-item', 'bg-white', 'p-5', 'rounded-lg', 'shadow-md', 'space-y-4', 'border', 'border-gray-200');
@@ -130,6 +139,9 @@
                     </button>
                 </div>
                 ${address.idDiaChi ? `<input type="hidden" name="DiaChis[${index}].IDDiaChi" value="${address.idDiaChi}" />` : ''}
+                <input type="hidden" name="DiaChis[${index}].IDKhachHang" value="${idKhachHang}" />
+                ${address.ngayTao ? `<input type="hidden" name="DiaChis[${index}].NgayTao" value="${new Date(address.ngayTao).toISOString().split('T')[0]}" />` : ''}
+                ${address.ngayCapNhat ? `<input type="hidden" name="DiaChis[${index}].NgayCapNhat" value="${new Date(address.ngayCapNhat).toISOString().split('T')[0]}" />` : ''}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label for="DiaChis_${index}__MaDiaChi" class="block text-sm font-medium text-gray-700 mb-1">Mã địa chỉ</label>
@@ -228,9 +240,12 @@
                     $.each(data_tinh.data, function (key, val) {
                         $(tinhSelect).append('<option value="' + val.full_name + '" data-id="' + val.id + '">' + val.full_name + '</option>');
                     });
+
                     if (address.diaChiChiTiet) {
-                        const tinhThanhName = address.diaChiChiTiet.split(',').pop().trim();
-                        $(tinhSelect).val(tinhThanhName).change();
+                        const parts = address.diaChiChiTiet.split(',').map(p => p.trim());
+                        const tinhThanhName = parts[parts.length - 1];
+                        $(tinhSelect).val(tinhThanhName);
+                        $(tinhSelect).trigger('change');
                     }
                 }
             });
@@ -246,10 +261,10 @@
                                 $(quanSelect).append('<option value="' + val.full_name + '" data-id="' + val.id + '">' + val.full_name + '</option>');
                             });
                             if (address.diaChiChiTiet) {
-                                const quanHuyenName = address.diaChiChiTiet.split(',')[address.diaChiChiTiet.split(',').length - 2]?.trim();
-                                if (quanHuyenName) {
-                                    $(quanSelect).val(quanHuyenName).change();
-                                }
+                                const parts = address.diaChiChiTiet.split(',').map(p => p.trim());
+                                const quanHuyenName = parts[parts.length - 2] || '';
+                                $(quanSelect).val(quanHuyenName);
+                                $(quanSelect).trigger('change');
                             }
                         }
                     });
@@ -266,10 +281,10 @@
                                 $(phuongSelect).append('<option value="' + val.full_name + '">' + val.full_name + '</option>');
                             });
                             if (address.diaChiChiTiet) {
-                                const phuongXaName = address.diaChiChiTiet.split(',')[address.diaChiChiTiet.split(',').length - 3]?.trim();
-                                if (phuongXaName) {
-                                    $(phuongSelect).val(phuongXaName);
-                                }
+                                const parts = address.diaChiChiTiet.split(',').map(p => p.trim());
+                                const phuongXaName = parts[parts.length - 3] || '';
+                                $(phuongSelect).val(phuongXaName);
+                                updateAddressString(formElement);
                             }
                         }
                     });
@@ -334,13 +349,16 @@
             $.validator.unobtrusive.parse(form);
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            var diaChis = @Html.Raw(Model.DiaChis != null && Model.DiaChis.Any() ? Newtonsoft.Json.JsonConvert.SerializeObject(Model.DiaChis) : "[]");
-            if (diaChis && diaChis.length > 0) {
-                renderAddresses(diaChis);
+        $(document).ready(function () {
+            const existingAddresses = @Html.Raw(Json.Serialize(Model.DiaChis ?? new List<QuanApi.Dtos.DiaChiDto>()));
+            console.log('Existing Addresses:', existingAddresses);
+
+            if (existingAddresses && existingAddresses.length > 0) {
+                renderAddresses(existingAddresses);
             } else {
                 addAddressForm();
             }
+
             document.getElementById('addAddressBtn').addEventListener('click', addAddressForm);
         });
     </script>
