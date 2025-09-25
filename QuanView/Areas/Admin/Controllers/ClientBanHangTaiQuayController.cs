@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using System;
 using System.Net.Http.Json;
 using QuanApi.Dtos;
+using QuanView.Services;
+using QuanView.Models;
 
 namespace QuanView.Areas.Admin.Controllers
 {
@@ -13,9 +15,13 @@ namespace QuanView.Areas.Admin.Controllers
     public class ClientBanHangTaiQuayController : Controller
     {
         private readonly HttpClient _httpClient;
-        public ClientBanHangTaiQuayController(IHttpClientFactory httpClientFactory)
+        private readonly IVnPayService _vnPayService;
+        private readonly IConfiguration _configuration;
+        public ClientBanHangTaiQuayController(IHttpClientFactory httpClientFactory, IVnPayService vnPayService, IConfiguration configuration)
         {
             _httpClient = httpClientFactory.CreateClient("MyApi");
+            _vnPayService = vnPayService;
+            _configuration = configuration;
         }
         public IActionResult Index()
         {
@@ -68,6 +74,57 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> CheckDiscount(string code)
         {
             var response = await _httpClient.GetAsync($"BanHangTaiQuay/kiem-tra-ma-giam-gia?code={Uri.EscapeDataString(code)}");
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Khởi tạo URL thanh toán VNPay cho POS (không ảnh hưởng online)
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/vnpay/init")]
+        public IActionResult InitVnpay([FromBody] PaymentInformationModel model)
+        {
+            // ReturnUrl riêng cho POS
+            var posReturnUrl = _configuration["PaymentCallBack:PosReturnUrl"] ?? Url.Action("VnPayPosCallback", "ClientBanHangTaiQuay", new { area = "Admin" }, Request.Scheme);
+            var url = _vnPayService.CreatePaymentUrl(model, HttpContext, posReturnUrl);
+            return Json(new { success = true, paymentUrl = url });
+        }
+
+        // VNPay callback cho POS: Sau khi thanh toán thành công, chuyển tới SuccessBHTQ
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/VnPayPosCallback")]
+        public async Task<IActionResult> VnPayPosCallback()
+        {
+            var response = _vnPayService.PaymentExecute(Request.Query);
+
+            if (response.Success && response.VnPayResponseCode == "00")
+            {
+                // Ở POS: mã đơn có thể lấy từ session tạm hoặc query nếu đã tạo trước
+                var orderIdStr = HttpContext.Session.GetString("POS_LastOrderId");
+                if (!string.IsNullOrEmpty(orderIdStr) && Guid.TryParse(orderIdStr, out var orderId))
+                {
+                    var res = await _httpClient.GetAsync($"HoaDons/{orderId}");
+                    if (res.IsSuccessStatusCode)
+                    {
+                        var json = await res.Content.ReadAsStringAsync();
+                        TempData["OrderJson"] = json;
+                        return View("~/Areas/Admin/Views/ClientBanHangTaiQuay/SuccessBHTQ.cshtml");
+                    }
+                }
+                // Fallback: chỉ hiển thị thông báo thành công nếu thiếu orderId
+                TempData["OrderJson"] = null;
+                return View("~/Areas/Admin/Views/ClientBanHangTaiQuay/SuccessBHTQ.cshtml");
+            }
+
+            TempData["ErrorMessage"] = "Thanh toán VNPay thất bại hoặc bị hủy.";
+            return RedirectToAction("Index");
+        }
+
+        // Tính phí vận chuyển
+        [HttpPost]
+        [Route("Admin/ClientBanHangTaiQuay/tinh-phi-van-chuyen")]
+        public async Task<IActionResult> CalculateShippingFee([FromBody] object shippingData)
+        {
+            var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
             var result = await response.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
@@ -253,6 +310,16 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
         {
             var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don", dto);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // Lấy chi tiết hóa đơn theo ID (wrapper)
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/hoa-don/{id}")]
+        public async Task<IActionResult> GetHoaDonById(Guid id)
+        {
+            var response = await _httpClient.GetAsync($"HoaDons/{id}");
             var result = await response.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }

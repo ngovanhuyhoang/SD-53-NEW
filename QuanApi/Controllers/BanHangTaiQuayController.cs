@@ -137,7 +137,7 @@ namespace QuanApi.Controllers
             // Cập nhật tổng tiền hóa đơn
             hoaDon.TongTien = await _context.ChiTietHoaDons.Where(x => x.IDHoaDon == dto.IDHoaDon).SumAsync(x => x.ThanhTien);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { message = "Thêm sản phẩm vào giỏ hàng thành công!" });
         }
 
         // 3. Cập nhật/xóa sản phẩm trong đơn
@@ -153,6 +153,10 @@ namespace QuanApi.Controllers
             if (dto.SoLuongMoi <= 0)
             {
                 _context.ChiTietHoaDons.Remove(cthd);
+                // Cập nhật tổng tiền hóa đơn
+                hoaDon.TongTien = await _context.ChiTietHoaDons.Where(x => x.IDHoaDon == dto.IDHoaDon).SumAsync(x => x.ThanhTien);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Đã xóa sản phẩm khỏi giỏ hàng!" });
             }
             else
             {
@@ -175,7 +179,7 @@ namespace QuanApi.Controllers
             // Cập nhật tổng tiền hóa đơn
             hoaDon.TongTien = await _context.ChiTietHoaDons.Where(x => x.IDHoaDon == dto.IDHoaDon).SumAsync(x => x.ThanhTien);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { message = "Cập nhật số lượng sản phẩm thành công!" });
         }
 
         // 4. Chọn khách hàng (tìm theo SĐT)
@@ -219,10 +223,11 @@ namespace QuanApi.Controllers
                 .Include(x => x.AnhSanPhams.Where(a => a.TrangThai))
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
+                .Include(x => x.HoaTiet)
                 .Where(x => x.TrangThai)
                 .Select(x => new {
                     id = x.IDSanPhamChiTiet,
-                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}]",
+                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
                     // Giá gốc
                     originalPrice = x.GiaBan,
                     // Tính giá giảm nếu có đợt giảm giá đang áp dụng
@@ -248,6 +253,7 @@ namespace QuanApi.Controllers
                     ),
                     size = x.KichCo.TenKichCo,
                     color = x.MauSac.TenMauSac,
+                    pattern = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "Không có",
                     // Lấy ảnh chính hoặc ảnh đầu tiên
                     img = x.AnhSanPhams
                         .Where(a => a.TrangThai)

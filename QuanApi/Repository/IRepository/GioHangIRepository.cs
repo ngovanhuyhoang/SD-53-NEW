@@ -1,4 +1,4 @@
-﻿using QuanApi.Data;
+using QuanApi.Data;
 using QuanApi.Dtos;
 
 namespace QuanApi.Repository.IRepository
@@ -11,5 +11,6 @@ namespace QuanApi.Repository.IRepository
         GioHang GetByUserId(Guid userId);
         void XoaChiTietGioHang(Guid idgiohang);
         void UpdateChiTietGioHang(Guid idghct, int soluong);
+        FilterOptionsDto GetFilterOptions();
     }
 }

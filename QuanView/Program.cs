@@ -1,10 +1,11 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using QuanView.Models;
+using QuanView.Services;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
@@ -44,6 +45,9 @@ var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailCon
 // Đăng ký cấu hình và dịch vụ Email
 builder.Services.AddSingleton(emailConfig);
 builder.Services.AddSingleton<IEmailService, EmailService>();
+
+//Connect VNPay API
+builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie

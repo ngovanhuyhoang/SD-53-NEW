@@ -92,6 +92,50 @@
             break;
     }
     
+    // Logic xác định trạng thái có thể rollback và tên hiển thị
+    string rollbackStatus = "";
+    string rollbackText = "";
+    bool canRollback = false;
+    
+    switch (currentStatus)
+    {
+        case "Đã xác nhận":
+            rollbackStatus = "Chờ xác nhận";
+            rollbackText = "Quay về chờ xác nhận";
+            canRollback = true;
+            break;
+        case "Chờ lấy hàng":
+            rollbackStatus = "Đã xác nhận";
+            rollbackText = "Quay về đã xác nhận";
+            canRollback = true;
+            break;
+        case "Đã lấy hàng":
+            rollbackStatus = "Chờ lấy hàng";
+            rollbackText = "Quay về chờ lấy hàng";
+            canRollback = true;
+            break;
+        case "Chờ giao hàng":
+            rollbackStatus = "Đã lấy hàng";
+            rollbackText = "Quay về đã lấy hàng";
+            canRollback = true;
+            break;
+        case "Đang giao hàng":
+            rollbackStatus = "Chờ giao hàng";
+            rollbackText = "Quay về chờ giao hàng";
+            canRollback = true;
+            break;
+        case "Đã giao":
+            rollbackStatus = "Đang giao hàng";
+            rollbackText = "Quay về đang giao hàng";
+            canRollback = true;
+            break;
+        case "Giao hàng thành công":
+            rollbackStatus = "Đã giao";
+            rollbackText = "Quay về đã giao";
+            canRollback = true;
+            break;
+    }
+    
     var orderCompleted = currentStatus == "Giao hàng thành công";
 }
 
@@ -413,6 +457,8 @@
                                                 &nbsp;|&nbsp;
                                                 Kích cỡ: @(chiTiet.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-")
                                                 &nbsp;|&nbsp;
+                                                Họa tiết: @(chiTiet.SanPhamChiTiet?.HoaTiet?.TenHoaTiet ?? "Không có")
+                                                &nbsp;|&nbsp;
                                                 Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
                                             </div>
                                         </td>
@@ -458,6 +504,16 @@
                             <div class="alert alert-success text-center">
                                 <i class="fas fa-check-circle"></i> Đơn hàng đã hoàn thành!
                             </div>
+                        }
+                        
+                        @* Button rollback hiển thị cho tất cả trạng thái có thể rollback *@
+                        @if (canRollback)
+                        {
+                            <form method="post" action="@Url.Action("Rollback", new { id = Model.IDHoaDon })" class="mt-2">
+                                <button type="submit" class="btn btn-warning btn-block" onclick="return confirm('Bạn có chắc chắn muốn rollback trạng thái đơn hàng này?')">
+                                    <i class="fas fa-undo-alt"></i> @rollbackText
+                                </button>
+                            </form>
                         }
                     </div>
                 </div>

@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using QuanView.Models;
+using QuanView.Services;
 
 namespace QuanView.Controllers
 {
@@ -37,10 +38,14 @@ namespace QuanView.Controllers
     public class CheckoutController : Controller
     {
         private readonly HttpClient _httpClient;
+        private readonly IVnPayService _vnPayService;
+        private readonly ILogger<CheckoutController> _logger;
 
-        public CheckoutController(IHttpClientFactory httpClientFactory)
+        public CheckoutController(IHttpClientFactory httpClientFactory, IVnPayService vnPayService, ILogger<CheckoutController> logger)
         {
             _httpClient = httpClientFactory.CreateClient("MyApi");
+            _vnPayService = vnPayService;
+            _logger = logger;
         }
 
         private bool ValidateVietnamesePhoneNumber(string phoneNumber)
@@ -224,7 +229,86 @@ namespace QuanView.Controllers
                 Console.WriteLine($"PhieuGiamGiaId: {phieuGiamGiaId}");
                 Console.WriteLine($"MaGiamGia: {checkoutData.MaGiamGia}");
                 
-                // Tạo dữ liệu hóa đơn
+                // Tính phí vận chuyển động dựa trên API Shipping nếu có province/district
+                try
+                {
+                    var orderValue = chiTietHoaDons.Sum(x => x.thanhTien);
+                    if (!string.IsNullOrWhiteSpace(checkoutData.Province))
+                    {
+                        var calcRequest = new
+                        {
+                            Province = checkoutData.Province,
+                            District = checkoutData.District,
+                            OrderValue = orderValue
+                        };
+                        var shippingResp = await _httpClient.PostAsJsonAsync("shipping/calculate", calcRequest);
+                        if (shippingResp.IsSuccessStatusCode)
+                        {
+                            var shippingInfo = await shippingResp.Content.ReadFromJsonAsync<ShippingInfoDto>();
+                            if (shippingInfo != null)
+                            {
+                                checkoutData.PhiVanChuyen = shippingInfo.FinalFee;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Không tính được phí vận chuyển động, dùng giá trị gửi từ client nếu có");
+                }
+
+                // Kiểm tra phương thức thanh toán - nếu là "chuyển khoản" thì chuyển hướng đến VNPay
+                var paymentMethodResponse = await _httpClient.GetAsync($"PhuongThucThanhToans/{checkoutData.PhuongThucThanhToanId}");
+                if (paymentMethodResponse.IsSuccessStatusCode)
+                {
+                    var paymentMethod = await paymentMethodResponse.Content.ReadFromJsonAsync<PhuongThucThanhToan>();
+                    if (paymentMethod != null && paymentMethod.TenPhuongThuc.ToLower().Contains("chuyển khoản"))
+                    {
+                        // Lưu thông tin đơn hàng vào session với format CheckoutDto để deserialize đúng
+                        var orderInfo = new CheckoutDto
+                        {
+                            KhachHangId = khachHangId,
+                            PhuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
+                            TongTien = checkoutData.TongTien,
+                            TienGiam = checkoutData.TienGiam ?? 0,
+                            PhiVanChuyen = checkoutData.PhiVanChuyen,
+                            TenNguoiNhan = checkoutData.TenNguoiNhan,
+                            SoDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
+                            DiaChiGiaoHang = checkoutData.DiaChiGiaoHang,
+                            GhiChu = checkoutData.GhiChu,
+                            PhieuGiamGiaId = phieuGiamGiaId,
+                            Province = checkoutData.Province,
+                            District = checkoutData.District,
+                            MaGiamGia = checkoutData.MaGiamGia
+                        };
+                        
+                        HttpContext.Session.SetObjectAsJson("PendingOrder", orderInfo);
+
+                        // Tạo thông tin thanh toán VNPay
+                        var paymentInfo = new PaymentInformationModel
+                        {
+                            OrderType = "billpayment",
+                            Amount = (double)checkoutData.TongTien,
+                            OrderDescription = $"Thanh toan don hang {checkoutData.TenNguoiNhan}",
+                            Name = checkoutData.TenNguoiNhan
+                        };
+
+                        // Debug: Log số tiền trước khi gửi VNPay
+                        _logger.LogInformation($"VNPay Payment - Amount: {paymentInfo.Amount}, TongTien: {checkoutData.TongTien}");
+
+                        // Tạo URL thanh toán VNPay
+                        var paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, HttpContext);
+                        
+                        return Json(new { 
+                            success = true, 
+                            redirectToVnPay = true,
+                            paymentUrl = paymentUrl,
+                            message = "Chuyển hướng đến VNPay để thanh toán" 
+                        });
+                    }
+                }
+
+                // Tạo dữ liệu hóa đơn cho thanh toán thường (tiền mặt, COD)
                 var hoaDonData = new
                 {
                     khachHangId = khachHangId, // Sử dụng từ claims thay vì checkoutData
@@ -233,7 +317,7 @@ namespace QuanView.Controllers
                     phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
-                    phiVanChuyen = checkoutData.PhiVanChuyen, // Thêm phí vận chuyển
+                    phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -279,9 +363,30 @@ namespace QuanView.Controllers
                         // Sử dụng fallback
                     }
                     
-                    HttpContext.Session.Remove("Cart"); 
+                    // Chuẩn bị dữ liệu cho trang Success
+                    ViewBag.OrderCode = maHoaDon;
+                    ViewBag.OrderTotal = checkoutData.TongTien;
+                    ViewBag.PaymentMethod = "Thanh toán khi nhận hàng";
+                    ViewBag.OrderDate = DateTime.Now;
+                    ViewBag.CustomerName = checkoutData.TenNguoiNhan;
+                    ViewBag.CustomerPhone = checkoutData.SoDienThoaiNguoiNhan;
+                    ViewBag.CustomerAddress = checkoutData.DiaChiGiaoHang;
+                    ViewBag.ShippingFee = checkoutData.PhiVanChuyen;
+                    
+                    HttpContext.Session.Remove("Cart");
+                    
                     return Json(new { 
                         success = true, 
+                        redirect = true,
+                        redirectUrl = Url.Action("Success", "Checkout", new { 
+                            orderCode = maHoaDon,
+                            total = checkoutData.TongTien,
+                            paymentMethod = "Thanh toán khi nhận hàng",
+                            customerName = checkoutData.TenNguoiNhan,
+                            customerPhone = checkoutData.SoDienThoaiNguoiNhan,
+                            customerAddress = checkoutData.DiaChiGiaoHang,
+                            shippingFee = checkoutData.PhiVanChuyen
+                        }),
                         message = $"Đặt hàng thành công! Mã đơn hàng của bạn là: {maHoaDon}" 
                     });
                 }
@@ -294,6 +399,22 @@ namespace QuanView.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        // Proxy tính phí vận chuyển giống bán hàng tại quầy
+        [HttpPost]
+        public async Task<IActionResult> CalculateShipping([FromBody] object shippingData)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
+                var result = await response.Content.ReadAsStringAsync();
+                return Content(result, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
 
@@ -343,9 +464,18 @@ namespace QuanView.Controllers
         }
 
         // GET: Trang thành công
-        public IActionResult Success(string orderCode)
+        public IActionResult Success(string orderCode, decimal? total = null, string paymentMethod = null, 
+            string customerName = null, string customerPhone = null, string customerAddress = null, 
+            decimal? shippingFee = null)
         {
             ViewBag.OrderCode = orderCode;
+            ViewBag.OrderTotal = total ?? 0;
+            ViewBag.PaymentMethod = paymentMethod ?? "Thanh toán khi nhận hàng";
+            ViewBag.OrderDate = DateTime.Now;
+            ViewBag.CustomerName = customerName;
+            ViewBag.CustomerPhone = customerPhone;
+            ViewBag.CustomerAddress = customerAddress;
+            ViewBag.ShippingFee = shippingFee ?? 0;
             return View();
         }
 
@@ -358,6 +488,16 @@ namespace QuanView.Controllers
                 success = true, 
                 message = $"Đặt hàng thành công! Mã đơn hàng của bạn là: {testOrderCode}",
                 orderCode = testOrderCode
+            });
+        }
+
+        [HttpGet]
+        public IActionResult TestSession()
+        {
+            var pendingOrder = HttpContext.Session.GetString("PendingOrder");
+            return Json(new { 
+                hasPendingOrder = !string.IsNullOrEmpty(pendingOrder),
+                pendingOrderData = pendingOrder
             });
         }
 
@@ -673,6 +813,155 @@ namespace QuanView.Controllers
                 return StatusCode(500, new { success = false, message = $"Lỗi: {ex.Message}" });
             }
         }
+
+        // VNPay callback handler
+        [HttpGet]
+        public async Task<IActionResult> PaymentCallbackVnpay()
+        {
+            try
+            {
+                // Log toàn bộ query parameters để debug
+                _logger.LogInformation($"VNPay Callback - Query: {string.Join("&", Request.Query.Select(x => $"{x.Key}={x.Value}"))}");
+                
+                // Xử lý response từ VNPay
+                var response = _vnPayService.PaymentExecute(Request.Query);
+                
+                _logger.LogInformation($"VNPay Response - Success: {response.Success}, ResponseCode: {response.VnPayResponseCode}");
+
+                if (response.Success && response.VnPayResponseCode == "00")
+                {
+                    // Thanh toán thành công, lấy thông tin đơn hàng từ session
+                    var orderInfoJson = HttpContext.Session.GetString("PendingOrder");
+                    _logger.LogInformation($"VNPay Success - PendingOrder from session: {orderInfoJson}");
+                    
+                    if (!string.IsNullOrEmpty(orderInfoJson))
+                    {
+                        // Parse CheckoutDto và tạo lại format cho API HoaDons
+                        var checkoutInfo = JsonSerializer.Deserialize<CheckoutDto>(orderInfoJson);
+                        
+                        // Lấy chi tiết hóa đơn từ giỏ hàng
+                        var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                        var chiTietHoaDons = cart.Select(item => new
+                        {
+                            idSanPhamChiTiet = item.IDSanPhamChiTiet,
+                            soLuong = item.SoLuong,
+                            donGia = item.GiaBan,
+                            thanhTien = Math.Round(item.GiaBan * item.SoLuong, 2)
+                        }).ToList();
+                        
+                        // Tạo dữ liệu hóa đơn với format đúng cho API
+                        var hoaDonData = new
+                        {
+                            khachHangId = checkoutInfo.KhachHangId,
+                            nhanVienId = (Guid?)null,
+                            phieuGiamGiaId = checkoutInfo.PhieuGiamGiaId,
+                            phuongThucThanhToanId = checkoutInfo.PhuongThucThanhToanId,
+                            tongTien = checkoutInfo.TongTien,
+                            tienGiam = checkoutInfo.TienGiam,
+                            phiVanChuyen = checkoutInfo.PhiVanChuyen,
+                            tenNguoiNhan = checkoutInfo.TenNguoiNhan,
+                            soDienThoaiNguoiNhan = checkoutInfo.SoDienThoaiNguoiNhan,
+                            diaChiGiaoHang = checkoutInfo.DiaChiGiaoHang,
+                            ghiChu = checkoutInfo.GhiChu,
+                            chiTietHoaDons = chiTietHoaDons
+                        };
+                        
+                        var content = new StringContent(JsonSerializer.Serialize(hoaDonData), Encoding.UTF8, "application/json");
+                        var hoaDonResponse = await _httpClient.PostAsync("HoaDons", content);
+                        
+                        _logger.LogInformation($"VNPay Success - API Response Status: {hoaDonResponse.StatusCode}");
+                        
+                        if (hoaDonResponse.IsSuccessStatusCode)
+                        {
+                            // Lấy mã hóa đơn từ response
+                            var responseContent = await hoaDonResponse.Content.ReadAsStringAsync();
+                            using (var doc = JsonDocument.Parse(responseContent))
+                            {
+                                var maHoaDon = doc.RootElement.GetProperty("maHoaDon").GetString();
+                                
+                                // Chuẩn bị dữ liệu cho trang Success
+                                ViewBag.OrderCode = maHoaDon;
+                                ViewBag.OrderTotal = checkoutInfo.TongTien;
+                                ViewBag.PaymentMethod = "Thanh toán VNPay";
+                                ViewBag.OrderDate = DateTime.Now;
+                                ViewBag.CustomerName = checkoutInfo.TenNguoiNhan;
+                                ViewBag.CustomerPhone = checkoutInfo.SoDienThoaiNguoiNhan;
+                                ViewBag.CustomerAddress = checkoutInfo.DiaChiGiaoHang;
+                                ViewBag.ShippingFee = checkoutInfo.PhiVanChuyen;
+                                
+                                // Xóa giỏ hàng và thông tin đơn hàng tạm
+                                HttpContext.Session.Remove("Cart");
+                                HttpContext.Session.Remove("PendingOrder");
+                                
+                                // Chuyển hướng đến trang Success
+                                return View("Success");
+                            }
+                        }
+                        else
+                        {
+                            var errorContent = await hoaDonResponse.Content.ReadAsStringAsync();
+                            _logger.LogError($"API Error: {errorContent}");
+                            TempData["ErrorMessage"] = "Có lỗi xảy ra khi tạo đơn hàng.";
+                            return RedirectToAction("Index");
+                        }
+                    }
+                    else
+                    {
+                        // Không tìm thấy thông tin đơn hàng
+                        TempData["ErrorMessage"] = "Không tìm thấy thông tin đơn hàng. Vui lòng thử lại.";
+                        return RedirectToAction("Index", "GioHang");
+                    }
+                }
+                else
+                {
+                    // Thanh toán thất bại hoặc bị hủy
+                    string errorMessage = "Thanh toán thất bại.";
+                    bool isUserCancelled = false;
+                    
+                    switch (response.VnPayResponseCode)
+                    {
+                        case "24":
+                            errorMessage = "Bạn đã hủy giao dịch thanh toán.";
+                            isUserCancelled = true;
+                            break;
+                        case "51":
+                            errorMessage = "Tài khoản không đủ số dư để thực hiện giao dịch.";
+                            break;
+                        case "65":
+                            errorMessage = "Tài khoản đã vượt quá hạn mức giao dịch trong ngày.";
+                            break;
+                        default:
+                            errorMessage = $"Thanh toán thất bại. Mã lỗi: {response.VnPayResponseCode}";
+                            break;
+                    }
+                    
+                    // Nếu user hủy giao dịch, chỉ hiển thị thông báo nhẹ nhàng
+                    if (isUserCancelled)
+                    {
+                        TempData["InfoMessage"] = errorMessage;
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = errorMessage;
+                    }
+                    
+                    // Xóa thông tin đơn hàng tạm nếu user hủy
+                    if (isUserCancelled)
+                    {
+                        HttpContext.Session.Remove("PendingOrder");
+                    }
+                    
+                    return RedirectToAction("Index", "GioHang");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in PaymentCallbackVnpay");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra trong quá trình xử lý thanh toán.";
+                return RedirectToAction("Index");
+            }
+        }
+
     }
 
     public class CheckoutDto
@@ -681,6 +970,8 @@ namespace QuanView.Controllers
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }
         public string DiaChiGiaoHang { get; set; }
+        public string Province { get; set; }
+        public string District { get; set; }
         public Guid PhuongThucThanhToanId { get; set; }
         public Guid? PhieuGiamGiaId { get; set; }
         public decimal TongTien { get; set; }

@@ -27,24 +27,72 @@ namespace QuanView.Areas.Admin.Controllers
             _http = factory.CreateClient("MyApi");
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int page = 1,
+            string? keyword = null,
+            string? trangThai = null,
+            decimal? priceFrom = null,
+            decimal? priceTo = null,
+            int? qtyFrom = null,
+            int? qtyTo = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null)
         {
-            var response = await _http.GetAsync("sanphams");
-            if (!response.IsSuccessStatusCode) return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            // Cố định pageSize = 5
+            int pageSize = 5;
+            
+            // Tạo query string cho API
+            var queryParams = new List<string>();
+            queryParams.Add($"page={page}");
+            queryParams.Add($"pageSize={pageSize}");
+            
+            if (!string.IsNullOrWhiteSpace(keyword))
+                queryParams.Add($"keyword={Uri.EscapeDataString(keyword)}");
+            if (!string.IsNullOrWhiteSpace(trangThai))
+                queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+            if (priceFrom.HasValue)
+                queryParams.Add($"priceFrom={priceFrom.Value}");
+            if (priceTo.HasValue)
+                queryParams.Add($"priceTo={priceTo.Value}");
+            if (qtyFrom.HasValue)
+                queryParams.Add($"qtyFrom={qtyFrom.Value}");
+            if (qtyTo.HasValue)
+                queryParams.Add($"qtyTo={qtyTo.Value}");
+            if (dateFrom.HasValue)
+                queryParams.Add($"dateFrom={dateFrom.Value:yyyy-MM-dd}");
+            if (dateTo.HasValue)
+                queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
+
+            var queryString = string.Join("&", queryParams);
+            var response = await _http.GetAsync($"sanphams/paged?{queryString}");
+            
+            if (!response.IsSuccessStatusCode) 
+                return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 
             var json = await response.Content.ReadAsStringAsync();
-            var products = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var pagedResult = JsonSerializer.Deserialize<dynamic>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            
+            // Parse kết quả từ API
+            var total = pagedResult.GetProperty("total").GetInt32();
+            var dataArray = pagedResult.GetProperty("data").EnumerateArray();
+            var products = new List<QuanView.Areas.Admin.Models.SanPhamDto>();
+            
+            foreach (var item in dataArray)
+            {
+                var product = JsonSerializer.Deserialize<QuanView.Areas.Admin.Models.SanPhamDto>(item.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                products.Add(product);
+            }
 
+            // Load chi tiết sản phẩm cho từng sản phẩm
             foreach (var sp in products)
             {
-                // ✅ Đảm bảo gọi đúng endpoint GET api/sanphamchitiets?idsanpham=...
                 var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={sp.IDSanPham}");
 
                 if (res.IsSuccessStatusCode)
                 {
                     var ctJson = await res.Content.ReadAsStringAsync();
                     sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    
+
                     // ✅ Cập nhật ảnh chính từ SanPhamChiTiet đầu tiên có ảnh
                     if (sp.ChiTietSanPhams != null && sp.ChiTietSanPhams.Any())
                     {
@@ -66,7 +114,7 @@ namespace QuanView.Areas.Admin.Controllers
                                 var imagesJson = await imagesRes.Content.ReadAsStringAsync();
                                 var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                                 ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages);
-                                
+
                                 // ✅ Cập nhật ảnh đại diện từ danh sách ảnh
                                 var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
                                 if (mainImage != null)
@@ -79,7 +127,24 @@ namespace QuanView.Areas.Admin.Controllers
                 }
             }
 
-            return View(products);
+            // Tạo ViewModel với phân trang và bộ lọc
+            var viewModel = new SanPhamFilterViewModel
+            {
+                SanPhams = products,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = total,
+                Keyword = keyword,
+                TrangThai = trangThai,
+                PriceFrom = priceFrom,
+                PriceTo = priceTo,
+                QtyFrom = qtyFrom,
+                QtyTo = qtyTo,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+
+            return View(viewModel);
         }
 
         public async Task<IActionResult> Create()

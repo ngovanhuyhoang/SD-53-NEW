@@ -134,14 +134,24 @@
                     int idx = 0;
                     foreach (var sp in selectedIds)
                     {
-                        var codeAndName = sp.Text.Split('|')[0].Trim();
+                        var parts = sp.Text.Split('|');
+                        var codeAndName = parts[0].Trim();
                         var code = codeAndName.Split('-')[0].Trim();
                         var name = codeAndName.Split('-').Length > 1 ? codeAndName.Split('-')[1].Trim() : "";
+                        var details = parts.Length > 1 ? parts[1].Trim() : "";
                         var isSelected = sp.Selected ? "selected" : "";
                         <div class="product-item-row @isSelected" data-id="@sp.Value" tabindex="0">
                             <label class="form-check-label fw-bold" style="width:100%;cursor:pointer;">
-                                <span style="color:#2563eb;">@code</span>
-                                <span style="color:#222; font-weight:normal;">@name</span>
+                                <div>
+                                    <span style="color:#2563eb;">@code</span>
+                                    <span style="color:#222; font-weight:normal;">@name</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(details))
+                                {
+                                    <div style="font-size: 0.85em; color: #666; font-weight: normal; margin-top: 2px;">
+                                        @details
+                                    </div>
+                                }
                             </label>
                         </div>
                         idx++;
