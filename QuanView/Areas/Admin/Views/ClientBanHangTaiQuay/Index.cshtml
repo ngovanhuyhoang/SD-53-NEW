@@ -314,7 +314,7 @@
                     <div class="mb-2">
                         <label class="form-label">Phí vận chuyển:</label>
                         <input type="number" class="form-control" id="shippingFee" value="0" min="0" readonly />
-                        <small class="text-muted">Phí vận chuyển cố định: 50.000 VNĐ</small>
+                        @* <small class="text-muted">Phí vận chuyển cố định: 50.000 VNĐ</small> *@
                     </div>
                  
                     <div class="mb-2">
@@ -1251,9 +1251,7 @@
                                 <button class="btn btn-success btn-sm" onclick="addProductQuick('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Thêm nhanh (SL: 1)">
                                     <i class="bi bi-plus-circle"></i>
                                 </button>
-                                <button class="btn btn-outline-success btn-sm" onclick="addProductToGioHang('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Chọn số lượng">
-                                    <i class="bi bi-123"></i>
-                                </button>
+                               
                             </div>
                         </td>
                     </tr>
