@@ -1,4 +1,4 @@
-﻿@model QuanApi.Dtos.NhanVienCreateDto
+@model QuanApi.Dtos.NhanVienCreateDto
 
 @{
     ViewData["Title"] = "Tạo mới Nhân viên";
@@ -124,10 +124,9 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label asp-for="MatKhau" class="control-label"></label>
-                            <input asp-for="MatKhau" class="form-control" type="password" />
-                            <span asp-validation-for="MatKhau" class="text-danger"></span>
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Lưu ý:</strong> Mật khẩu sẽ được tự động tạo và gửi qua email của nhân viên.
                         </div>
                     </div>
                     <div class="col-md-6">

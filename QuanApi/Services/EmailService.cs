@@ -45,7 +45,7 @@ namespace QuanApi.Services
                 var body = GenerateStatusChangeEmailBody(fullOrder, oldStatus, newStatus);
 
                 await SendEmailAsync(fullOrder.KhachHang.Email, subject, body);
-                
+
                 _logger.LogInformation($"Đã gửi email thông báo thay đổi trạng thái từ '{oldStatus}' sang '{newStatus}' cho đơn hàng {hoaDon.MaHoaDon}");
             }
             catch (Exception ex)
@@ -71,7 +71,7 @@ namespace QuanApi.Services
                 var body = GenerateCancellationEmailBody(fullOrder, reason);
 
                 await SendEmailAsync(fullOrder.KhachHang.Email, subject, body);
-                
+
                 _logger.LogInformation($"Đã gửi email thông báo hủy đơn hàng {hoaDon.MaHoaDon}");
             }
             catch (Exception ex)
@@ -144,17 +144,17 @@ namespace QuanApi.Services
             sb.AppendLine("<!DOCTYPE html>");
             sb.AppendLine("<html><head><meta charset='UTF-8'></head><body>");
             sb.AppendLine("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>");
-            
+
             // Header
             sb.AppendLine("<div style='background-color: #007bff; color: white; padding: 20px; text-align: center;'>");
             sb.AppendLine("<h1>Cập nhật trạng thái đơn hàng</h1>");
             sb.AppendLine("</div>");
-            
+
             // Content
             sb.AppendLine("<div style='padding: 20px;'>");
             sb.AppendLine($"<p>Xin chào <strong>{hoaDon.KhachHang?.TenKhachHang ?? hoaDon.TenNguoiNhan}</strong>,</p>");
             sb.AppendLine($"<p>Đơn hàng <strong>#{hoaDon.MaHoaDon}</strong> của bạn đã được cập nhật trạng thái:</p>");
-            
+
             // Status change
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;'>");
             sb.AppendLine($"<p><strong>Trạng thái cũ:</strong> <span style='color: #6c757d;'>{oldStatus}</span></p>");
@@ -190,15 +190,15 @@ namespace QuanApi.Services
 
             sb.AppendLine("<p>Cảm ơn bạn đã mua sắm tại cửa hàng của chúng tôi!</p>");
             sb.AppendLine("</div>");
-            
+
             // Footer
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; text-align: center; color: #6c757d;'>");
             sb.AppendLine("<p>Đây là email tự động, vui lòng không trả lời email này.</p>");
             sb.AppendLine("<p>Nếu có thắc mắc, vui lòng liên hệ: support@example.com | 0123-456-789</p>");
             sb.AppendLine("</div>");
-            
+
             sb.AppendLine("</div></body></html>");
-            
+
             return sb.ToString();
         }
 
@@ -208,17 +208,17 @@ namespace QuanApi.Services
             sb.AppendLine("<!DOCTYPE html>");
             sb.AppendLine("<html><head><meta charset='UTF-8'></head><body>");
             sb.AppendLine("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>");
-            
+
             // Header
             sb.AppendLine("<div style='background-color: #dc3545; color: white; padding: 20px; text-align: center;'>");
             sb.AppendLine("<h1>Thông báo hủy đơn hàng</h1>");
             sb.AppendLine("</div>");
-            
+
             // Content
             sb.AppendLine("<div style='padding: 20px;'>");
             sb.AppendLine($"<p>Xin chào <strong>{hoaDon.KhachHang?.TenKhachHang ?? hoaDon.TenNguoiNhan}</strong>,</p>");
             sb.AppendLine($"<p>Chúng tôi rất tiếc phải thông báo rằng đơn hàng <strong>#{hoaDon.MaHoaDon}</strong> của bạn đã bị hủy.</p>");
-            
+
             if (!string.IsNullOrEmpty(reason))
             {
                 sb.AppendLine("<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;'>");
@@ -228,18 +228,18 @@ namespace QuanApi.Services
 
             sb.AppendLine($"<p><strong>Thời gian hủy:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>");
             sb.AppendLine($"<p><strong>Tổng tiền đơn hàng:</strong> {hoaDon.TongTien:N0} VNĐ</p>");
-            
+
             sb.AppendLine("<p>Nếu bạn đã thanh toán, chúng tôi sẽ hoàn tiền trong vòng 3-7 ngày làm việc.</p>");
             sb.AppendLine("<p>Chúng tôi xin lỗi vì sự bất tiện này và hy vọng được phục vụ bạn trong tương lai.</p>");
             sb.AppendLine("</div>");
-            
+
             // Footer
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; text-align: center; color: #6c757d;'>");
             sb.AppendLine("<p>Nếu có thắc mắc, vui lòng liên hệ: support@example.com | 0123-456-789</p>");
             sb.AppendLine("</div>");
-            
+
             sb.AppendLine("</div></body></html>");
-            
+
             return sb.ToString();
         }
 
@@ -253,6 +253,73 @@ namespace QuanApi.Services
                 "Đã giao hàng" => "<div style='background-color: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng đã được giao thành công!</strong> Cảm ơn bạn đã mua sắm tại cửa hàng chúng tôi.</p></div>",
                 _ => ""
             };
+        }
+
+        public async Task SendEmployeeCredentialsEmailAsync(string email, string employeeName, string employeeCode, string password)
+        {
+            try
+            {
+                var subject = "Thông tin tài khoản nhân viên mới";
+                var body = GenerateEmployeeCredentialsEmailBody(email, employeeName, employeeCode, password);
+
+                await SendEmailAsync(email, subject, body);
+
+                _logger.LogInformation($"Đã gửi email thông tin tài khoản cho nhân viên {employeeName} ({employeeCode}) tới {email}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi gửi email thông tin tài khoản cho nhân viên {employeeName}: {ex.Message}");
+                throw new ApplicationException($"Lỗi khi gửi email thông tin tài khoản: {ex.Message}", ex);
+            }
+        }
+
+        private string GenerateEmployeeCredentialsEmailBody(string email, string employeeName, string employeeCode, string password)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html><head><meta charset='UTF-8'></head><body>");
+            sb.AppendLine("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>");
+
+            // Header
+            sb.AppendLine("<div style='background-color: #28a745; color: white; padding: 20px; text-align: center;'>");
+            sb.AppendLine("<h1>Chào mừng bạn đến với đội ngũ nhân viên!</h1>");
+            sb.AppendLine("</div>");
+
+            // Content
+            sb.AppendLine("<div style='padding: 20px;'>");
+            sb.AppendLine($"<p>Xin chào <strong>{employeeName}</strong>,</p>");
+            sb.AppendLine("<p>Chúc mừng! Tài khoản nhân viên của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>");
+
+            // Credentials box
+            sb.AppendLine("<div style='background-color: #f8f9fa; border: 2px solid #28a745; padding: 20px; border-radius: 10px; margin: 20px 0;'>");
+            sb.AppendLine($"<p><strong>Mã nhân viên:</strong> <span style='color: #007bff; font-weight: bold;'>{employeeCode}</span></p>");
+            sb.AppendLine($"<p><strong>Email đăng nhập:</strong> <span style='color: #007bff; font-weight: bold;'>{email}</span></p>");
+            sb.AppendLine($"<p><strong>Mật khẩu:</strong> <span style='color: #dc3545; font-weight: bold; font-family: monospace;'>{password}</span></p>");
+            sb.AppendLine("</div>");
+
+            // Security notice
+            sb.AppendLine("<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;'>");
+            sb.AppendLine("<p><strong>⚠️ Lưu ý bảo mật:</strong></p>");
+            sb.AppendLine("<ul>");
+            sb.AppendLine("<li>Vui lòng đổi mật khẩu sau lần đăng nhập đầu tiên</li>");
+            sb.AppendLine("<li>Không chia sẻ thông tin đăng nhập với bất kỳ ai</li>");
+            sb.AppendLine("<li>Sử dụng mật khẩu mạnh khi thay đổi</li>");
+            sb.AppendLine("</ul>");
+            sb.AppendLine("</div>");
+
+            sb.AppendLine("<p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với bộ phận IT hoặc quản lý trực tiếp.</p>");
+            sb.AppendLine("<p>Chúc bạn làm việc hiệu quả!</p>");
+            sb.AppendLine("</div>");
+
+            // Footer
+            sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; text-align: center; color: #6c757d;'>");
+            sb.AppendLine("<p>Đây là email tự động, vui lòng không trả lời email này.</p>");
+            sb.AppendLine("<p>Nếu có thắc mắc, vui lòng liên hệ: hr@example.com | 0123-456-789</p>");
+            sb.AppendLine("</div>");
+
+            sb.AppendLine("</div></body></html>");
+
+            return sb.ToString();
         }
 
         Task IEmailService.SendEmailAsync(string toEmail, string subject, string body)

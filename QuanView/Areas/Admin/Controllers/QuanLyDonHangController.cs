@@ -515,6 +515,13 @@ namespace QuanView.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
+                // Kiểm tra trạng thái đã hoàn thành
+                if (hoaDon.TrangThai == "Giao hàng thành công")
+                {
+                    TempData["ErrorMessage"] = "Đơn hàng đã hoàn thành. Không thể rollback trạng thái.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
                 // Xác định trạng thái rollback dựa trên trạng thái hiện tại
                 string targetStatus = hoaDon.TrangThai switch
                 {

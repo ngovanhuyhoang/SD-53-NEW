@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -130,7 +130,7 @@ namespace QuanView.Areas.Admin.Controllers
         // POST: Admin/NhanViens/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MaNhanVien,TenNhanVien,Email,MatKhau,SoDienThoai,NgaySinh,GioiTinh,QueQuan,CCCD,IDVaiTro,TrangThai,IDNguoiTao")] NhanVienCreateDto createDto)
+        public async Task<IActionResult> Create([Bind("MaNhanVien,TenNhanVien,Email,SoDienThoai,NgaySinh,GioiTinh,QueQuan,CCCD,IDVaiTro,TrangThai,IDNguoiTao")] NhanVienCreateDto createDto)
         {
             if (!ModelState.IsValid)
             {
@@ -145,7 +145,7 @@ namespace QuanView.Areas.Admin.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    TempData["SuccessMessage"] = "Tạo nhân viên thành công!";
+                    TempData["SuccessMessage"] = "Tạo nhân viên thành công! Thông tin đăng nhập đã được gửi qua email.";
                     return RedirectToAction(nameof(Index));
                 }
                 else
@@ -263,13 +263,11 @@ namespace QuanView.Areas.Admin.Controllers
             if (currentUserId.HasValue && id == currentUserId.Value)
             {
                 var nhanVienHienTai = await _httpClient.GetFromJsonAsync<NhanVienResponseDto>($"NhanVien/{id}");
-                if (nhanVienHienTai != null && nhanVienHienTai.TrangThai != updateDto.TrangThai)
+                if (nhanVienHienTai != null)
                 {
-                    ModelState.AddModelError(string.Empty, "Bạn không thể tự thay đổi trạng thái của mình.");
-                    await LoadVaiTroDropdown();
-                    ViewBag.NhanVienId = id;
-                    ViewBag.IsCurrentUser = true;
-                    return View(updateDto);
+                    // Đảm bảo trạng thái không thay đổi khi user tự chỉnh sửa
+                    updateDto.TrangThai = nhanVienHienTai.TrangThai;
+                    _logger.LogInformation("User {UserId} is editing themselves. Status preserved as: {Status}", currentUserId, updateDto.TrangThai);
                 }
             }
 

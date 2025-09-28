@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanApi.Data
@@ -22,6 +22,7 @@ namespace QuanApi.Data
 
         [MaxLength(255)]
         public string? MatKhau { get; set; }
+
         public DateTime? NgaySinh { get; set; }
 
         public bool? GioiTinh { get; set; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +11,8 @@ using AutoMapper;
 using QuanApi.Dtos;
 using System.Text.Json;
 using System.Security.Claims;
+using QuanApi.Utils;
+using QuanApi.Services;
 namespace QuanApi.Controllers
 {
     [ApiController]
@@ -20,12 +22,14 @@ namespace QuanApi.Controllers
         private readonly BanQuanAu1DbContext _context;
         private readonly ILogger<NhanVienController> _logger;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
 
-        public NhanVienController(BanQuanAu1DbContext context, ILogger<NhanVienController> logger, IMapper mapper)
+        public NhanVienController(BanQuanAu1DbContext context, ILogger<NhanVienController> logger, IMapper mapper, IEmailService emailService)
         {
             _context = context;
             _logger = logger;
             _mapper = mapper;
+            _emailService = emailService;
         }
 
         // GET: api/NhanVien
@@ -211,15 +215,64 @@ namespace QuanApi.Controllers
                 }
 
 
+                // Tạo mật khẩu ngẫu nhiên nếu không được cung cấp
+                string generatedPassword = string.Empty;
+                if (string.IsNullOrEmpty(nhanVienCreateDto.MatKhau))
+                {
+                    generatedPassword = PasswordGenerator.GenerateSimplePassword(10);
+                    nhanVienCreateDto.MatKhau = generatedPassword;
+                    _logger.LogInformation("Generated password for new employee {MaNhanVien}: {Password}", 
+                        nhanVienCreateDto.MaNhanVien, generatedPassword);
+                }
+                else
+                {
+                    generatedPassword = nhanVienCreateDto.MatKhau;
+                    _logger.LogInformation("Using provided password for employee {MaNhanVien}", nhanVienCreateDto.MaNhanVien);
+                }
+
                 var nhanVien = _mapper.Map<NhanVien>(nhanVienCreateDto);
+                
+                // Lưu mật khẩu plain text
+                if (!string.IsNullOrEmpty(nhanVienCreateDto.MatKhau))
+                {
+                    nhanVien.MatKhau = nhanVienCreateDto.MatKhau;
+                    _logger.LogInformation("Password set for new employee {MaNhanVien}: {Password}", 
+                        nhanVien.MaNhanVien, nhanVienCreateDto.MatKhau);
+                }
+                else
+                {
+                    _logger.LogWarning("No password provided for employee {MaNhanVien}", nhanVien.MaNhanVien);
+                }
                 nhanVien.IDNhanVien = Guid.NewGuid();
                 nhanVien.NgayTao = DateTime.Now;
                 nhanVien.NguoiTao = nhanVienCreateDto.IDNguoiTao.ToString();
                 nhanVien.TrangThai = nhanVienCreateDto.TrangThai;
 
-
                 _context.NhanViens.Add(nhanVien);
                 await _context.SaveChangesAsync();
+
+                // Gửi email với thông tin tài khoản nếu mật khẩu được tự động tạo
+                if (!string.IsNullOrEmpty(generatedPassword))
+                {
+                    try
+                    {
+                        await _emailService.SendEmployeeCredentialsEmailAsync(
+                            nhanVien.Email, 
+                            nhanVien.TenNhanVien, 
+                            nhanVien.MaNhanVien, 
+                            generatedPassword);
+                        
+                        _logger.LogInformation("Email thông tin tài khoản đã được gửi cho nhân viên {TenNhanVien} ({MaNhanVien})", 
+                            nhanVien.TenNhanVien, nhanVien.MaNhanVien);
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogError(emailEx, "Lỗi khi gửi email cho nhân viên {TenNhanVien} ({MaNhanVien}): {Error}", 
+                            nhanVien.TenNhanVien, nhanVien.MaNhanVien, emailEx.Message);
+                        // Không throw exception để không làm fail việc tạo nhân viên
+                        // Chỉ log lỗi và tiếp tục
+                    }
+                }
 
                 await _context.Entry(nhanVien).Reference(n => n.VaiTro).LoadAsync();
 
@@ -278,13 +331,10 @@ namespace QuanApi.Controllers
                 var currentUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
                 if (!string.IsNullOrEmpty(currentUserIdClaim) && id.ToString() == currentUserIdClaim)
                 {
-
-                    if (nhanVienToUpdate.TrangThai != nhanVienUpdateDto.TrangThai)
-                    {
-                        _logger.LogWarning("User with ID {currentUserIdClaim} attempted to change their own status from {oldStatus} to {newStatus}.",
-                            currentUserIdClaim, nhanVienToUpdate.TrangThai, nhanVienUpdateDto.TrangThai);
-                        return BadRequest("Bạn không thể thay đổi trạng thái của chính mình.");
-                    }
+                    // Đảm bảo trạng thái không thay đổi khi user tự chỉnh sửa
+                    _logger.LogInformation("User {UserId} is editing themselves. Preserving original status: {Status}", 
+                        currentUserIdClaim, nhanVienToUpdate.TrangThai);
+                    nhanVienUpdateDto.TrangThai = nhanVienToUpdate.TrangThai;
                 }
 
                 if (nhanVienUpdateDto.IDVaiTro == Guid.Empty || !await _context.VaiTro.AnyAsync(v => v.IDVaiTro == nhanVienUpdateDto.IDVaiTro))
@@ -300,7 +350,9 @@ namespace QuanApi.Controllers
                 _mapper.Map(nhanVienUpdateDto, nhanVienToUpdate);
                 if (!string.IsNullOrEmpty(nhanVienUpdateDto.MatKhau))
                 {
+                    // Lưu mật khẩu plain text
                     nhanVienToUpdate.MatKhau = nhanVienUpdateDto.MatKhau;
+                    _logger.LogInformation("Password updated for employee: {Id}", id);
                 }
                 nhanVienToUpdate.LanCapNhatCuoi = DateTime.Now;
                 nhanVienToUpdate.NguoiCapNhat = currentUserIdClaim;

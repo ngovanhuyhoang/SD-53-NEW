@@ -37,7 +37,7 @@ namespace QuanApi.Services
             vnpay.AddRequestData("vnp_CurrCode", _config["VnPay:CurrCode"]);
 
             // Địa chỉ IP khách hàng
-            vnpay.AddRequestData("vnp_IpAddr", Utils.GetIpAddress(context));
+            vnpay.AddRequestData("vnp_IpAddr", context.Connection.RemoteIpAddress?.ToString() ?? string.Empty);
             vnpay.AddRequestData("vnp_Locale", _config["VnPay:Locale"]);
             // Thông tin đơn hàng
             vnpay.AddRequestData("vnp_OrderInfo", $"Thanh toán cho đơn hàng: {model.OrderId}");

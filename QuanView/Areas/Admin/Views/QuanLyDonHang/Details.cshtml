@@ -86,55 +86,60 @@
             nextAction = "";
             nextActionText = "";
             break;
-        default:
-            nextAction = "XacNhanDonHang";
-            nextActionText = "Xác nhận";
-            break;
     }
+    
+    // Kiểm tra trạng thái có thể rollback
+    var isNotCompleted = currentStatus != "Giao hàng thành công" && currentStatus != "Đã hủy";
     
     // Logic xác định trạng thái có thể rollback và tên hiển thị
     string rollbackStatus = "";
     string rollbackText = "";
-    bool canRollback = false;
+    bool canRollbackByStatus = false;
     
     switch (currentStatus)
     {
         case "Đã xác nhận":
             rollbackStatus = "Chờ xác nhận";
             rollbackText = "Quay về chờ xác nhận";
-            canRollback = true;
+            canRollbackByStatus = true;
             break;
         case "Chờ lấy hàng":
             rollbackStatus = "Đã xác nhận";
             rollbackText = "Quay về đã xác nhận";
-            canRollback = true;
+            canRollbackByStatus = true;
             break;
         case "Đã lấy hàng":
             rollbackStatus = "Chờ lấy hàng";
             rollbackText = "Quay về chờ lấy hàng";
-            canRollback = true;
+            canRollbackByStatus = true;
             break;
         case "Chờ giao hàng":
             rollbackStatus = "Đã lấy hàng";
             rollbackText = "Quay về đã lấy hàng";
-            canRollback = true;
+            canRollbackByStatus = true;
             break;
         case "Đang giao hàng":
             rollbackStatus = "Chờ giao hàng";
             rollbackText = "Quay về chờ giao hàng";
-            canRollback = true;
+            canRollbackByStatus = true;
             break;
         case "Đã giao":
             rollbackStatus = "Đang giao hàng";
             rollbackText = "Quay về đang giao hàng";
-            canRollback = true;
+            canRollbackByStatus = true;
             break;
         case "Giao hàng thành công":
-            rollbackStatus = "Đã giao";
-            rollbackText = "Quay về đã giao";
-            canRollback = true;
+            rollbackStatus = "";
+            rollbackText = "";
+            canRollbackByStatus = false; // Không cho phép rollback khi đã hoàn thành
+            break;
+        default:
+            canRollbackByStatus = false;
             break;
     }
+    
+    // Chỉ kiểm tra trạng thái chưa hoàn thành và trạng thái cho phép rollback
+    var canRollback = isNotCompleted && canRollbackByStatus;
     
     var orderCompleted = currentStatus == "Giao hàng thành công";
 }
@@ -515,11 +520,17 @@
                                 </button>
                             </form>
                         }
+                        else if (currentStatus == "Giao hàng thành công")
+                        {
+                            <div class="mt-2">
+                                <small class="text-info d-block mb-2">
+                                    <i class="fas fa-check-circle"></i> Đơn hàng đã hoàn thành - không thể rollback
+                                </small>
+                            </div>
+                        }
                     </div>
                 </div>
             }
-
-            <!-- Order Summary -->
             <div class="card shadow">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">Tổng quan đơn hàng</h6>

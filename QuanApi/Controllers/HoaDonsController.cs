@@ -465,6 +465,12 @@ namespace QuanApi.Controllers
                     return NotFound("Không tìm thấy hóa đơn");
                 }
 
+                // Kiểm tra trạng thái đã hoàn thành
+                if (hoaDon.TrangThai == "Giao hàng thành công")
+                {
+                    return BadRequest("Đơn hàng đã hoàn thành. Không thể rollback trạng thái.");
+                }
+
                 var oldStatus = hoaDon.TrangThai;
                 var success = await _orderHistoryService.RollbackOrderStatusAsync(id, dto.TargetStatus, dto.Reason, dto.UpdatedBy);
 

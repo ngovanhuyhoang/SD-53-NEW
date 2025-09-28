@@ -1,4 +1,4 @@
-﻿@model QuanApi.Dtos.NhanVienUpdateDto
+@model QuanApi.Dtos.NhanVienUpdateDto
 
 @using System.Security.Claims
 
@@ -429,25 +429,34 @@
         console.log('Hai ID có khớp không?', nhanVienId === currentUserId);
 
             if (nhanVienId === currentUserId) {
+                // Lưu trạng thái hiện tại
+                var currentStatus = $('#trangThaiCheckbox').prop('checked');
+                
+                // Disable checkbox
+                $('#trangThaiCheckbox').prop('disabled', true);
 
-                $('#trangThaiCheckbox').prop('disabled',true);
-
-
+                // Thêm hidden input để đảm bảo giá trị được gửi đi
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'TrangThai',
+                    value: currentStatus
+                }).appendTo($('#trangThaiCheckbox').closest('form'));
 
                 $('#trangThaiCheckbox').closest('.form-check').find('.form-check-label').after(
-
                     '<small class="form-text text-muted d-block mt-2">' +
-
                     'Bạn không thể tự thay đổi trạng thái của mình.' +
-
                     '</small>'
-
                 );
 
+                // Đảm bảo khi submit form, checkbox disabled vẫn gửi đúng giá trị
+                $('form').on('submit', function() {
+                    if ($('#trangThaiCheckbox').prop('disabled')) {
+                        $('#trangThaiCheckbox').prop('disabled', false);
+                    }
+                });
             }
 
         });
 
     </script>
-
 }
