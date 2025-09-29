@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using AutoMapper;
 using QuanApi.Dtos;
+using QuanApi.Services;
 
 namespace QuanApi.Controllers
 {
@@ -16,10 +17,12 @@ namespace QuanApi.Controllers
     public class PhieuGiamGiasController : ControllerBase
     {
         private readonly BanQuanAu1DbContext _context;
+        private readonly IEmailService _emailService;
 
-        public PhieuGiamGiasController(BanQuanAu1DbContext context)
+        public PhieuGiamGiasController(BanQuanAu1DbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -82,6 +85,17 @@ namespace QuanApi.Controllers
             {
                 _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
                 await _context.SaveChangesAsync();
+            }
+
+            // Gửi email thông báo giảm giá cho tất cả khách hàng
+            try
+            {
+                await _emailService.SendDiscountNotificationEmailAsync(model);
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nhưng không làm gián đoạn việc tạo phiếu giảm giá
+                // Logger sẽ được xử lý trong EmailService
             }
 
             return CreatedAtAction(nameof(GetById),

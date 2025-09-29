@@ -9,5 +9,6 @@ namespace QuanApi.Services
         Task SendOrderCancellationEmailAsync(HoaDon hoaDon, string reason);
         Task SendEmailAsync(string toEmail, string subject, string body);
         Task SendEmployeeCredentialsEmailAsync(string email, string employeeName, string employeeCode, string password);
+        Task SendDiscountNotificationEmailAsync(PhieuGiamGia phieuGiamGia);
     }
 }

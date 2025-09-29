@@ -322,6 +322,136 @@ namespace QuanApi.Services
             return sb.ToString();
         }
 
+        public async Task SendDiscountNotificationEmailAsync(PhieuGiamGia phieuGiamGia)
+        {
+            try
+            {
+                // Lấy danh sách tất cả khách hàng có email
+                var customers = await _context.KhachHang
+                    .Where(kh => kh.TrangThai && !string.IsNullOrEmpty(kh.Email))
+                    .ToListAsync();
+
+                if (!customers.Any())
+                {
+                    _logger.LogWarning("Không có khách hàng nào có email để gửi thông báo giảm giá");
+                    return;
+                }
+
+                var subject = $"🎉 Chương trình giảm giá mới: {phieuGiamGia.TenPhieu}";
+                var body = GenerateDiscountNotificationEmailBody(phieuGiamGia);
+
+                // Gửi email cho từng khách hàng
+                var emailTasks = customers.Select(async customer =>
+                {
+                    try
+                    {
+                        await SendEmailAsync(customer.Email, subject, body);
+                        _logger.LogInformation($"Đã gửi email thông báo giảm giá cho khách hàng {customer.TenKhachHang} ({customer.Email})");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Lỗi khi gửi email thông báo giảm giá cho khách hàng {customer.TenKhachHang} ({customer.Email}): {ex.Message}");
+                    }
+                });
+
+                await Task.WhenAll(emailTasks);
+
+                _logger.LogInformation($"Đã hoàn thành gửi email thông báo giảm giá '{phieuGiamGia.TenPhieu}' cho {customers.Count} khách hàng");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi gửi email thông báo giảm giá '{phieuGiamGia.TenPhieu}': {ex.Message}");
+                // Không throw exception để không làm gián đoạn việc tạo phiếu giảm giá
+            }
+        }
+
+        private string GenerateDiscountNotificationEmailBody(PhieuGiamGia phieuGiamGia)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html><head><meta charset='UTF-8'></head><body>");
+            sb.AppendLine("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>");
+
+            // Header
+            sb.AppendLine("<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>");
+            sb.AppendLine("<h1 style='margin: 0; font-size: 28px;'>🎉 Chương trình giảm giá mới!</h1>");
+            sb.AppendLine("<p style='margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;'>Cơ hội tuyệt vời dành riêng cho bạn</p>");
+            sb.AppendLine("</div>");
+
+            // Content
+            sb.AppendLine("<div style='padding: 30px; background-color: #ffffff;'>");
+            sb.AppendLine("<p style='font-size: 16px; color: #333; margin-bottom: 20px;'>Xin chào quý khách,</p>");
+            sb.AppendLine($"<p style='font-size: 16px; color: #333; line-height: 1.6;'>Chúng tôi vui mừng thông báo về chương trình giảm giá mới <strong style='color: #667eea;'>\"{phieuGiamGia.TenPhieu}\"</strong> đã chính thức có hiệu lực!</p>");
+
+            // Discount details box
+            sb.AppendLine("<div style='background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); padding: 25px; border-radius: 15px; margin: 25px 0; text-align: center; border: 3px solid #ff6b6b;'>");
+            sb.AppendLine($"<h2 style='color: #d63031; margin: 0 0 15px 0; font-size: 24px;'>MÃ GIẢM GIÁ: <span style='background-color: #d63031; color: white; padding: 8px 15px; border-radius: 25px; font-family: monospace;'>{phieuGiamGia.MaCode}</span></h2>");
+            sb.AppendLine($"<p style='font-size: 20px; color: #2d3436; margin: 10px 0; font-weight: bold;'>🔥 GIẢM NGAY {phieuGiamGia.GiaTriGiam}% 🔥</p>");
+            
+            if (phieuGiamGia.GiaTriGiamToiDa.HasValue)
+            {
+                sb.AppendLine($"<p style='color: #636e72; margin: 5px 0;'>💰 Giảm tối đa: <strong>{phieuGiamGia.GiaTriGiamToiDa.Value:N0} VNĐ</strong></p>");
+            }
+            
+            if (phieuGiamGia.DonToiThieu.HasValue)
+            {
+                sb.AppendLine($"<p style='color: #636e72; margin: 5px 0;'>🛒 Đơn hàng tối thiểu: <strong>{phieuGiamGia.DonToiThieu.Value:N0} VNĐ</strong></p>");
+            }
+            sb.AppendLine("</div>");
+
+            // Validity period
+            sb.AppendLine("<div style='background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0;'>");
+            sb.AppendLine("<h3 style='color: #007bff; margin: 0 0 10px 0; font-size: 18px;'>⏰ Thời gian áp dụng:</h3>");
+            sb.AppendLine($"<p style='margin: 5px 0; color: #495057;'><strong>Từ:</strong> {phieuGiamGia.NgayBatDau:dd/MM/yyyy HH:mm}</p>");
+            sb.AppendLine($"<p style='margin: 5px 0; color: #495057;'><strong>Đến:</strong> {phieuGiamGia.NgayKetThuc:dd/MM/yyyy HH:mm}</p>");
+            sb.AppendLine("</div>");
+
+            // Call to action
+            sb.AppendLine("<div style='text-align: center; margin: 30px 0;'>");
+            sb.AppendLine("<a href='#' style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);'>🛍️ MUA SẮM NGAY</a>");
+            sb.AppendLine("</div>");
+
+            // Instructions
+            sb.AppendLine("<div style='background-color: #e8f4fd; border: 1px solid #bee5eb; padding: 20px; border-radius: 10px; margin: 20px 0;'>");
+            sb.AppendLine("<h3 style='color: #0c5460; margin: 0 0 15px 0; font-size: 16px;'>📋 Cách sử dụng mã giảm giá:</h3>");
+            sb.AppendLine("<ol style='color: #0c5460; margin: 0; padding-left: 20px;'>");
+            sb.AppendLine("<li>Chọn sản phẩm yêu thích và thêm vào giỏ hàng</li>");
+            sb.AppendLine("<li>Tiến hành thanh toán</li>");
+            sb.AppendLine($"<li>Nhập mã <strong>{phieuGiamGia.MaCode}</strong> vào ô \"Mã giảm giá\"</li>");
+            sb.AppendLine("<li>Nhấn \"Áp dụng\" và hoàn tất đơn hàng</li>");
+            sb.AppendLine("</ol>");
+            sb.AppendLine("</div>");
+
+            // Terms
+            sb.AppendLine("<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;'>");
+            sb.AppendLine("<p style='margin: 0; color: #856404; font-size: 14px;'><strong>⚠️ Lưu ý:</strong></p>");
+            sb.AppendLine("<ul style='color: #856404; font-size: 14px; margin: 10px 0 0 0; padding-left: 20px;'>");
+            sb.AppendLine("<li>Mỗi khách hàng chỉ được sử dụng mã này một lần</li>");
+            sb.AppendLine("<li>Không áp dụng cùng với các chương trình khuyến mãi khác</li>");
+            sb.AppendLine("<li>Mã giảm giá có thể hết hạn sớm nếu đã đạt số lượng tối đa</li>");
+            sb.AppendLine("</ul>");
+            sb.AppendLine("</div>");
+
+            sb.AppendLine("<p style='color: #333; font-size: 16px; line-height: 1.6;'>Đừng bỏ lỡ cơ hội tuyệt vời này! Hãy nhanh tay mua sắm để tận hưởng ưu đãi hấp dẫn.</p>");
+            sb.AppendLine("<p style='color: #333; font-size: 16px;'>Cảm ơn bạn đã tin tưởng và đồng hành cùng chúng tôi! 💝</p>");
+            sb.AppendLine("</div>");
+
+            // Footer
+            sb.AppendLine("<div style='background-color: #2d3436; color: #ddd; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;'>");
+            sb.AppendLine("<p style='margin: 0 0 10px 0; font-size: 14px;'>Đây là email tự động, vui lòng không trả lời email này.</p>");
+            sb.AppendLine("<p style='margin: 0; font-size: 14px;'>Nếu có thắc mắc, vui lòng liên hệ: support@example.com | 0123-456-789</p>");
+            sb.AppendLine("<div style='margin-top: 15px;'>");
+            sb.AppendLine("<a href='#' style='color: #74b9ff; text-decoration: none; margin: 0 10px;'>Website</a>");
+            sb.AppendLine("<a href='#' style='color: #74b9ff; text-decoration: none; margin: 0 10px;'>Facebook</a>");
+            sb.AppendLine("<a href='#' style='color: #74b9ff; text-decoration: none; margin: 0 10px;'>Instagram</a>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("</div>");
+
+            sb.AppendLine("</div></body></html>");
+
+            return sb.ToString();
+        }
+
         Task IEmailService.SendEmailAsync(string toEmail, string subject, string body)
         {
             return SendEmailAsync(toEmail, subject, body);

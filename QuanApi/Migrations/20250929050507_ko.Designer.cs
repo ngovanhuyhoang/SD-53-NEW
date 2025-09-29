@@ -4,6 +4,7 @@ using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace QuanApi.Migrations
 {
     [DbContext(typeof(BanQuanAu1DbContext))]
-    partial class BanQuanAu1DbContextModelSnapshot : ModelSnapshot
+    [Migration("20250929050507_ko")]
+    partial class ko
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -417,6 +420,67 @@ namespace QuanApi.Migrations
                     b.HasKey("IDDotGiamGia");
 
                     b.ToTable("DotGiamGias");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.EmailLog", b =>
+                {
+                    b.Property<Guid>("IDEmailLog")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EmailType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("HoaDonIDHoaDon")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PhieuGiamGiaIDPhieuGiamGia")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReferenceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ToEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("IDEmailLog");
+
+                    b.HasIndex("HoaDonIDHoaDon");
+
+                    b.HasIndex("PhieuGiamGiaIDPhieuGiamGia");
+
+                    b.ToTable("EmailLogs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.GioHang", b =>
@@ -1440,6 +1504,21 @@ namespace QuanApi.Migrations
                         .IsRequired();
 
                     b.Navigation("KhachHang");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.EmailLog", b =>
+                {
+                    b.HasOne("QuanApi.Data.HoaDon", "HoaDon")
+                        .WithMany()
+                        .HasForeignKey("HoaDonIDHoaDon");
+
+                    b.HasOne("QuanApi.Data.PhieuGiamGia", "PhieuGiamGia")
+                        .WithMany()
+                        .HasForeignKey("PhieuGiamGiaIDPhieuGiamGia");
+
+                    b.Navigation("HoaDon");
+
+                    b.Navigation("PhieuGiamGia");
                 });
 
             modelBuilder.Entity("QuanApi.Data.GioHang", b =>
